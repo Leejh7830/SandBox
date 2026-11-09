@@ -1,0 +1,18 @@
+{
+  "user-data-protection-guard": {
+    "enabled": true,
+    "PreToolUse": [
+      {
+        "matcher": "run_command|write_file|edit_file",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -File ./scripts/data-guard.ps1",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
+

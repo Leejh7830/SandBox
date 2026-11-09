@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{7C93B62A-5A8E-4D1F-9B83-2E4D1F8C9B7A}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>GateHelper</RootNamespace>
+    <AssemblyName>SandBox</AssemblyName>
+    <ApplicationIcon>Resource_TEMP\ico_gateone_fixed.ico</ApplicationIcon>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AngleSharp, Version=1.5.2.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
+      <HintPath>packages\AngleSharp.1.5.2\lib\net472\AngleSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="MaterialSkin, Version=2.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\MaterialSkin.2.2.3.1\lib\net461\MaterialSkin.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="ObjectListView, Version=2.9.1.1072, Culture=neutral, PublicKeyToken=b1c5bf581481bcd4, processorArchitecture=MSIL">
+      <HintPath>packages\ObjectListView.Official.2.9.1\lib\net20\ObjectListView.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Memory, Version=4.0.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Memory.4.6.2\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.6.1.1\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages, Version=9.0.0.3, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Text.Encoding.CodePages.9.0.3\lib\net462\System.Text.Encoding.CodePages.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AppSettings.cs" />
+    <Compile Include="Util_Option.cs" />
+    <Compile Include="Utils\ToastNotification.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Dashboard\DashboardModel.cs" />
+    <Compile Include="Dashboard\DashboardManager.cs" />
+    <Compile Include="SandBox\1. BitFlip\BitFlipControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\1. BitFlip\BitFlipControl.Designer.cs">
+      <DependentUpon>BitFlipControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\1. BitFlip\BitFlipModel.cs" />
+    <Compile Include="SandBox\1. BitFlip\Gimmicks.cs" />
+    <Compile Include="SandBox\2. SignalLink\SignalLinkControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\2. SignalLink\SignalLinkControl.Designer.cs">
+      <DependentUpon>SignalLinkControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\2. SignalLink\SignalManager.cs" />
+    <Compile Include="SandBox\2. SignalLink\SignalNode.cs" />
+    <Compile Include="SandBox\3. MysteryTime\MysteryModel.cs" />
+    <Compile Include="SandBox\3. MysteryTime\MysteryCaseRepository.cs" />
+    <Compile Include="SandBox\3. MysteryTime\MysteryAiEngine.cs" />
+    <Compile Include="SandBox\3. MysteryTime\MysteryTimeControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\3. MysteryTime\MysteryTimeControl.Designer.cs">
+      <DependentUpon>MysteryTimeControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\3. MysteryTime\MysteryApiKeyForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\3. MysteryTime\MysteryApiKeyForm.Designer.cs">
+      <DependentUpon>MysteryApiKeyForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\4. AiTrend\AiTrendModel.cs" />
+    <Compile Include="SandBox\4. AiTrend\AiTrendService.cs" />
+    <Compile Include="SandBox\4. AiTrend\AiTrendControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\4. AiTrend\AiTrendControl.Designer.cs">
+      <DependentUpon>AiTrendControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\4. AiTrend\CustomKeywordDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\4. AiTrend\KeywordGuideDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\4. AiTrend\AiTrendPreviewDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\5. ServerTycoon\ServerTycoonModel.cs" />
+    <Compile Include="SandBox\5. ServerTycoon\ServerTycoonControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\5. ServerTycoon\ServerTycoonControl.Designer.cs">
+      <DependentUpon>ServerTycoonControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\5. ServerTycoon\ServerTycoonControl.Render.cs">
+      <DependentUpon>ServerTycoonControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\5. ServerTycoon\ServerTycoonControl.Tabs.cs">
+      <DependentUpon>ServerTycoonControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\5. ServerTycoon\ServerTycoonControl.Input.cs">
+      <DependentUpon>ServerTycoonControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\6. DataFlip\DataFlipEntities.cs" />
+    <Compile Include="SandBox\6. DataFlip\DataFlipModel.cs" />
+    <Compile Include="SandBox\6. DataFlip\DataFlipModel.Cards.cs">
+      <DependentUpon>DataFlipModel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\6. DataFlip\DataFlipModel.Ai.cs">
+      <DependentUpon>DataFlipModel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\6. DataFlip\DataFlipControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\6. DataFlip\DataFlipControl.Designer.cs">
+      <DependentUpon>DataFlipControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\6. DataFlip\DataFlipControl.Render.cs">
+      <DependentUpon>DataFlipControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\6. DataFlip\DataFlipControl.Modals.cs">
+      <DependentUpon>DataFlipControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\6. DataFlip\DataFlipControl.Inspector.cs">
+      <DependentUpon>DataFlipControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmEntities.cs" />
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmWeather.cs">
+      <DependentUpon>PocketFarmModel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmAchievements.cs">
+      <DependentUpon>PocketFarmModel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmContracts.cs">
+      <DependentUpon>PocketFarmModel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmModel.cs" />
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmModel.Actions.cs">
+      <DependentUpon>PocketFarmModel.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmControl.Designer.cs">
+      <DependentUpon>PocketFarmControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmControl.Render.cs">
+      <DependentUpon>PocketFarmControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\7. PocketFarm\PocketFarmControl.Modals.cs">
+      <DependentUpon>PocketFarmControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\GameListControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\GameListControl.Designer.cs">
+      <DependentUpon>GameListControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\SandBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\SandBox.Designer.cs">
+      <DependentUpon>SandBox.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Program.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\1. BitFlip\BitFlipControl.resx">
+      <DependentUpon>BitFlipControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\2. SignalLink\SignalLinkControl.resx">
+      <DependentUpon>SignalLinkControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\3. MysteryTime\MysteryTimeControl.resx">
+      <DependentUpon>MysteryTimeControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\3. MysteryTime\MysteryApiKeyForm.resx">
+      <DependentUpon>MysteryApiKeyForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\4. AiTrend\AiTrendControl.resx">
+      <DependentUpon>AiTrendControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\GameListControl.resx">
+      <DependentUpon>GameListControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\SandBox.resx">
+      <DependentUpon>SandBox.cs</DependentUpon>
+    </EmbeddedResource>
+    <None Include="App.config" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

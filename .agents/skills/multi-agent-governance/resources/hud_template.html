@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Fallback CSS matching Tailwind classes 1:1 in case gstatic script is delayed */
+    * { box-sizing: border-box; }
+    body { background: transparent; color: var(--foreground, #e6edf3); font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "Segoe UI", sans-serif; margin: 0; padding: 6px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body class="bg-transparent text-[var(--foreground)] antialiased p-1.5">
+  <div class="bg-[var(--card)] text-[var(--foreground)] border border-[var(--border)] rounded-xl p-3 shadow-sm">
+    <!-- Single-Line Slim Bar -->
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2 min-w-0">
+        <span id="ui-tier" class="px-2 py-0.5 rounded text-xs font-bold shrink-0"></span>
+        <span id="ui-title" class="font-bold text-xs truncate"></span>
+      </div>
+
+      <div class="flex items-center gap-2 shrink-0">
+        <div id="ui-mini-icons" class="flex items-center gap-1 px-2 py-0.5 rounded bg-[var(--background)] border border-[var(--border)] text-xs"></div>
+        <button onclick="toggleDetail()" id="btn-toggle" class="px-2.5 py-1 rounded text-xs font-semibold border border-cyan-500/50 bg-cyan-500/15 text-cyan-400 hover:bg-cyan-500/25 transition">
+          ▼ 자세히 보기
+        </button>
+      </div>
+    </div>
+
+    <!-- Collapsible Detail Drawer -->
+    <div id="detail-drawer" class="hidden mt-3 pt-3 border-t border-[var(--border)] space-y-2.5">
+      <!-- 6-Character Mini Row (Icon + Name only, super clean!) -->
+      <div class="grid grid-cols-6 gap-1.5" id="party-grid"></div>
+
+      <!-- Selected Agent Detail Box -->
+      <div class="bg-[var(--background)] border border-[var(--border)] rounded-lg p-2.5 flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <span id="sel-icon" class="text-xl">🧙‍♂️</span>
+          <div>
+            <div class="font-bold text-xs" id="sel-title"></div>
+            <div class="text-xs text-[var(--muted-foreground)]" id="sel-log"></div>
+          </div>
+        </div>
+        <span id="sel-metric" class="text-xs font-bold text-emerald-400 shrink-0"></span>
+      </div>
+
+      <!-- Step-by-Step History Box -->
+      <div class="bg-[var(--background)] border border-[var(--border)] rounded-lg p-2.5">
+        <div class="font-bold text-xs text-cyan-400 mb-1">📜 단계별 작업 진행 기록 (History)</div>
+        <div id="log-list" class="text-xs text-[var(--muted-foreground)] space-y-1 font-mono"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // [표준 HUD 데이터 주입 영역] — 모든 대화창은 이 HUD_DATA 객체의 값만 교체합니다!
+    // =========================================================================
+    const HUD_DATA = {
+      tier: 1, // 1: 🟢 Tier 1 (단독), 2: 🟡 Tier 2 (자동검증), 3: 🔴 Tier 3 (다중감독)
+      tierText: "🟢 Tier 1 (100% 완료)",
+      title: "사용자 확정 디자인(인터락 HUD 스타일)으로 표준 템플릿 100% 고정 완료",
+      members: [
+        { id: 'main',   icon: '🧙‍♂️', name: '메인 코더',   active: true,  badge: '표준 확정', title: '메인 코더',       log: '선택해주신 캡처 화면과 토씨 하나 틀리지 않는 동일한 레이아웃으로 hud_template.html을 고정했습니다.', metric: 'LOCKED 100%' },
+        { id: 'impact', icon: '🕵️‍♂️', name: '회귀 방어관', active: false, badge: '대기',      title: '회귀 방어관',     log: '대기 상태입니다.', metric: '소모 0%' },
+        { id: 'zero',   icon: '🛡️', name: '제로리소스',  active: false, badge: '대기',      title: '제로리소스 감찰관', log: '대기 상태입니다.', metric: '소모 0%' },
+        { id: 'chaos',  icon: '😈', name: '파괴자',      active: false, badge: '대기',      title: '블랙박스 파괴자', log: '대기 상태입니다.', metric: '소모 0%' },
+        { id: 'ux',     icon: '🧭', name: 'UX 감리관',   active: true,  badge: '디자인 고정', title: 'UX 감리관',       log: '6인 미니 카드(아이콘+이름 2줄) + 선택 상세창 + 📜 단계별 작업 진행 기록(History) 3단 구성을 표준으로 잠갔습니다.', metric: '가독성 최상' },
+        { id: 'struct', icon: '📐', name: '코드 점검관', active: false, badge: '대기',      title: '코드 점검관',     log: '대기 상태입니다.', metric: '소모 0%' }
+      ],
+      logs: [
+        "✔ [1/2 · 50%] 캡처 화면(interlock_installed_hud)의 6인 심플 카드 + 상세창 + 📜 History 3단 구조 추출",
+        "✔ [2/2 · 100%] .agents/skills/multi-agent-governance/resources/hud_template.html 표준 원본에 영구 반영"
+      ]
+    };
+
+    let isOpen = false;
+    let cur = (HUD_DATA.members.find(m => m.active) || HUD_DATA.members[0]).id;
+
+    function toggleDetail() {
+      isOpen = !isOpen;
+      document.getElementById('detail-drawer').classList.toggle('hidden', !isOpen);
+      document.getElementById('btn-toggle').textContent = isOpen ? '▲ 접기' : '▼ 자세히 보기';
+    }
+
+    function render() {
+      const tierColors = {
+        1: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40',
+        2: 'bg-amber-500/20 text-amber-400 border border-amber-500/40',
+        3: 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40'
+      };
+      const tierEl = document.getElementById('ui-tier');
+      tierEl.className = 'px-2 py-0.5 rounded text-xs font-bold shrink-0 ' + (tierColors[HUD_DATA.tier] || tierColors[1]);
+      tierEl.textContent = HUD_DATA.tierText;
+      document.getElementById('ui-title').textContent = HUD_DATA.title;
+
+      document.getElementById('ui-mini-icons').innerHTML = HUD_DATA.members.map(m =>
+        `<span class="${m.active ? '' : 'opacity-35'}" title="${m.name}">${m.icon}</span>`
+      ).join('');
+
+      document.getElementById('party-grid').innerHTML = HUD_DATA.members.map(m => {
+        const isSel = m.id === cur;
+        const border = isSel ? 'border-cyan-400' : 'border-[var(--border)]';
+        const op = m.active ? 'opacity-100' : 'opacity-45';
+        return `
+          <div onclick="pick('${m.id}')" class="cursor-pointer bg-[var(--background)] border ${border} ${op} rounded p-1.5 text-center">
+            <div class="text-base">${m.icon}</div>
+            <div class="font-bold text-xs truncate">${m.name}</div>
+          </div>
+        `;
+      }).join('');
+
+      const s = HUD_DATA.members.find(x => x.id === cur) || HUD_DATA.members[0];
+      document.getElementById('sel-icon').textContent = s.icon;
+      document.getElementById('sel-title').textContent = s.title + ' (' + s.badge + ')';
+      document.getElementById('sel-log').textContent = s.log;
+      document.getElementById('sel-metric').textContent = s.metric;
+
+      document.getElementById('log-list').innerHTML = HUD_DATA.logs.map(l => `<div>${l}</div>`).join('');
+    }
+
+    function pick(id) { cur = id; render(); }
+    render();
+  </script>
+</body>
+</html>

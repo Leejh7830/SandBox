@@ -8,6 +8,7 @@ namespace GateHelper
         public GameListControl()
         {
             InitializeComponent();
+            GL_pnlFooter.SendToBack();
         }
 
         private void btnSelectBitFlip_Click(object sender, EventArgs e)
@@ -63,6 +64,22 @@ namespace GateHelper
             if (this.ParentForm is SandBox sb)
             {
                 sb.SwitchToGame("PocketFarm");
+            }
+        }
+
+        private void GL_btnSelectStockAdvisor_Click(object sender, EventArgs e)
+        {
+            if (this.ParentForm is SandBox sb)
+            {
+                sb.SwitchToGame("StockAdvisor");
+            }
+        }
+
+        private void GL_btnOptions_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new OptionForm())
+            {
+                dlg.ShowDialog(this);
             }
         }
     }

@@ -21,6 +21,12 @@ namespace GateHelper
         // AI 샌드박스 옵션: 프로그램 시작 시 AI 데일리 브리핑 백그라운드 자동 예열 여부
         public bool AutoPreloadAiTrend { get; set; }
 
+        // KB증권 Open API 비상 주문 연동 설정 (Security: Windows DPAPI 암호화)
+        public string KbAppKey { get; set; }
+        public string KbAppSecretEncrypted { get; set; }
+        public string KbAccountNumber { get; set; }
+        public bool KbIsMockTrading { get; set; }
+
         public AppSettings() // 옵션 변수들
         {
             RemoveDuplicates = true;
@@ -35,6 +41,10 @@ namespace GateHelper
             EncryptCredentialsOnStart = false;
             GeminiApiKey = "";
             AutoPreloadAiTrend = false;
+            KbAppKey = "";
+            KbAppSecretEncrypted = "";
+            KbAccountNumber = "";
+            KbIsMockTrading = true;
         }
     }
 }

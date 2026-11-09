@@ -51,6 +51,13 @@
 
 ---
 
+### 8. WinForms 패널 내 `Anchor=Right`와 `Dock=Right` 혼용 시 Z-Order 가림 결함
+- **증상**: 작은 창(1000px)에서는 정상 노출되던 우측 상단 액션 버튼들이 창을 전체화면이나 가로로 크게 늘리면 흔적도 없이 사라짐.
+- **원인**: 부모 패널 안에 `Anchor = Top | Left | Right`를 가진 가변 컨트롤과 `Dock = Right`를 가진 버튼 패널이 함께 존재할 때, 창이 가로로 넓어지면 `Anchor=Right` 컨트롤이 부모의 오른쪽 끝까지 강제 확장되면서 Z-Order 상 뒤에 있는 `Dock=Right` 버튼 패널 위를 불투명하게 완전히 덮어버림.
+- **해결 공식**: 가변 텍스트 영역과 고정 버튼군이 공존하는 상단 헤더는 절대 Anchor와 Dock을 혼용하지 말고, 1행 3열의 **`TableLayoutPanel`** (고정 뱃지 / 100% 가변 텍스트 / 고정 버튼 그리드) 구조로 설계하여 창 크기와 관계없이 침범/가림 결함을 원천 차단할 것.
+
+---
+
 ### 8. GDI+ `DrawString`의 서러게이트 이모지(`📋`, `📸`, `🔥`) 네모(`□`) 깨짐과 `TextRenderer` 해결 공식
 - **증상**: 안내 문구(예: `📋 이 영역에서 [Ctrl+V]`)나 컨트롤 렌더링에 이모지를 넣었을 때 `□ 이 영역에서...` 처럼 네모 상자(Tofu Box)로 출력됨.
 - **원인**: GDI+ `Graphics.DrawString`은 맑은 고딕 등 단일 폰트 지정 시 Windows 유니코드 서러게이트 이모지 자동 폰트 링크(Segoe UI Emoji 등) 폴백을 처리하지 못함. 반면 Windows GDI 기반의 `TextRenderer.DrawText`는 OS 레벨의 다중 폰트 링크 및 서러게이트 이모지 폴백을 완벽히 지원함.
@@ -70,3 +77,16 @@
 - **해결 공식**: `float range = Math.Max(0.001f, maxVal - minVal);`와 같이 최소 보정값을 두어 0 나눗셈을 원천 방어할 것.
 
 
+
+---
+
+### 11. WinForms `Dock=Bottom`과 `Dock=Fill`의 Z-Order 우선순위 및 `Anchor=Right` 화면 밖 이탈 버그
+- **증상**: 
+  1. 바닥에 배치한 패널(`Dock = DockStyle.Bottom`)이 상단 메인 영역(`Dock = DockStyle.Fill`) 뒤로 숨겨져 화면에 보이지 않음.
+  2. 패널 안의 버튼에 `Anchor = AnchorStyles.Right`를 주었더니, 폼이 커질 때 버튼 좌표(X)가 화면 오른쪽 바깥(예: X=1039px)으로 영원히 날아가버림.
+- **원인**:
+  1. WinForms의 도킹 엔진은 Z-Order 상 뒤쪽(`Controls.Add`가 먼저 호출되거나 `SendToBack()`이 적용된 컨트롤)을 먼저 화면 외곽(Top, Bottom, Left, Right)에 도킹하고, 나중에 남은 내부 영역을 `Dock = Fill`로 채움. 반대로 `BringToFront()`를 호출하면 도킹 엔진에서 우선순위가 밀려 `Fill` 컨트롤 아래로 깔림.
+  2. 컨트롤이 생성될 때 부모 패널의 초기 너비(예: 200px)가 실제 렌더링 너비(예: 884px)보다 작은 상태에서 `Anchor = Right`가 설정되면, 폼 리사이즈 시 초기 오프셋 차이(`Right Margin`)를 유지하려다 X 좌표가 비정상적으로 부모 경계 밖으로 밀려남.
+- **해결 공식**:
+  1. 하단 바 패널은 반드시 `pnlFooter.SendToBack();`을 호출하여 외곽 도킹 우선권을 부여할 것.
+  2. 우측 정렬 버튼은 불필요하게 `Anchor = Right`를 쓰지 말고 `btn.Dock = DockStyle.Right;`와 부모 패널의 `Padding`을 활용하거나 `FlowLayoutPanel(FlowDirection.RightToLeft)`를 사용할 것.

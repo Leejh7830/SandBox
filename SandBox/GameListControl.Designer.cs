@@ -43,7 +43,12 @@ namespace GateHelper
             this.materialLabelDataFlip = new MaterialSkin.Controls.MaterialLabel();
             this.GL_btnSelectPocketFarm = new MaterialSkin.Controls.MaterialCard();
             this.materialLabelPocketFarm = new MaterialSkin.Controls.MaterialLabel();
+            this.GL_btnSelectStockAdvisor = new MaterialSkin.Controls.MaterialCard();
+            this.materialLabelStockAdvisor = new MaterialSkin.Controls.MaterialLabel();
+            this.GL_pnlFooter = new System.Windows.Forms.Panel();
+            this.GL_btnOptions = new System.Windows.Forms.Button();
             this.GL_FlowPanel1.SuspendLayout();
+            this.GL_pnlFooter.SuspendLayout();
             this.GL_btnSelectBitFlip.SuspendLayout();
             this.GL_btnSelectSignalLink.SuspendLayout();
             this.GL_btnSelectMysteryTime.SuspendLayout();
@@ -51,6 +56,7 @@ namespace GateHelper
             this.GL_btnSelectServerTycoon.SuspendLayout();
             this.GL_btnSelectDataFlip.SuspendLayout();
             this.GL_btnSelectPocketFarm.SuspendLayout();
+            this.GL_btnSelectStockAdvisor.SuspendLayout();
             this.SuspendLayout();
             // 
             // GL_FlowPanel1
@@ -62,6 +68,7 @@ namespace GateHelper
             this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectServerTycoon);
             this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectDataFlip);
             this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectPocketFarm);
+            this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectStockAdvisor);
             this.GL_FlowPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.GL_FlowPanel1.Location = new System.Drawing.Point(0, 0);
             this.GL_FlowPanel1.Name = "GL_FlowPanel1";
@@ -260,14 +267,68 @@ namespace GateHelper
             this.materialLabelPocketFarm.Text = "Pocket Farm";
             this.materialLabelPocketFarm.Click += new System.EventHandler(this.GL_btnSelectPocketFarm_Click);
             // 
+            // GL_btnSelectStockAdvisor
+            // 
+            this.GL_btnSelectStockAdvisor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(255)))));
+            this.GL_btnSelectStockAdvisor.Controls.Add(this.materialLabelStockAdvisor);
+            this.GL_btnSelectStockAdvisor.Depth = 0;
+            this.GL_btnSelectStockAdvisor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
+            this.GL_btnSelectStockAdvisor.Location = new System.Drawing.Point(192, 308);
+            this.GL_btnSelectStockAdvisor.Margin = new System.Windows.Forms.Padding(14);
+            this.GL_btnSelectStockAdvisor.MouseState = MaterialSkin.MouseState.HOVER;
+            this.GL_btnSelectStockAdvisor.Name = "GL_btnSelectStockAdvisor";
+            this.GL_btnSelectStockAdvisor.Padding = new System.Windows.Forms.Padding(14);
+            this.GL_btnSelectStockAdvisor.Size = new System.Drawing.Size(150, 70);
+            this.GL_btnSelectStockAdvisor.TabIndex = 7;
+            this.GL_btnSelectStockAdvisor.Click += new System.EventHandler(this.GL_btnSelectStockAdvisor_Click);
+            // 
+            // materialLabelStockAdvisor
+            // 
+            this.materialLabelStockAdvisor.AutoSize = true;
+            this.materialLabelStockAdvisor.Depth = 0;
+            this.materialLabelStockAdvisor.Font = new System.Drawing.Font("Roboto", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel);
+            this.materialLabelStockAdvisor.Location = new System.Drawing.Point(26, 26);
+            this.materialLabelStockAdvisor.MouseState = MaterialSkin.MouseState.HOVER;
+            this.materialLabelStockAdvisor.Name = "materialLabelStockAdvisor";
+            this.materialLabelStockAdvisor.Size = new System.Drawing.Size(98, 19);
+            this.materialLabelStockAdvisor.TabIndex = 9;
+            this.materialLabelStockAdvisor.Text = "Stock Advisor";
+            this.materialLabelStockAdvisor.Click += new System.EventHandler(this.GL_btnSelectStockAdvisor_Click);
+            // 
+            // GL_pnlFooter
+            // 
+            this.GL_pnlFooter.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(34)))), ((int)(((byte)(44)))));
+            this.GL_pnlFooter.Controls.Add(this.GL_btnOptions);
+            this.GL_pnlFooter.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.GL_pnlFooter.Size = new System.Drawing.Size(500, 52);
+            this.GL_pnlFooter.Name = "GL_pnlFooter";
+            this.GL_pnlFooter.Padding = new System.Windows.Forms.Padding(0, 8, 16, 8);
+            // 
+            // GL_btnOptions
+            // 
+            this.GL_btnOptions.Dock = System.Windows.Forms.DockStyle.Right;
+            this.GL_btnOptions.Size = new System.Drawing.Size(140, 36);
+            this.GL_btnOptions.Name = "GL_btnOptions";
+            this.GL_btnOptions.Text = "[설정] 환경 설정";
+            this.GL_btnOptions.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.GL_btnOptions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(45)))), ((int)(((byte)(75)))), ((int)(((byte)(115)))));
+            this.GL_btnOptions.ForeColor = System.Drawing.Color.White;
+            this.GL_btnOptions.Font = new System.Drawing.Font("Malgun Gothic", 9.5F, System.Drawing.FontStyle.Bold);
+            this.GL_btnOptions.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.GL_btnOptions.Click += new System.EventHandler(this.GL_btnOptions_Click);
+            this.GL_btnOptions.FlatAppearance.BorderSize = 0;
+            // 
             // GameListControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.Controls.Add(this.GL_pnlFooter);
             this.Controls.Add(this.GL_FlowPanel1);
             this.Name = "GameListControl";
             this.Size = new System.Drawing.Size(500, 500);
             this.GL_FlowPanel1.ResumeLayout(false);
+            this.GL_pnlFooter.ResumeLayout(false);
+            this.GL_pnlFooter.PerformLayout();
             this.GL_btnSelectBitFlip.ResumeLayout(false);
             this.GL_btnSelectBitFlip.PerformLayout();
             this.GL_btnSelectSignalLink.ResumeLayout(false);
@@ -282,6 +343,8 @@ namespace GateHelper
             this.GL_btnSelectDataFlip.PerformLayout();
             this.GL_btnSelectPocketFarm.ResumeLayout(false);
             this.GL_btnSelectPocketFarm.PerformLayout();
+            this.GL_btnSelectStockAdvisor.ResumeLayout(false);
+            this.GL_btnSelectStockAdvisor.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -296,6 +359,7 @@ namespace GateHelper
         private MaterialSkin.Controls.MaterialCard GL_btnSelectServerTycoon;
         private MaterialSkin.Controls.MaterialCard GL_btnSelectDataFlip;
         private MaterialSkin.Controls.MaterialCard GL_btnSelectPocketFarm;
+        private MaterialSkin.Controls.MaterialCard GL_btnSelectStockAdvisor;
         private MaterialSkin.Controls.MaterialLabel materialLabel1;
         private MaterialSkin.Controls.MaterialLabel materialLabel2;
         private MaterialSkin.Controls.MaterialLabel materialLabel3;
@@ -303,5 +367,8 @@ namespace GateHelper
         private MaterialSkin.Controls.MaterialLabel materialLabelServerTycoon;
         private MaterialSkin.Controls.MaterialLabel materialLabelDataFlip;
         private MaterialSkin.Controls.MaterialLabel materialLabelPocketFarm;
+        private MaterialSkin.Controls.MaterialLabel materialLabelStockAdvisor;
+        private System.Windows.Forms.Panel GL_pnlFooter;
+        private System.Windows.Forms.Button GL_btnOptions;
     }
 }

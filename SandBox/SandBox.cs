@@ -7,6 +7,7 @@ using GateHelper.AiTrend;
 using GateHelper.ServerTycoon;
 using GateHelper.DataFlip;
 using GateHelper.PocketFarm;
+using GateHelper.StockAdvisor;
 
 namespace GateHelper
 {
@@ -20,6 +21,7 @@ namespace GateHelper
         private ServerTycoonControl _serverTycoonControl;
         private DataFlipControl _dataFlipControl;
         private PocketFarmControl _pocketFarmControl;
+        private StockAdvisorControl _stockAdvisorControl;
 
         public SandBox() : this(null)
         {
@@ -110,6 +112,14 @@ namespace GateHelper
                 tpPocketFarm.Controls.Add(_pocketFarmControl);
             }
 
+            // 9. Stock Advisor 컨트롤 추가
+            _stockAdvisorControl = new StockAdvisorControl();
+            _stockAdvisorControl.Dock = DockStyle.Fill;
+            if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
+            {
+                tpStockAdvisor.Controls.Add(_stockAdvisorControl);
+            }
+
             // 탭 전환 이벤트: 활성 탭에 따른 스마트 렌더링/절전 제어
             SB_tabControl1.SelectedIndexChanged += SB_tabControl1_SelectedIndexChanged;
 
@@ -133,6 +143,9 @@ namespace GateHelper
 
             bool isPocketFarm = SB_tabControl1.SelectedTab == tpPocketFarm;
             _pocketFarmControl?.OnTabVisibilityChanged(isPocketFarm);
+
+            bool isStockAdvisor = SB_tabControl1.SelectedTab == tpStockAdvisor;
+            _stockAdvisorControl?.OnTabVisibilityChanged(isStockAdvisor);
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -146,6 +159,7 @@ namespace GateHelper
                 _serverTycoonControl?.OnTabVisibilityChanged(false);
                 _dataFlipControl?.OnTabVisibilityChanged(false);
                 _pocketFarmControl?.OnTabVisibilityChanged(false);
+                _stockAdvisorControl?.OnTabVisibilityChanged(false);
             }
             else
             {
@@ -161,6 +175,7 @@ namespace GateHelper
             _serverTycoonControl?.OnTabVisibilityChanged(false);
             _dataFlipControl?.OnTabVisibilityChanged(false);
             _pocketFarmControl?.OnTabVisibilityChanged(false);
+            _stockAdvisorControl?.OnTabVisibilityChanged(false);
         }
 
         public void BackToList()
@@ -234,6 +249,18 @@ namespace GateHelper
                 {
                     SB_tabControl1.SelectedTab = tpPocketFarm;
                     _pocketFarmControl?.OnTabVisibilityChanged(true);
+                }
+            }
+            else if (gameName == "StockAdvisor")
+            {
+                if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
+                {
+                    if (this.ClientSize.Width < 1000 || this.ClientSize.Height < 700)
+                    {
+                        this.ClientSize = new System.Drawing.Size(1000, 700);
+                    }
+                    SB_tabControl1.SelectedTab = tpStockAdvisor;
+                    _stockAdvisorControl?.OnTabVisibilityChanged(true);
                 }
             }
         }

@@ -18,12 +18,6 @@ namespace GateHelper
 
             try
             {
-                Dashboard.DashboardManager.Initialize();
-            }
-            catch { }
-
-            try
-            {
                 AiTrend.AiTrendService.PurgeStaleCaches(days: 3);
             }
             catch { }

@@ -103,3 +103,16 @@
 - **해결 공식**:
   1. 액션 버튼군은 `FlowLayoutPanel`의 가변 마진에 맡기지 말고, 명시적 `Panel`에서 `Location = new Point(..., btnY)`로 **절대 Y좌표(`btnY = 5`)와 동일 높이(`Height = 34`)를 칼같이 고정**할 것.
   2. 모든 UI 검증 시 단순 눈대중 확인을 금지하고, 메모리 상에서 폼을 인스턴스화하여 `(TextRenderer.MeasureText.Width + 14 > btn.ClientSize.Width)` 및 인접 버튼 Y좌표 일치 여부를 1px 단위로 기계적 실측(`UI Pixel Auditor`)할 것.
+
+---
+
+### 13. ListView 컬럼 추가 시 `OriginalColumnNames` 캐시 배열 미동기화로 인한 열헤더 정렬 시 대량 데이터 인덱스 밀림(Shift) 버그
+- **증상**: 
+  - 신규 컬럼(예: `AI 등급`)을 리스트뷰 중간(인덱스 4)에 추가한 후, 사용자가 열 헤더를 클릭하여 정렬하는 순간 `14일 RSI` 헤더 밑에 등급(`C`)이 나오고, `5일 거래량` 헤더 밑에 RSI 수치(`28.2%`)가 나오는 등 4번 이후 모든 열의 데이터가 1칸씩 통째로 밀리는 현상 발생.
+- **원인**:
+  - `_lvStocks.Columns.Add`와 `ListViewItem(new[] { ... })`에는 13개 컬럼을 정상 추가했으나, 정렬 시 화살표(`▲/▼`)를 붙였다 떼는 데 사용되는 원본 컬럼명 캐시 배열(`OriginalColumnNames`)에 신규 컬럼이 누락되어 12개 구버전 배열로 남아 있었음.
+  - 열 헤더 클릭 시 `_lvStocks.Columns[i].Text = OriginalColumnNames[i]`가 실행되면서 4번 인덱스 컬럼명이 "AI 등급"에서 "14일 RSI"로 덮어써져 헤더 텍스트만 1칸씩 당겨진 착시와 데이터 불일치가 발생함.
+- **해결 공식**:
+  1. 리스트뷰에 컬럼을 추가/삭제/변경할 때는 반드시 **(1) `Columns.Add`, (2) `OriginalColumnNames` 배열, (3) `ListViewItem` 서브아이템 생성 배열, (4) `IComparer` switch-case 인덱스, (5) `AutoFitLastColumn` 마지막 인덱스**의 5대 요소를 1:1 완벽 동기화할 것.
+  2. 동률 발생 시 정렬 안정성을 위해 `IComparer` 내부에 `result == 0`일 때 2차 정렬 기준(예: 종합점수 내림차순 -> 종목명 가나다순)을 기본 탑재할 것.
+  3. `UpdateUi()`에서 리스트뷰 대량 아이템 추가 전 `_lvStocks.ListViewItemSorter = null;`로 정렬기 간섭을 차단하여 속도와 정렬 무결성을 보장할 것.

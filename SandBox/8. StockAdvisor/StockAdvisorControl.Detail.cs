@@ -60,7 +60,7 @@ namespace GateHelper.StockAdvisor
 
             foreach (var item in _portfolio.Items)
             {
-                string rsiText = item.Rsi > 0 ? $"{item.Rsi:F1}%" : "-";
+                string rsiText = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                 string volText = item.VolumeRatio > 0 ? $"{item.VolumeRatio:F0}%" : "-";
                 string chartText = item.ChartScore > 0 ? $"{item.ChartScore}점" : "-";
                 string newsText = item.NewsScore > 0 ? $"{item.NewsScore}점" : "-";
@@ -233,7 +233,7 @@ namespace GateHelper.StockAdvisor
                 _lblDetailTimingWarning.BackColor = Color.FromArgb(28, 30, 38);
                 _lblDetailTimingWarning.ForeColor = Color.Silver;
                 _lblDetailScores.Text = "📊 [3대 정량점수] 차트: -점 | 뉴스: -점 | 손익비: -점\n★ 최종 종합점수: -점 / 10점";
-                _lblDetailTechnicalFacts.Text = "🔍 [팩트] 14일 RSI: -% | 거래량: -%\n• 20일 지지선: -원 (하방위험: -%)";
+                _lblDetailTechnicalFacts.Text = "🔍 [팩트] 14일 RSI: - | 거래량: -%\n• 20일 지지선: -원 (하방위험: -%)";
                 _lblDetailGroupBadge.Text = "포지션: -";
                 _lblDetailAction.Text = "권고 액션: -";
                 _lblDetailReliability.Text = "■ 출처 신뢰도: -";
@@ -285,7 +285,7 @@ namespace GateHelper.StockAdvisor
 
             // 팩트 지표 라벨 (2줄 배치로 텍스트 잘림 0%)
             string suppStr = item.SupportPrice > 0 ? $"{item.SupportPrice:N0}원" : "-";
-            _lblDetailTechnicalFacts.Text = $"🔍 14일 RSI: {item.Rsi:F1}%  |  5일대비 거래량: {item.VolumeRatio:F0}%\n• 20일 지지선: {suppStr} (하방위험: -{item.DownsideRiskPercent:F1}%)";
+            _lblDetailTechnicalFacts.Text = $"🔍 14일 RSI: {item.Rsi:F1}  |  5일대비 거래량: {item.VolumeRatio:F0}%\n• 20일 지지선: {suppStr} (하방위험: -{item.DownsideRiskPercent:F1}%)";
 
             // AI 등급 표시 (사용자 지정 4색: S,A(초록) / B,C(노랑) / D(주황) / F(빨강))
             _lblDetailGroupBadge.Text = $"AI 등급: {GradeHelper.GetGradeDescription(item.Grade)}";
@@ -349,7 +349,7 @@ namespace GateHelper.StockAdvisor
             {
                 AppendText($"  ▶ 안전 가이드 : {item.TimingWarning}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.TimingBadge.Contains("과열") ? Color.FromArgb(255, 130, 130) : Color.FromArgb(255, 230, 110));
             }
-            AppendText($"  • 14일 RSI : {item.Rsi:F1}% {(item.Rsi >= 70 ? "(과열 구간 - 추격매수 금지!)" : (item.Rsi <= 30 ? "(과매도 침체 구간)" : "(안정 추세)"))}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 14일 RSI : {item.Rsi:F1} {(item.Rsi >= 70 ? "(과열 구간 - 추격매수 금지!)" : (item.Rsi <= 30 ? "(과매도 침체 구간)" : "(안정 추세)"))}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             AppendText($"  • 5일 평균대비 거래량 : {item.VolumeRatio:F0}% {(item.VolumeRatio >= 140 ? "(대량 수급 유입)" : "")}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             AppendText($"  • 20일 지지선 (손절 기준선) : {item.SupportPrice:N0}원 (현재가 대비 -{item.DownsideRiskPercent:F1}%)\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             AppendText($"  • 20일 저항선 (단기 목표선) : {item.ResistancePrice:N0}원\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
@@ -383,7 +383,7 @@ namespace GateHelper.StockAdvisor
             {
                 AppendText($"  • 타이밍 가이드 : {item.TimingWarning}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.TimingBadge.Contains("과열") ? Color.FromArgb(255, 130, 130) : Color.FromArgb(255, 230, 110));
             }
-            AppendText($"  • 14일 RSI : {item.Rsi:F1}%   |   5일대비 거래량 : {item.VolumeRatio:F0}%\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 14일 RSI : {item.Rsi:F1}   |   5일대비 거래량 : {item.VolumeRatio:F0}%\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             AppendText($"  • 20일 지지선 : {item.SupportPrice:N0}원 (하방 위험 -{item.DownsideRiskPercent:F1}%)   |   저항선 : {item.ResistancePrice:N0}원\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
 
             // 섹션 2: 행동 지침 (굵은 글씨 헤더)

@@ -183,7 +183,7 @@ namespace GateHelper.StockAdvisor
 
             foreach (var item in list)
             {
-                string rsiStr = item.Rsi > 0 ? $"{item.Rsi:F1}%" : "-";
+                string rsiStr = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                 string scoreStr = item.FinalScore > 0 ? $"★ {item.FinalScore}점" : "-";
                 string actionStr = item.LastDiagnosis?.RecommendedAction;
                 if (string.IsNullOrEmpty(actionStr))

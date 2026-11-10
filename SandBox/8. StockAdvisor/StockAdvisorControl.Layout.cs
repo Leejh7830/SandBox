@@ -342,7 +342,7 @@ namespace GateHelper.StockAdvisor
 
             _lblDetailTechnicalFacts = new Label
             {
-                Text = "🔍 14일 RSI: -% | 거래량: -%\n• 20일 지지선: -원 (하방: -%)",
+                Text = "🔍 14일 RSI: - | 거래량: -%\n• 20일 지지선: -원 (하방: -%)",
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(170, 210, 255),
                 Dock = DockStyle.Top,

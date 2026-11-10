@@ -224,7 +224,8 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Segoe UI", 9.2f),
                 BorderStyle = BorderStyle.None
             };
-            _lvStocks.Columns.Add("종목명 (코드)", 135);
+            _lvStocks.Columns.Add("종목명", 125);
+            _lvStocks.Columns.Add("코드", 62, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("현재가", 75, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("수익률", 68, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("14일 RSI", 68, HorizontalAlignment.Right);
@@ -430,16 +431,16 @@ namespace GateHelper.StockAdvisor
 
         private void AutoFitLastColumn()
         {
-            if (_lvStocks == null || _lvStocks.Columns.Count < 11) return;
+            if (_lvStocks == null || _lvStocks.Columns.Count < 12) return;
             try
             {
                 int fixedWidth = 0;
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 11; i++)
                 {
                     fixedWidth += _lvStocks.Columns[i].Width;
                 }
                 int remain = _lvStocks.ClientSize.Width - fixedWidth - 4;
-                _lvStocks.Columns[10].Width = Math.Max(240, remain);
+                _lvStocks.Columns[11].Width = Math.Max(240, remain);
             }
             catch { }
         }

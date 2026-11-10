@@ -73,7 +73,8 @@ namespace GateHelper.StockAdvisor
 
                 var lvi = new ListViewItem(new[]
                 {
-                    $"{item.StockName} ({item.StockCode})",
+                    item.StockName,
+                    item.StockCode,
                     $"{item.CurrentPrice:N0}",
                     $"{item.ProfitRate:+0.00;-0.00}%",
                     rsiText,
@@ -88,48 +89,51 @@ namespace GateHelper.StockAdvisor
 
                 lvi.Tag = item;
 
-                // 손익률 색상 (SubItem 2)
-                if (item.ProfitRate > 0) lvi.SubItems[2].ForeColor = Color.FromArgb(255, 95, 95);
-                else if (item.ProfitRate < 0) lvi.SubItems[2].ForeColor = Color.FromArgb(85, 160, 255);
+                // 종목코드 색상 (SubItem 1 - 차분한 청회색)
+                lvi.SubItems[1].ForeColor = Color.FromArgb(145, 165, 195);
 
-                // 14일 RSI 색상 (SubItem 3)
-                if (item.Rsi >= 70m) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 80, 80);
-                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(80, 180, 255);
-                else lvi.SubItems[3].ForeColor = Color.FromArgb(120, 230, 150);
+                // 손익률 색상 (SubItem 3)
+                if (item.ProfitRate > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 95, 95);
+                else if (item.ProfitRate < 0) lvi.SubItems[3].ForeColor = Color.FromArgb(85, 160, 255);
 
-                // 거래량 색상 (SubItem 4)
-                if (item.VolumeRatio >= 140m) lvi.SubItems[4].ForeColor = Color.FromArgb(0, 230, 200);
-                else lvi.SubItems[4].ForeColor = Color.FromArgb(200, 215, 235);
+                // 14일 RSI 색상 (SubItem 4)
+                if (item.Rsi >= 70m) lvi.SubItems[4].ForeColor = Color.FromArgb(255, 80, 80);
+                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[4].ForeColor = Color.FromArgb(80, 180, 255);
+                else lvi.SubItems[4].ForeColor = Color.FromArgb(120, 230, 150);
 
-                // 차트 점수 (SubItem 5)
-                if (item.ChartScore >= 7) lvi.SubItems[5].ForeColor = Color.FromArgb(120, 215, 255);
-                else if (item.ChartScore <= 3) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 110, 110);
+                // 거래량 색상 (SubItem 5)
+                if (item.VolumeRatio >= 140m) lvi.SubItems[5].ForeColor = Color.FromArgb(0, 230, 200);
+                else lvi.SubItems[5].ForeColor = Color.FromArgb(200, 215, 235);
 
-                // 뉴스 점수 (SubItem 6)
-                if (item.NewsScore >= 7) lvi.SubItems[6].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.NewsScore <= 3) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 110, 110);
+                // 차트 점수 (SubItem 6)
+                if (item.ChartScore >= 7) lvi.SubItems[6].ForeColor = Color.FromArgb(120, 215, 255);
+                else if (item.ChartScore <= 3) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 110, 110);
 
-                // 손익비 점수 (SubItem 7)
-                if (item.RiskScore >= 8) lvi.SubItems[7].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.RiskScore <= 3) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 170, 70);
+                // 뉴스 점수 (SubItem 7)
+                if (item.NewsScore >= 7) lvi.SubItems[7].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.NewsScore <= 3) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 110, 110);
 
-                // ★ 최종점수 (SubItem 8)
-                if (item.FinalScore >= 8) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 215, 0); // 골드
-                else if (item.FinalScore <= 3) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 110, 110);
-                else lvi.SubItems[8].ForeColor = Color.FromArgb(235, 240, 255);
+                // 손익비 점수 (SubItem 8)
+                if (item.RiskScore >= 8) lvi.SubItems[8].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.RiskScore <= 3) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 170, 70);
 
-                // 타이밍 안전벨트 (SubItem 9)
+                // ★ 최종점수 (SubItem 9)
+                if (item.FinalScore >= 8) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 215, 0); // 골드
+                else if (item.FinalScore <= 3) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 110, 110);
+                else lvi.SubItems[9].ForeColor = Color.FromArgb(235, 240, 255);
+
+                // 타이밍 안전벨트 (SubItem 10)
                 string tb = item.TimingBadge ?? string.Empty;
-                if (tb.Contains("과열")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 75, 95);
-                else if (tb.Contains("골든")) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
-                else if (tb.Contains("눌림목")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 210, 60);
-                else if (tb.Contains("과매도")) lvi.SubItems[9].ForeColor = Color.FromArgb(70, 180, 255);
-                else if (tb.Contains("보유불필요")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 90, 90);
-                else lvi.SubItems[9].ForeColor = Color.FromArgb(190, 200, 215);
+                if (tb.Contains("과열")) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 75, 95);
+                else if (tb.Contains("골든")) lvi.SubItems[10].ForeColor = Color.FromArgb(0, 230, 118);
+                else if (tb.Contains("눌림목")) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 210, 60);
+                else if (tb.Contains("과매도")) lvi.SubItems[10].ForeColor = Color.FromArgb(70, 180, 255);
+                else if (tb.Contains("보유불필요")) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 90, 90);
+                else lvi.SubItems[10].ForeColor = Color.FromArgb(190, 200, 215);
 
-                // 권고 지침 (SubItem 10)
-                if (tb.Contains("과열")) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 130, 130);
-                else lvi.SubItems[10].ForeColor = Color.FromArgb(220, 225, 235);
+                // 권고 지침 (SubItem 11)
+                if (tb.Contains("과열")) lvi.SubItems[11].ForeColor = Color.FromArgb(255, 130, 130);
+                else lvi.SubItems[11].ForeColor = Color.FromArgb(220, 225, 235);
 
                 lvi.UseItemStyleForSubItems = false;
                 _lvStocks.Items.Add(lvi);

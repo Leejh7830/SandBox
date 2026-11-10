@@ -457,16 +457,17 @@ namespace GateHelper.StockAdvisor
 
         private void AutoFitLastColumn()
         {
-            if (_lvStocks == null || _lvStocks.Columns.Count < 12) return;
+            if (_lvStocks == null || _lvStocks.Columns.Count < 13) return;
             try
             {
                 int fixedWidth = 0;
-                for (int i = 0; i < 11; i++)
+                int lastIdx = _lvStocks.Columns.Count - 1;
+                for (int i = 0; i < lastIdx; i++)
                 {
                     fixedWidth += _lvStocks.Columns[i].Width;
                 }
                 int remain = _lvStocks.ClientSize.Width - fixedWidth - 4;
-                _lvStocks.Columns[11].Width = Math.Max(240, remain);
+                _lvStocks.Columns[lastIdx].Width = Math.Max(240, remain);
             }
             catch { }
         }

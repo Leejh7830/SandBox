@@ -55,6 +55,7 @@ namespace GateHelper.StockAdvisor
 
             // 3. 리스트뷰 갱신
             _lvStocks.BeginUpdate();
+            _lvStocks.ListViewItemSorter = null; // 대량 추가 시 정렬기 간섭 방지
             _lvStocks.Items.Clear();
 
             foreach (var item in _portfolio.Items)
@@ -155,6 +156,7 @@ namespace GateHelper.StockAdvisor
                 _lvStocks.ListViewItemSorter = new StockListViewComparer(_sortColumn, _sortOrder);
                 _lvStocks.Sort();
             }
+            UpdateColumnHeaderSortArrows();
 
             // 4. 하단 요약바 갱신
             decimal totalProfit = totalEval - totalBuy;
@@ -445,8 +447,9 @@ namespace GateHelper.StockAdvisor
             else
             {
                 _sortColumn = e.Column;
-                // 금액/수익률/지표/점수 컬럼(2~9번)은 높은 값(내림차순) 우선, 텍스트 컬럼은 오름차순 우선
-                _sortOrder = (e.Column >= 2 && e.Column <= 9) ? SortOrder.Descending : SortOrder.Ascending;
+                // 금액/수익률/지표/점수 컬럼(2,3, 5~10번)은 높은 값(내림차순) 우선
+                // 4번(AI 등급: A->B->C->F) 및 텍스트 컬럼은 오름차순 우선
+                _sortOrder = (e.Column >= 2 && e.Column <= 10 && e.Column != 4) ? SortOrder.Descending : SortOrder.Ascending;
             }
 
             UpdateColumnHeaderSortArrows();
@@ -517,7 +520,7 @@ namespace GateHelper.StockAdvisor
                 case 3: // 수익률 (수치 정렬)
                     result = itemX.ProfitRate.CompareTo(itemY.ProfitRate);
                     break;
-                case 4: // AI 등급 (S, A, B, C, D, F)
+                case 4: // AI 등급 (A, B, C, F)
                     result = itemX.Grade.CompareTo(itemY.Grade);
                     break;
                 case 5: // 14일 RSI (수치 정렬)
@@ -549,6 +552,17 @@ namespace GateHelper.StockAdvisor
                 default:
                     result = 0;
                     break;
+            }
+
+            if (result == 0 && ColumnIndex != 0)
+            {
+                // 동률 시 2차 정렬: 종합점수 내림차순 -> 종목명 가나다순 안정 정렬
+                result = itemY.FinalScore.CompareTo(itemX.FinalScore);
+                if (result == 0)
+                {
+                    result = string.Compare(itemX.StockName, itemY.StockName, StringComparison.CurrentCultureIgnoreCase);
+                }
+                return result;
             }
 
             return Order == SortOrder.Descending ? -result : result;

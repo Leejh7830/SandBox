@@ -132,7 +132,8 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.FromArgb(170, 185, 210),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(12, 0, 0, 0)
+                Padding = new Padding(12, 0, 0, 0),
+                AutoEllipsis = true
             };
 
             pnlTop.Controls.Add(_lblStatus);

@@ -155,7 +155,7 @@ namespace GateHelper.StockAdvisor
             var pnlBtns = new Panel
             {
                 Dock = DockStyle.Right,
-                Width = 360
+                Width = 440
             };
 
             _btnConfirmApply = new Button
@@ -184,7 +184,7 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.FromArgb(200, 210, 230),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Malgun Gothic", 9f),
-                Width = 140,
+                Width = 165,
                 Dock = DockStyle.Left,
                 Cursor = Cursors.Hand,
                 Margin = new Padding(0, 0, 10, 0)

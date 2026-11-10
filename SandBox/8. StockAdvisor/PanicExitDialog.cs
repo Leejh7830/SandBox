@@ -170,12 +170,12 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "호가 유형",
                 Location = new Point(16, 40),
-                Size = new Size(210, 52),
+                Size = new Size(216, 52),
                 ForeColor = Color.FromArgb(140, 190, 240),
                 Font = new Font("Segoe UI", 8.5f)
             };
             _rbMarketOrder = new RadioButton { Text = "시장가 (Market)", Checked = true, Location = new Point(10, 20), AutoSize = true, ForeColor = Color.White };
-            _rbLimitOrder = new RadioButton { Text = "최유리 지정가", Location = new Point(120, 20), AutoSize = true, ForeColor = Color.White };
+            _rbLimitOrder = new RadioButton { Text = "최유리 지정가", Location = new Point(112, 20), AutoSize = true, ForeColor = Color.White };
             grpOrderType.Controls.Add(_rbMarketOrder);
             grpOrderType.Controls.Add(_rbLimitOrder);
 

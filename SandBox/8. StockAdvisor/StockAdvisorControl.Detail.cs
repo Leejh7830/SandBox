@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
@@ -139,6 +140,13 @@ namespace GateHelper.StockAdvisor
                 _lvStocks.Items.Add(lvi);
             }
             _lvStocks.EndUpdate();
+
+            // 기존 정렬 상태 유지
+            if (_sortColumn >= 0 && _sortOrder != SortOrder.None)
+            {
+                _lvStocks.ListViewItemSorter = new StockListViewComparer(_sortColumn, _sortOrder);
+                _lvStocks.Sort();
+            }
 
             // 4. 하단 요약바 갱신
             decimal totalProfit = totalEval - totalBuy;
@@ -418,6 +426,124 @@ namespace GateHelper.StockAdvisor
                 _lblMacroTicker.Text = "⚡ [글로벌 매크로 인텔]  " + tickerText;
             }
             catch { }
+        }
+
+        #region Column Sorting Logic
+
+        private void LvStocks_ColumnClick(object sender, ColumnClickEventArgs e)
+        {
+            if (e.Column == _sortColumn)
+            {
+                // 동일 컬럼 재클릭 시 오름차순 <-> 내림차순 토글
+                _sortOrder = (_sortOrder == SortOrder.Ascending) ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                _sortColumn = e.Column;
+                // 금액/수익률/지표/점수 컬럼(2~9번)은 높은 값(내림차순) 우선, 텍스트 컬럼은 오름차순 우선
+                _sortOrder = (e.Column >= 2 && e.Column <= 9) ? SortOrder.Descending : SortOrder.Ascending;
+            }
+
+            UpdateColumnHeaderSortArrows();
+
+            _lvStocks.ListViewItemSorter = new StockListViewComparer(_sortColumn, _sortOrder);
+            _lvStocks.Sort();
+        }
+
+        private void UpdateColumnHeaderSortArrows()
+        {
+            if (_lvStocks == null) return;
+
+            for (int i = 0; i < _lvStocks.Columns.Count; i++)
+            {
+                string baseName = (i < OriginalColumnNames.Length) ? OriginalColumnNames[i] : _lvStocks.Columns[i].Text;
+                if (i == _sortColumn && _sortOrder != SortOrder.None)
+                {
+                    _lvStocks.Columns[i].Text = baseName + (_sortOrder == SortOrder.Ascending ? " ▲" : " ▼");
+                }
+                else
+                {
+                    _lvStocks.Columns[i].Text = baseName;
+                }
+            }
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// 주식 포트폴리오 리스트뷰 전용 수치/텍스트 정렬기
+    /// </summary>
+    public class StockListViewComparer : IComparer
+    {
+        public int ColumnIndex { get; set; } = -1;
+        public SortOrder Order { get; set; } = SortOrder.None;
+
+        public StockListViewComparer(int column, SortOrder order)
+        {
+            ColumnIndex = column;
+            Order = order;
+        }
+
+        public int Compare(object x, object y)
+        {
+            if (Order == SortOrder.None || ColumnIndex < 0) return 0;
+
+            var lviX = x as ListViewItem;
+            var lviY = y as ListViewItem;
+            if (lviX == null || lviY == null) return 0;
+
+            var itemX = lviX.Tag as StockHoldingItem;
+            var itemY = lviY.Tag as StockHoldingItem;
+            if (itemX == null || itemY == null) return 0;
+
+            int result = 0;
+            switch (ColumnIndex)
+            {
+                case 0: // 종목명 (한글 가나다순)
+                    result = string.Compare(itemX.StockName, itemY.StockName, StringComparison.CurrentCultureIgnoreCase);
+                    break;
+                case 1: // 코드
+                    result = string.Compare(itemX.StockCode, itemY.StockCode, StringComparison.OrdinalIgnoreCase);
+                    break;
+                case 2: // 현재가 (수치 정렬)
+                    result = itemX.CurrentPrice.CompareTo(itemY.CurrentPrice);
+                    break;
+                case 3: // 수익률 (수치 정렬)
+                    result = itemX.ProfitRate.CompareTo(itemY.ProfitRate);
+                    break;
+                case 4: // 14일 RSI (수치 정렬)
+                    result = itemX.Rsi.CompareTo(itemY.Rsi);
+                    break;
+                case 5: // 5일 거래량 (수치 정렬)
+                    result = itemX.VolumeRatio.CompareTo(itemY.VolumeRatio);
+                    break;
+                case 6: // 차트 점수 (수치 정렬)
+                    result = itemX.ChartScore.CompareTo(itemY.ChartScore);
+                    break;
+                case 7: // 뉴스 점수 (수치 정렬)
+                    result = itemX.NewsScore.CompareTo(itemY.NewsScore);
+                    break;
+                case 8: // 손익비 점수 (수치 정렬)
+                    result = itemX.RiskScore.CompareTo(itemY.RiskScore);
+                    break;
+                case 9: // ★종합점수 (수치 정렬)
+                    result = itemX.FinalScore.CompareTo(itemY.FinalScore);
+                    break;
+                case 10: // 타이밍 안전벨트
+                    result = string.Compare(itemX.TimingBadge, itemY.TimingBadge, StringComparison.CurrentCultureIgnoreCase);
+                    break;
+                case 11: // 권고 지침
+                    string actX = itemX.LastDiagnosis?.RecommendedAction ?? string.Empty;
+                    string actY = itemY.LastDiagnosis?.RecommendedAction ?? string.Empty;
+                    result = string.Compare(actX, actY, StringComparison.CurrentCultureIgnoreCase);
+                    break;
+                default:
+                    result = 0;
+                    break;
+            }
+
+            return Order == SortOrder.Descending ? -result : result;
         }
     }
 }

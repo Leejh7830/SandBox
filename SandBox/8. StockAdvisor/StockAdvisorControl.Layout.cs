@@ -251,18 +251,19 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("종목명", 125);
             _lvStocks.Columns.Add("코드", 62, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("현재가", 75, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("수익률", 68, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("14일 RSI", 68, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("5일 거래량", 82, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("차트", 48, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("뉴스", 48, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("손익비", 52, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("★종합점수", 76, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("수익률", 72, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("14일 RSI", 74, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("5일 거래량", 84, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("차트", 56, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("뉴스", 56, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("손익비", 62, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("★종합점수", 88, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("타이밍 안전벨트", 125, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("권고 지침", 260);
+            _lvStocks.Columns.Add("권고 지침", 240);
 
             _lvStocks.Resize += (s, e) => AutoFitLastColumn();
             _lvStocks.SelectedIndexChanged += LvStocks_SelectedIndexChanged;
+            _lvStocks.ColumnClick += LvStocks_ColumnClick;
             _lvStocks.DoubleClick += (s, e) => EditSelectedStock();
             _lvStocks.KeyDown += (s, e) =>
             {

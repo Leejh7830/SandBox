@@ -63,6 +63,15 @@ namespace GateHelper.StockAdvisor
         // 비동기 작업 상태 플래그 (멀티태스킹 분리)
         private bool _isAiDiagnosing = false;
         private bool _isRefreshingPrice = false;
+
+        // 리스트뷰 컬럼 정렬 상태
+        private int _sortColumn = -1;
+        private SortOrder _sortOrder = SortOrder.None;
+        private static readonly string[] OriginalColumnNames = new[]
+        {
+            "종목명", "코드", "현재가", "수익률", "14일 RSI", "5일 거래량",
+            "차트", "뉴스", "손익비", "★종합점수", "타이밍 안전벨트", "권고 지침"
+        };
         private GlobalMarketSnapshot _macroSnapshot;
 
         public StockAdvisorControl()

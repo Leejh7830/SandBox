@@ -69,40 +69,30 @@ namespace GateHelper.StockAdvisor
             pnlMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
             pnlMain.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 36)); // 0: 검색
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 34)); // 1: 코드
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 34)); // 2: 종목명
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 34)); // 3: 수량
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 34)); // 4: 매수가
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 30)); // 5: 안내 라벨
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 0: 검색
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 1: 코드
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 2: 종목명
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 3: 수량
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 4: 매수가
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 28)); // 5: 안내 라벨
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // 6: 메모
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 7: 버튼 행
 
             Font lblFont = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
-            Font inputFont = new Font("Segoe UI", 10f);
+            Font inputFont = new Font("Segoe UI", 9.5f);
 
             // 1. 종목 검색창 (종목명 or 코드 자유 입력)
             var lblSearch = new Label { Text = "종목명 / 코드:", Font = lblFont, ForeColor = Color.FromArgb(0, 230, 255), Anchor = AnchorStyles.Left };
-            var pnlCodeRow = new Panel
+            var pnlCodeRow = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
+                ColumnCount = 2,
+                RowCount = 1,
                 Margin = new Padding(0)
             };
-
-            btnFetchPrice = new Button
-            {
-                Text = "🔍 시세 조회",
-                Dock = DockStyle.Right,
-                Width = 100,
-                Height = 28,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(30, 65, 110),
-                ForeColor = Color.FromArgb(120, 220, 255),
-                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            btnFetchPrice.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 255);
-            btnFetchPrice.Click += async (s, e) => await AutoFetchStockInfoAsync();
+            pnlCodeRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+            pnlCodeRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88));
+            pnlCodeRow.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
             txtSearchQuery = new TextBox
             {
@@ -110,7 +100,8 @@ namespace GateHelper.StockAdvisor
                 Font = inputFont,
                 BackColor = Color.FromArgb(32, 38, 50),
                 ForeColor = Color.White,
-                MaxLength = 50
+                MaxLength = 50,
+                Margin = new Padding(0, 2, 8, 2)
             };
             txtSearchQuery.KeyDown += async (s, e) =>
             {
@@ -121,8 +112,22 @@ namespace GateHelper.StockAdvisor
                 }
             };
 
-            pnlCodeRow.Controls.Add(txtSearchQuery);
-            pnlCodeRow.Controls.Add(btnFetchPrice);
+            btnFetchPrice = new Button
+            {
+                Text = "시세 조회",
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0, 1, 0, 2),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(24, 52, 85),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnFetchPrice.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 230);
+            btnFetchPrice.Click += async (s, e) => await AutoFetchStockInfoAsync();
+
+            pnlCodeRow.Controls.Add(txtSearchQuery, 0, 0);
+            pnlCodeRow.Controls.Add(btnFetchPrice, 1, 0);
 
             // 2. 자동 인식된 종목코드 (읽기 전용 표시)
             var lblCode = new Label { Text = "확정 종목코드:", Font = lblFont, ForeColor = Color.FromArgb(160, 180, 200), Anchor = AnchorStyles.Left };
@@ -205,23 +210,26 @@ namespace GateHelper.StockAdvisor
                 Width = 90,
                 Height = 34,
                 FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(40, 48, 62),
-                ForeColor = Color.FromArgb(200, 210, 225),
+                BackColor = Color.FromArgb(35, 42, 56),
+                ForeColor = Color.FromArgb(200, 215, 230),
                 DialogResult = DialogResult.Cancel,
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Font = new Font("Malgun Gothic", 9f)
             };
-            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.FlatAppearance.BorderSize = 1;
+            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(70, 85, 110);
 
             btnSave = new Button
             {
                 Text = "✔ 등록/저장",
-                Width = 110,
+                Width = 115,
                 Height = 34,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(16, 120, 175),
                 ForeColor = Color.White,
-                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                Cursor = Cursors.Hand
+                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(8, 0, 0, 0)
             };
             btnSave.FlatAppearance.BorderSize = 1;
             btnSave.FlatAppearance.BorderColor = Color.FromArgb(0, 200, 255);

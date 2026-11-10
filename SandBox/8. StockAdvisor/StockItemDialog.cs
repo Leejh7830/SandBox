@@ -83,25 +83,33 @@ namespace GateHelper.StockAdvisor
 
             // 1. 종목 검색창 (종목명 or 코드 자유 입력)
             var lblSearch = new Label { Text = "종목명 / 코드:", Font = lblFont, ForeColor = Color.FromArgb(0, 230, 255), Anchor = AnchorStyles.Left };
-            var pnlCodeRow = new TableLayoutPanel
+            var pnlCodeRow = new Panel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
-                RowCount = 1,
                 Margin = new Padding(0)
             };
-            pnlCodeRow.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            pnlCodeRow.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 88));
-            pnlCodeRow.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+
+            btnFetchPrice = new Button
+            {
+                Text = "시세 조회",
+                Size = new Size(88, 26),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(24, 52, 85),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            btnFetchPrice.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 230);
+            btnFetchPrice.Click += async (s, e) => await AutoFetchStockInfoAsync();
 
             txtSearchQuery = new TextBox
             {
-                Dock = DockStyle.Fill,
                 Font = inputFont,
                 BackColor = Color.FromArgb(32, 38, 50),
                 ForeColor = Color.White,
                 MaxLength = 50,
-                Margin = new Padding(0, 2, 8, 2)
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
             txtSearchQuery.KeyDown += async (s, e) =>
             {
@@ -112,22 +120,18 @@ namespace GateHelper.StockAdvisor
                 }
             };
 
-            btnFetchPrice = new Button
+            void LayoutSearchRow()
             {
-                Text = "시세 조회",
-                Dock = DockStyle.Fill,
-                Margin = new Padding(0, 1, 0, 2),
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(24, 52, 85),
-                ForeColor = Color.FromArgb(0, 216, 255),
-                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                Cursor = Cursors.Hand
-            };
-            btnFetchPrice.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 230);
-            btnFetchPrice.Click += async (s, e) => await AutoFetchStockInfoAsync();
+                int topY = 3;
+                btnFetchPrice.Location = new Point(pnlCodeRow.Width - btnFetchPrice.Width - 3, topY);
+                txtSearchQuery.Location = new Point(0, topY);
+                txtSearchQuery.Width = Math.Max(50, btnFetchPrice.Left - 8);
+            }
+            pnlCodeRow.Resize += (s, e) => LayoutSearchRow();
+            LayoutSearchRow();
 
-            pnlCodeRow.Controls.Add(txtSearchQuery, 0, 0);
-            pnlCodeRow.Controls.Add(btnFetchPrice, 1, 0);
+            pnlCodeRow.Controls.Add(txtSearchQuery);
+            pnlCodeRow.Controls.Add(btnFetchPrice);
 
             // 2. 자동 인식된 종목코드 (읽기 전용 표시)
             var lblCode = new Label { Text = "확정 종목코드:", Font = lblFont, ForeColor = Color.FromArgb(160, 180, 200), Anchor = AnchorStyles.Left };
@@ -198,17 +202,16 @@ namespace GateHelper.StockAdvisor
             };
 
             // 8. 하단 버튼
-            var pnlBtns = new FlowLayoutPanel
+            var pnlBtns = new Panel
             {
                 Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.RightToLeft,
-                Margin = new Padding(0, 6, 0, 0)
+                Margin = new Padding(0)
             };
             btnCancel = new Button
             {
                 Text = "취소",
-                Width = 90,
-                Height = 34,
+                Size = new Size(85, 34),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(35, 42, 56),
                 ForeColor = Color.FromArgb(200, 215, 230),
@@ -222,18 +225,26 @@ namespace GateHelper.StockAdvisor
             btnSave = new Button
             {
                 Text = "✔ 등록/저장",
-                Width = 115,
-                Height = 34,
+                Size = new Size(115, 34),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(16, 120, 175),
                 ForeColor = Color.White,
                 Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                Margin = new Padding(8, 0, 0, 0)
+                Cursor = Cursors.Hand
             };
             btnSave.FlatAppearance.BorderSize = 1;
             btnSave.FlatAppearance.BorderColor = Color.FromArgb(0, 200, 255);
             btnSave.Click += async (s, e) => await HandleSaveClickAsync();
+
+            void LayoutActionButtons()
+            {
+                int btnY = 5;
+                btnCancel.Location = new Point(pnlBtns.Width - btnCancel.Width - 3, btnY);
+                btnSave.Location = new Point(btnCancel.Left - btnSave.Width - 8, btnY);
+            }
+            pnlBtns.Resize += (s, e) => LayoutActionButtons();
+            LayoutActionButtons();
 
             pnlBtns.Controls.Add(btnCancel);
             pnlBtns.Controls.Add(btnSave);

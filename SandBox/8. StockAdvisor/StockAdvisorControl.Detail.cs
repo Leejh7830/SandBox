@@ -1,0 +1,383 @@
+using System;
+using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+using GateHelper.StockAdvisor.Models;
+using GateHelper.StockAdvisor.Services;
+
+namespace GateHelper.StockAdvisor
+{
+    public partial class StockAdvisorControl
+    {
+        private void UpdateUi()
+        {
+            if (this.InvokeRequired)
+            {
+                this.BeginInvoke(new Action(UpdateUi));
+                return;
+            }
+
+            // 1. 상단 브리핑 및 신호등 갱신
+            var briefing = _portfolio.LastBriefing ?? new MarketBriefing();
+            _lblBriefing1.Text = "• " + briefing.Line1;
+            _lblBriefing2.Text = "• " + briefing.Line2;
+            _lblBriefing3.Text = "• " + briefing.Line3;
+
+            switch (briefing.RiskLevel)
+            {
+                case OverallRiskLevel.Safe:
+                    _lblTrafficLight.Text = "●\n안전\n(뉴스📰)";
+                    _lblTrafficLight.ForeColor = Color.FromArgb(70, 220, 140);
+                    break;
+                case OverallRiskLevel.Caution:
+                    _lblTrafficLight.Text = "▲\n주의\n(뉴스📰)";
+                    _lblTrafficLight.ForeColor = Color.FromArgb(240, 200, 60);
+                    break;
+                case OverallRiskLevel.Panic:
+                    _lblTrafficLight.Text = "■\n비상\n(뉴스📰)";
+                    _lblTrafficLight.ForeColor = Color.FromArgb(255, 80, 80);
+                    break;
+            }
+
+            // 2. 비중 계산
+            decimal totalEval = 0m;
+            decimal totalBuy = 0m;
+            foreach (var item in _portfolio.Items)
+            {
+                totalEval += item.TotalEvalAmount;
+                totalBuy += item.TotalBuyAmount;
+            }
+            foreach (var item in _portfolio.Items)
+            {
+                item.WeightPercent = (totalEval > 0) ? (item.TotalEvalAmount / totalEval * 100m) : 0m;
+            }
+
+            // 3. 리스트뷰 갱신
+            _lvStocks.BeginUpdate();
+            _lvStocks.Items.Clear();
+
+            foreach (var item in _portfolio.Items)
+            {
+                string rsiText = item.Rsi > 0 ? $"{item.Rsi:F1}%" : "-";
+                string volText = item.VolumeRatio > 0 ? $"{item.VolumeRatio:F0}%" : "-";
+                string chartText = item.ChartScore > 0 ? $"{item.ChartScore}점" : "-";
+                string newsText = item.NewsScore > 0 ? $"{item.NewsScore}점" : "-";
+                string riskText = item.RiskScore > 0 ? $"{item.RiskScore}점" : "-";
+                string finalScoreText = item.FinalScore > 0 ? $"★ {item.FinalScore}점" : "-";
+
+                string actionText = item.LastDiagnosis?.RecommendedAction;
+                if (string.IsNullOrEmpty(actionText))
+                {
+                    actionText = item.Rsi >= 70m ? "[과열] 추격매수 금지" : (item.FinalScore >= 7 ? "[골든] 분할 진입 검토" : "진단 대기");
+                }
+
+                var lvi = new ListViewItem(new[]
+                {
+                    $"{item.StockName} ({item.StockCode})",
+                    $"{item.CurrentPrice:N0}",
+                    $"{item.ProfitRate:+0.00;-0.00}%",
+                    rsiText,
+                    volText,
+                    chartText,
+                    newsText,
+                    riskText,
+                    finalScoreText,
+                    item.TimingBadge,
+                    actionText
+                });
+
+                lvi.Tag = item;
+
+                // 손익률 색상 (SubItem 2)
+                if (item.ProfitRate > 0) lvi.SubItems[2].ForeColor = Color.FromArgb(255, 95, 95);
+                else if (item.ProfitRate < 0) lvi.SubItems[2].ForeColor = Color.FromArgb(85, 160, 255);
+
+                // 14일 RSI 색상 (SubItem 3)
+                if (item.Rsi >= 70m) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 80, 80);
+                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(80, 180, 255);
+                else lvi.SubItems[3].ForeColor = Color.FromArgb(120, 230, 150);
+
+                // 거래량 색상 (SubItem 4)
+                if (item.VolumeRatio >= 140m) lvi.SubItems[4].ForeColor = Color.FromArgb(0, 230, 200);
+                else lvi.SubItems[4].ForeColor = Color.FromArgb(200, 215, 235);
+
+                // 차트 점수 (SubItem 5)
+                if (item.ChartScore >= 7) lvi.SubItems[5].ForeColor = Color.FromArgb(120, 215, 255);
+                else if (item.ChartScore <= 3) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 110, 110);
+
+                // 뉴스 점수 (SubItem 6)
+                if (item.NewsScore >= 7) lvi.SubItems[6].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.NewsScore <= 3) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 110, 110);
+
+                // 손익비 점수 (SubItem 7)
+                if (item.RiskScore >= 8) lvi.SubItems[7].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.RiskScore <= 3) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 170, 70);
+
+                // ★ 최종점수 (SubItem 8)
+                if (item.FinalScore >= 8) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 215, 0); // 골드
+                else if (item.FinalScore <= 3) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 110, 110);
+                else lvi.SubItems[8].ForeColor = Color.FromArgb(235, 240, 255);
+
+                // 타이밍 안전벨트 (SubItem 9)
+                string tb = item.TimingBadge ?? string.Empty;
+                if (tb.Contains("과열")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 75, 95);
+                else if (tb.Contains("골든")) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
+                else if (tb.Contains("눌림목")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 210, 60);
+                else if (tb.Contains("과매도")) lvi.SubItems[9].ForeColor = Color.FromArgb(70, 180, 255);
+                else if (tb.Contains("보유불필요")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 90, 90);
+                else lvi.SubItems[9].ForeColor = Color.FromArgb(190, 200, 215);
+
+                // 권고 지침 (SubItem 10)
+                if (tb.Contains("과열")) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 130, 130);
+                else lvi.SubItems[10].ForeColor = Color.FromArgb(220, 225, 235);
+
+                lvi.UseItemStyleForSubItems = false;
+                _lvStocks.Items.Add(lvi);
+            }
+            _lvStocks.EndUpdate();
+
+            // 4. 하단 요약바 갱신
+            decimal totalProfit = totalEval - totalBuy;
+            decimal totalRate = (totalBuy > 0) ? (totalProfit / totalBuy * 100m) : 0m;
+            _lblAccountSummary.Text = $"총 매수: {totalBuy:N0}원  |  총 평가: {totalEval:N0}원  |  손익: {totalProfit:+0,0;-0,0;0}원 ({totalRate:+0.00;-0.00}%)";
+            _lblAccountSummary.ForeColor = totalProfit >= 0 ? Color.FromArgb(255, 110, 110) : Color.FromArgb(100, 175, 255);
+
+            // 첫 번째 종목 자동 선택
+            if (_lvStocks.Items.Count > 0 && _lvStocks.SelectedItems.Count == 0)
+            {
+                _lvStocks.Items[0].Selected = true;
+            }
+            else
+            {
+                UpdateDetailPanel(null);
+            }
+        }
+
+        private string GetGroupDisplay(PositionGroup group)
+        {
+            switch (group)
+            {
+                case PositionGroup.GroupA: return "[A:손절권고]";
+                case PositionGroup.GroupC: return "[C:분할매수]";
+                default: return "[B:관망유지]";
+            }
+        }
+
+        private void LvStocks_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_lvStocks.SelectedItems.Count > 0)
+            {
+                var item = _lvStocks.SelectedItems[0].Tag as StockHoldingItem;
+                UpdateDetailPanel(item);
+            }
+            else
+            {
+                UpdateDetailPanel(null);
+            }
+        }
+
+        private void UpdateDetailPanel(StockHoldingItem item)
+        {
+            if (item == null)
+            {
+                _lblDetailTitle.Text = "선택된 종목이 없습니다";
+                _lblDetailTimingWarning.Text = "🚨 [타이밍 가이드] 종목을 선택하시면 안전벨트 지침이 표시됩니다.";
+                _lblDetailTimingWarning.BackColor = Color.FromArgb(28, 30, 38);
+                _lblDetailTimingWarning.ForeColor = Color.Silver;
+                _lblDetailScores.Text = "📊 [3대 정량점수] 차트: -점 | 뉴스: -점 | 손익비: -점\n★ 최종 종합점수: -점 / 10점";
+                _lblDetailTechnicalFacts.Text = "🔍 [팩트] 14일 RSI: -% | 거래량: -%\n• 20일 지지선: -원 (하방위험: -%)";
+                _lblDetailGroupBadge.Text = "포지션: -";
+                _lblDetailAction.Text = "권고 액션: -";
+                _lblDetailReliability.Text = "■ 출처 신뢰도: -";
+                _lblDetailImpact.Text = "⚡ 정책/실적 직결도: -";
+                _lblDetailTargetCut.Text = "◆ 권고 손절/방어선: - 원";
+                _txtDetailReason.Text = "좌측 목록에서 종목을 선택하시면 객관적 3대 점수와 AI 참모 진단 리포트를 열람할 수 있습니다.";
+                return;
+            }
+
+            _lblDetailTitle.Text = $"◆ {item.StockName} ({item.StockCode})  |  현재가: {item.CurrentPrice:N0}원 ({item.ProfitRate:+0.00;-0.00}%)";
+
+            // 타이밍 안전벨트 가이드 라벨
+            string tb = item.TimingBadge ?? "⚪ 관망유지";
+            string warnText = !string.IsNullOrEmpty(item.TimingWarning) ? item.TimingWarning : "추세 및 지지선 모니터링 중";
+            if (tb.Contains("과열"))
+            {
+                _lblDetailTimingWarning.Text = $"🚨 {warnText}";
+                _lblDetailTimingWarning.BackColor = Color.FromArgb(58, 20, 28);
+                _lblDetailTimingWarning.ForeColor = Color.FromArgb(255, 120, 130);
+            }
+            else if (tb.Contains("골든"))
+            {
+                _lblDetailTimingWarning.Text = $"🟢 {warnText}";
+                _lblDetailTimingWarning.BackColor = Color.FromArgb(16, 46, 32);
+                _lblDetailTimingWarning.ForeColor = Color.FromArgb(100, 255, 180);
+            }
+            else if (tb.Contains("눌림목"))
+            {
+                _lblDetailTimingWarning.Text = $"🟡 {warnText}";
+                _lblDetailTimingWarning.BackColor = Color.FromArgb(46, 40, 20);
+                _lblDetailTimingWarning.ForeColor = Color.FromArgb(255, 230, 110);
+            }
+            else if (tb.Contains("과매도"))
+            {
+                _lblDetailTimingWarning.Text = $"🔵 {warnText}";
+                _lblDetailTimingWarning.BackColor = Color.FromArgb(20, 36, 56);
+                _lblDetailTimingWarning.ForeColor = Color.FromArgb(120, 210, 255);
+            }
+            else
+            {
+                _lblDetailTimingWarning.Text = $"⚪ {warnText}";
+                _lblDetailTimingWarning.BackColor = Color.FromArgb(26, 30, 42);
+                _lblDetailTimingWarning.ForeColor = Color.FromArgb(200, 215, 235);
+            }
+
+            // 3대 정량 점수 라벨 (2줄 배치로 텍스트 잘림 0%)
+            _lblDetailScores.Text = $"📊 차트: {item.ChartScore}점  |  뉴스: {item.NewsScore}점  |  손익비: {item.RiskScore}점\n★ 최종 종합 점수 : ★ {item.FinalScore}점 / 10점";
+            _lblDetailScores.ForeColor = item.FinalScore >= 8 ? Color.FromArgb(255, 215, 0) : Color.FromArgb(255, 225, 130);
+
+            // 팩트 지표 라벨 (2줄 배치로 텍스트 잘림 0%)
+            string suppStr = item.SupportPrice > 0 ? $"{item.SupportPrice:N0}원" : "-";
+            _lblDetailTechnicalFacts.Text = $"🔍 14일 RSI: {item.Rsi:F1}%  |  5일대비 거래량: {item.VolumeRatio:F0}%\n• 20일 지지선: {suppStr} (하방위험: -{item.DownsideRiskPercent:F1}%)";
+
+            var diag = item.LastDiagnosis;
+            if (diag != null)
+            {
+                _lblDetailGroupBadge.Text = $"포지션 판정: {GetGroupDisplay(diag.Group)}";
+                _lblDetailGroupBadge.ForeColor = diag.Group == PositionGroup.GroupA 
+                    ? Color.FromArgb(255, 80, 100) 
+                    : (diag.Group == PositionGroup.GroupC ? Color.FromArgb(0, 230, 118) : Color.FromArgb(255, 205, 70));
+
+                _lblDetailAction.Text = $"▶ 권고 액션: {diag.RecommendedAction}";
+
+                string stars = new string('★', diag.SourceReliability) + new string('☆', 5 - diag.SourceReliability);
+                _lblDetailReliability.Text = $"■ 출처 신뢰도: {stars} ({diag.SourceReliability}/5점)";
+
+                string impactShort = diag.PolicyImpact > 0 ? "호재 수혜" : (diag.PolicyImpact < 0 ? "악재 규제" : "중립");
+                _lblDetailImpact.Text = $"⚡ 정책/실적 직결도: {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactShort})";
+                _lblDetailTargetCut.Text = diag.TargetCutPrice > 0 ? $"◆ 권고 손절/방어선: {diag.TargetCutPrice:N0}원" : $"◆ 20일 지지 기준선: {suppStr}";
+
+                _txtDetailReason.Text = FormatDetailReasonReport(item, diag);
+            }
+            else
+            {
+                _lblDetailGroupBadge.Text = "포지션: AI 진단 대기 중";
+                _lblDetailGroupBadge.ForeColor = Color.Silver;
+                _lblDetailAction.Text = item.Rsi >= 70m ? "▶ 권고 액션: [과열주의] 추격매수 금지" : "권고 액션: [★ AI 참모 진단] 필요";
+                _lblDetailReliability.Text = "■ 출처 신뢰도: 대기 중";
+                _lblDetailImpact.Text = "⚡ 정책/실적 직결도: 대기 중";
+                _lblDetailTargetCut.Text = $"◆ 20일 지지 기준선: {suppStr}";
+                _txtDetailReason.Text = FormatPreDiagnosisReport(item);
+            }
+        }
+
+        private string FormatPreDiagnosisReport(StockHoldingItem item)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("----------------------------------------");
+            sb.AppendLine($"  [정량 기술 지표 진단]  {DateTime.Now:yyyy-MM-dd HH:mm}");
+            sb.AppendLine("----------------------------------------");
+            sb.AppendLine();
+            sb.AppendLine("【 1. 객관적 3대 정량 점수 】");
+            sb.AppendLine($"  ▶ ★ 최종 종목 점수 : ★ {item.FinalScore} / 10점 (가중치: 차트 40% + 뉴스 30% + 손익비 30%)");
+            sb.AppendLine($"  • 📈 차트 점수 : {item.ChartScore} / 10점 (5일/20일선 정배열 및 거래량 수급)");
+            sb.AppendLine($"  • 📰 뉴스 점수 : {item.NewsScore} / 10점 (AI 심층 진단 시 정밀 분석 반영)");
+            sb.AppendLine($"  • 🛡️ 손익비 점수 : {item.RiskScore} / 10점 (지지선 대비 하방 안전마진)");
+            sb.AppendLine();
+            sb.AppendLine("【 2. 팩트 데이터 및 타이밍 안전벨트 】");
+            sb.AppendLine($"  • 타이밍 판정 : {item.TimingBadge}");
+            if (!string.IsNullOrEmpty(item.TimingWarning))
+            {
+                sb.AppendLine($"  • 안전 가이드 : {item.TimingWarning}");
+            }
+            sb.AppendLine($"  • 14일 RSI : {item.Rsi:F1}% {(item.Rsi >= 70 ? "(과열 구간 - 추격매수 금지!)" : (item.Rsi <= 30 ? "(과매도 침체 구간)" : "(안정 추세)"))}");
+            sb.AppendLine($"  • 5일 평균대비 거래량 : {item.VolumeRatio:F0}% {(item.VolumeRatio >= 140 ? "(대량 수급 유입)" : "")}");
+            sb.AppendLine($"  • 20일 지지선(손절 기준) : {item.SupportPrice:N0}원 (현재가 대비 -{item.DownsideRiskPercent:F1}%)");
+            sb.AppendLine($"  • 20일 저항선(목표 기준) : {item.ResistancePrice:N0}원");
+            sb.AppendLine();
+            sb.AppendLine("상단 [★ AI 참모 진단]을 클릭하시면 글로벌 매크로 및 외신 뉴스 감성을 결합한 심층 리포트가 완성됩니다.");
+            return sb.ToString();
+        }
+
+        private string FormatDetailReasonReport(StockHoldingItem item, StockRiskDiagnosis diag)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("----------------------------------------");
+            sb.AppendLine($"  [AI 주식 참모 진단 리포트]  {diag.DiagnosedAt:yyyy-MM-dd HH:mm}");
+            sb.AppendLine("----------------------------------------");
+            sb.AppendLine();
+
+            sb.AppendLine("【 1. 객관적 3대 정량 점수 및 타이밍 】");
+            sb.AppendLine($"  ▶ ★ 최종 종목 점수 : ★ {item.FinalScore} / 10점");
+            sb.AppendLine($"  • 📈 차트 점수 : {item.ChartScore} / 10점  |  📰 뉴스 점수 : {item.NewsScore} / 10점  |  🛡️ 손익비 : {item.RiskScore} / 10점");
+            sb.AppendLine($"  • 타이밍 안전벨트 : {item.TimingBadge}");
+            if (!string.IsNullOrEmpty(item.TimingWarning))
+            {
+                sb.AppendLine($"  • 타이밍 가이드 : {item.TimingWarning}");
+            }
+            sb.AppendLine($"  • 14일 RSI : {item.Rsi:F1}%  |  5일대비 거래량 : {item.VolumeRatio:F0}%");
+            sb.AppendLine($"  • 20일 지지선 : {item.SupportPrice:N0}원 (하방 위험 -{item.DownsideRiskPercent:F1}%)  |  저항선 : {item.ResistancePrice:N0}원");
+            sb.AppendLine();
+
+            sb.AppendLine("【 2. 핵심 권고 행동 지침 】");
+            sb.AppendLine($"  ▶ 권고 액션 : {diag.RecommendedAction}");
+            if (diag.TargetCutPrice > 0)
+            {
+                sb.AppendLine($"  ▶ 권고 손절/방어선 : {diag.TargetCutPrice:N0}원");
+            }
+            sb.AppendLine();
+
+            sb.AppendLine("【 3. 거시 지표 & 정책 영향 】");
+            string stars = new string('★', diag.SourceReliability) + new string('☆', 5 - diag.SourceReliability);
+            sb.AppendLine($"  • 정보 출처 신뢰도 : {stars} ({diag.SourceReliability} / 5점)");
+            string impactDesc = diag.PolicyImpact > 0 ? "호재성 정책/실적 수혜" : (diag.PolicyImpact < 0 ? "악재성 규제/비용 충격" : "중립 영향");
+            sb.AppendLine($"  • 정책/실적 직결도 : {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactDesc})");
+            sb.AppendLine();
+
+            sb.AppendLine("【 4. 심층 대응 논리 및 판단 근거 】");
+            string reasonText = diag.ReasonSummary ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(reasonText))
+            {
+                var sentences = reasonText.Split(new[] { ". ", ".\n", ".\r\n" }, StringSplitOptions.RemoveEmptyEntries);
+                foreach (var s in sentences)
+                {
+                    string trimmed = s.Trim().TrimEnd('.');
+                    if (!string.IsNullOrWhiteSpace(trimmed))
+                    {
+                        sb.AppendLine($"  • {trimmed}.");
+                        sb.AppendLine();
+                    }
+                }
+            }
+            else
+            {
+                sb.AppendLine("  • 상세 대응 논리가 기록되지 않았습니다.");
+                sb.AppendLine();
+            }
+
+            if (!string.IsNullOrWhiteSpace(item.Memo))
+            {
+                sb.AppendLine("【 5. 사용자 투자 메모 】");
+                sb.AppendLine($"  • {item.Memo}");
+            }
+
+            return sb.ToString().TrimEnd();
+        }
+
+        private void UpdateMacroTicker(GlobalMarketSnapshot intel)
+        {
+            if (intel == null) return;
+            _macroSnapshot = intel;
+            if (_lblMacroTicker == null) return;
+            try
+            {
+                string tickerText = intel.GetTickerText();
+                if (intel.RecentPolicyHeadlines.Count > 0)
+                {
+                    tickerText += "   |   미 연방관보(BIS): " + intel.RecentPolicyHeadlines[0];
+                }
+                _lblMacroTicker.Text = "⚡ [글로벌 매크로 인텔]  " + tickerText;
+            }
+            catch { }
+        }
+    }
+}

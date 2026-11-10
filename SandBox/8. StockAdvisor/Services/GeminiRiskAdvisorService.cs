@@ -89,14 +89,15 @@ namespace GateHelper.StockAdvisor.Services
                     sbPrompt.AppendLine();
                 }
 
-                sbPrompt.AppendLine("[현재 포트폴리오 종목 목록]");
+                sbPrompt.AppendLine("[현재 포트폴리오 종목 목록 및 기술적 팩트 지표]");
                 foreach (var item in items)
                 {
-                    sbPrompt.AppendLine($"- 종목: {item.StockName}({item.StockCode}), 보유수량: {item.Quantity:N0}주, 매수가: {item.BuyPrice:N0}원, 현재가: {item.CurrentPrice:N0}원, 수익률: {item.ProfitRate:F2}%, 포트폴리오 비중: {item.WeightPercent:F1}%, 메모: {item.Memo}");
+                    sbPrompt.AppendLine($"- 종목: {item.StockName}({item.StockCode}), 현재가: {item.CurrentPrice:N0}원, 매수가: {item.BuyPrice:N0}원, 수익률: {item.ProfitRate:F2}%, 14일 RSI: {item.Rsi:F1}, 거래량비율: {item.VolumeRatio:F1}%, 차트점수: {item.ChartScore}/10, 20일지지선: {item.SupportPrice:N0}원(하방위험: {item.DownsideRiskPercent:F1}%), 손익비점수: {item.RiskScore}/10, 타이밍: {item.TimingBadge}, 메모: {item.Memo}");
                 }
 
                 sbPrompt.AppendLine();
                 sbPrompt.AppendLine("다음 요구사항에 맞춰 **반드시 순수한 JSON 포맷**으로만 응답하세요(코드블록이나 마크다운 백틱 제외):");
+                sbPrompt.AppendLine("※ 중요 투자 원칙: 14일 RSI가 70 이상이거나 과열 상태인 종목은 아무리 호재가 좋아도 '과열 주의: 추격매수 금지 및 눌림목 대기'를 권고해야 합니다.");
                 sbPrompt.AppendLine("※ 중요 서식 규칙: JSON 문자열 값 내부에는 절대 큰따옴표(\")를 넣지 마시고 작은따옴표(')나 괄호를 사용하세요. 문자열 내 줄바꿈을 넣지 마세요.");
                 sbPrompt.AppendLine("{");
                 sbPrompt.AppendLine("  \"overallRisk\": \"Safe\" | \"Caution\" | \"Panic\",");
@@ -106,10 +107,11 @@ namespace GateHelper.StockAdvisor.Services
                 sbPrompt.AppendLine("  \"diagnoses\": [");
                 sbPrompt.AppendLine("    {");
                 sbPrompt.AppendLine("      \"stockCode\": \"005930\",");
+                sbPrompt.AppendLine("      \"newsScore\": 1~10 (뉴스 팩트/공시 감성 점수: 1은 치명적 악재, 5는 중립, 10은 초대형 실적/계약 호재),");
                 sbPrompt.AppendLine("      \"reliability\": 1~5 (출처 신뢰도),");
                 sbPrompt.AppendLine("      \"policyImpact\": -5~+5 (정책/실적 직결도: -5는 치명적 악재, +5는 강력 수혜),");
                 sbPrompt.AppendLine("      \"group\": \"GroupA\"(반등시 손절/축소) | \"GroupB\"(관망/홀딩) | \"GroupC\"(분할매수 검토),");
-                sbPrompt.AppendLine("      \"action\": \"구체적 실행 권고 (예: [익절] 비중 30% 축소 권고 / [관망] 관망 유지 / [매수] 분할 매수 검토)\",");
+                sbPrompt.AppendLine("      \"action\": \"구체적 실행 권고 (예: [익절] 비중 30% 축소 / [과열주의] 추격매수 금지 및 눌림목 대기 / [관망] 관망 유지 / [매수] 분할 매수 검토)\",");
                 sbPrompt.AppendLine("      \"targetCutPrice\": 권고 손절가 숫자,");
                 sbPrompt.AppendLine("      \"reason\": \"진단 상세 사유 및 대응 논리 (작은따옴표 사용, 2~3문장)\"");
                 sbPrompt.AppendLine("    }");
@@ -233,6 +235,9 @@ namespace GateHelper.StockAdvisor.Services
                             var matchedItem = items.Find(x => x.StockCode.TrimStart('0') == code.TrimStart('0'));
                             string name = matchedItem?.StockName ?? code;
 
+                            int nScore = token["newsScore"]?.ToObject<int>() ?? 5;
+                            nScore = Math.Max(1, Math.Min(10, nScore));
+
                             int rel = token["reliability"]?.ToObject<int>() ?? 3;
                             int pol = token["policyImpact"]?.ToObject<int>() ?? 0;
                             string grpStr = token["group"]?.ToString() ?? "GroupB";
@@ -242,12 +247,37 @@ namespace GateHelper.StockAdvisor.Services
                             decimal cut = token["targetCutPrice"]?.ToObject<decimal>() ?? 0m;
                             string rsn = token["reason"]?.ToString() ?? string.Empty;
 
+                            int cScore = matchedItem?.ChartScore ?? 5;
+                            int rScore = matchedItem?.RiskScore ?? 5;
+                            int fScore = (int)Math.Round(cScore * 0.4 + nScore * 0.3 + rScore * 0.3);
+                            fScore = Math.Max(1, Math.Min(10, fScore));
+
+                            string timingWarn = string.Empty;
+                            if (matchedItem != null)
+                            {
+                                matchedItem.NewsScore = nScore;
+                                matchedItem.FinalScore = fScore;
+                                timingWarn = matchedItem.TimingWarning;
+
+                                // 과열 안전벨트: RSI 70 이상인 경우 액션에 과열 경고 강제 추가
+                                if (matchedItem.Rsi >= 70.0m && !act.Contains("과열"))
+                                {
+                                    act = "[과열주의] 추격매수 금지! " + act;
+                                    posGroup = PositionGroup.GroupB; // 과열 상태에서는 신규 매수 금지(GroupC 배제)
+                                }
+                            }
+
                             result.ItemDiagnoses.Add(new StockRiskDiagnosis
                             {
                                 StockCode = code,
                                 StockName = name,
                                 SourceReliability = Math.Max(1, Math.Min(5, rel)),
                                 PolicyImpact = Math.Max(-5, Math.Min(5, pol)),
+                                NewsScore = nScore,
+                                ChartScore = cScore,
+                                RiskScore = rScore,
+                                FinalScore = fScore,
+                                TimingWarning = timingWarn,
                                 Group = posGroup,
                                 RecommendedAction = act,
                                 TargetCutPrice = cut,
@@ -397,6 +427,31 @@ namespace GateHelper.StockAdvisor.Services
                     diag.RecommendedAction = "[방어] 평단가 방어 관망 (추가 매수 보류)";
                     diag.TargetCutPrice = Math.Round(item.BuyPrice * 0.94m, 0);
                     diag.ReasonSummary = $"경미한 조정(-{Math.Abs(profitRate):F1}%) 구간입니다. 물타기는 자제하고 업종 섹터 수급 유입 여부를 점검하세요.";
+                }
+
+                // 3대 점수 및 최종점수 반영
+                int cScore = item.ChartScore > 0 ? item.ChartScore : 5;
+                int rScore = item.RiskScore > 0 ? item.RiskScore : 5;
+                int nScore = 5; // 오프라인 모드는 중립 5점
+                if (item.ProfitRate >= 10m) nScore = 7;
+                else if (item.ProfitRate <= -10m) nScore = 3;
+
+                int fScore = (int)Math.Round(cScore * 0.4 + nScore * 0.3 + rScore * 0.3);
+                fScore = Math.Max(1, Math.Min(10, fScore));
+
+                item.NewsScore = nScore;
+                item.FinalScore = fScore;
+
+                diag.ChartScore = cScore;
+                diag.RiskScore = rScore;
+                diag.NewsScore = nScore;
+                diag.FinalScore = fScore;
+                diag.TimingWarning = item.TimingWarning;
+
+                // RSI 과열 안전벨트 적용
+                if (item.Rsi >= 70.0m && !diag.RecommendedAction.Contains("과열"))
+                {
+                    diag.RecommendedAction = "[과열주의] 추격매수 금지! " + diag.RecommendedAction;
                 }
 
                 res.ItemDiagnoses.Add(diag);

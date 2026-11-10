@@ -32,6 +32,62 @@ namespace GateHelper.StockAdvisor.Models
         public decimal ChangePrice { get; set; } = 0m;
         public string Memo { get; set; } = string.Empty;
 
+        // --- 객관적 정량 지표 & 3대 점수 체계 ---
+        /// <summary>
+        /// 차트 점수 (1~10점): 20일 일봉 정배열, 거래량 수급, 추세 기반
+        /// </summary>
+        public int ChartScore { get; set; } = 5;
+
+        /// <summary>
+        /// 뉴스 점수 (1~10점): 공시, 수출통제, 실적 팩트 기반 호악재 감성
+        /// </summary>
+        public int NewsScore { get; set; } = 5;
+
+        /// <summary>
+        /// 손익비/안전 점수 (1~10점): 20일 지지선까지의 거리(손절폭 %)
+        /// </summary>
+        public int RiskScore { get; set; } = 5;
+
+        /// <summary>
+        /// 최종 종목 점수 (1~10점): [차트 40% + 뉴스 30% + 손익비 30%]
+        /// </summary>
+        public int FinalScore { get; set; } = 5;
+
+        /// <summary>
+        /// 14일 RSI 상대강도지수 (0~100)
+        /// </summary>
+        public decimal Rsi { get; set; } = 50m;
+
+        /// <summary>
+        /// 최근 5일 평균 대비 당일 거래량 비율 (%)
+        /// </summary>
+        public decimal VolumeRatio { get; set; } = 100m;
+
+        /// <summary>
+        /// 최근 20일 지지선 (최저가 / 1차 손절 기준선)
+        /// </summary>
+        public decimal SupportPrice { get; set; } = 0m;
+
+        /// <summary>
+        /// 최근 20일 저항선 (최고가 / 1차 목표가)
+        /// </summary>
+        public decimal ResistancePrice { get; set; } = 0m;
+
+        /// <summary>
+        /// 지지선까지의 하방 위험률 (%)
+        /// </summary>
+        public decimal DownsideRiskPercent { get; set; } = 0m;
+
+        /// <summary>
+        /// 타이밍 상태 뱃지 (🔴 과열(매수금지), 🟢 골든진입, 🟡 눌림목대기, 🔵 과매도반등, ⚪ 관망유지, ❌ 보유불필요)
+        /// </summary>
+        public string TimingBadge { get; set; } = "⚪ 관망유지";
+
+        /// <summary>
+        /// 추격매수 방지 경고 및 타이밍 가이드 코멘트
+        /// </summary>
+        public string TimingWarning { get; set; } = string.Empty;
+
         // 최종 AI 진단 결과
         public StockRiskDiagnosis LastDiagnosis { get; set; }
 
@@ -68,6 +124,31 @@ namespace GateHelper.StockAdvisor.Models
         /// 2. 정책/실적 직결도 (-5 ~ +5점)
         /// </summary>
         public int PolicyImpact { get; set; } = 0;
+
+        /// <summary>
+        /// 뉴스 팩트 감성 점수 (1~10점)
+        /// </summary>
+        public int NewsScore { get; set; } = 5;
+
+        /// <summary>
+        /// 차트 기술적 점수 (1~10점)
+        /// </summary>
+        public int ChartScore { get; set; } = 5;
+
+        /// <summary>
+        /// 손익비 안전 점수 (1~10점)
+        /// </summary>
+        public int RiskScore { get; set; } = 5;
+
+        /// <summary>
+        /// 최종 종합 점수 (1~10점)
+        /// </summary>
+        public int FinalScore { get; set; } = 5;
+
+        /// <summary>
+        /// 타이밍 가이드 코멘트
+        /// </summary>
+        public string TimingWarning { get; set; } = string.Empty;
 
         /// <summary>
         /// 3. 포지션 분류 (Group A: 반등시 손절, Group B: 관망/유지, Group C: 분할매수)

@@ -207,6 +207,7 @@
     <Compile Include="SandBox\8. StockAdvisor\Services\NaverStockPriceService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\GlobalMarketPollerService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\GeminiRiskAdvisorService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\TechnicalIndicatorService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingModels.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingClient.cs" />
     <Compile Include="SandBox\8. StockAdvisor\StockItemDialog.cs">
@@ -223,6 +224,14 @@
     </Compile>
     <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Designer.cs">
       <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Layout.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Detail.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="SandBox\OptionForm.cs">
       <SubType>Form</SubType>

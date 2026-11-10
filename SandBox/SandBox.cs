@@ -35,6 +35,21 @@ namespace GateHelper
             skinManager.AddFormToManage(this);
             skinManager.Theme = MaterialSkin.MaterialSkinManager.Themes.DARK;
 
+            // SandBox 전용 크리스탈 큐브 아이콘 적용
+            try
+            {
+                string iconPath = System.IO.Path.Combine(Application.StartupPath, "Resource_TEMP", "sandbox_icon.ico");
+                if (System.IO.File.Exists(iconPath))
+                {
+                    this.Icon = new Icon(iconPath);
+                }
+                else
+                {
+                    this.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
+                }
+            }
+            catch { }
+
             if (!DesignMode)
             {
                 InitializeCustomControls();

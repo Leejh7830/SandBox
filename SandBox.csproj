@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>GateHelper</RootNamespace>
     <AssemblyName>SandBox</AssemblyName>
-    <ApplicationIcon>Resource_TEMP\ico_gateone_fixed.ico</ApplicationIcon>
+    <ApplicationIcon>Resource_TEMP\sandbox_icon.ico</ApplicationIcon>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

@@ -53,7 +53,9 @@ namespace GateHelper.StockAdvisor
         private Label _lblAccountSummary;
         private Label _lblLastUpdated;
 
-        private bool _isBusy = false;
+        // 비동기 작업 상태 플래그 (멀티태스킹 분리)
+        private bool _isAiDiagnosing = false;
+        private bool _isRefreshingPrice = false;
         private GlobalMarketSnapshot _macroSnapshot;
 
         public StockAdvisorControl()
@@ -761,8 +763,8 @@ namespace GateHelper.StockAdvisor
 
         public async Task RefreshPricesAsync()
         {
-            if (_isBusy) return;
-            _isBusy = true;
+            if (_isRefreshingPrice) return;
+            _isRefreshingPrice = true;
             _btnRefreshPrice.Enabled = false;
             _btnRefreshPrice.Text = "조회 중...";
 
@@ -784,7 +786,7 @@ namespace GateHelper.StockAdvisor
             }
             finally
             {
-                _isBusy = false;
+                _isRefreshingPrice = false;
                 _btnRefreshPrice.Enabled = true;
                 _btnRefreshPrice.Text = "↻ 시세 갱신";
             }
@@ -868,16 +870,17 @@ namespace GateHelper.StockAdvisor
 
         private async Task RunAiDiagnosisAsync()
         {
-            if (_isBusy) return;
+            if (_isAiDiagnosing) return;
             if (_portfolio.Items.Count == 0)
             {
                 MessageBox.Show("진단할 종목이 없습니다. [+ 종목 추가] 버튼을 눌러 먼저 종목을 등록하세요.", "종목 없음", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            _isBusy = true;
+            _isAiDiagnosing = true;
             _btnDiagnose.Enabled = false;
             _btnDiagnose.Text = "AI 분석 중...";
+            _lblLastUpdated.Text = "AI 리스크 진단 분석 중...";
 
             try
             {
@@ -925,7 +928,7 @@ namespace GateHelper.StockAdvisor
             }
             finally
             {
-                _isBusy = false;
+                _isAiDiagnosing = false;
                 _btnDiagnose.Enabled = true;
                 _btnDiagnose.Text = "★ AI 참모 진단";
             }
@@ -951,6 +954,7 @@ namespace GateHelper.StockAdvisor
                     }
 
                     SavePortfolio();
+                    UpdateUi(); // AI 진단 중이더라도 등록 즉시 화면에 0.01초 만에 표시!
                     _ = RefreshPricesAsync();
                 }
             }
@@ -967,6 +971,7 @@ namespace GateHelper.StockAdvisor
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
                     SavePortfolio();
+                    UpdateUi(); // 수정 즉시 화면에 반영!
                     _ = RefreshPricesAsync();
                 }
             }

@@ -25,21 +25,19 @@ namespace GateHelper.StockAdvisor.Services
     {
         private static readonly HttpClient _httpClient = new HttpClient
         {
-            Timeout = TimeSpan.FromSeconds(25)
+            Timeout = TimeSpan.FromSeconds(12)
         };
 
         private static readonly string[] ModelCandidates = new[]
         {
-            "gemini-2.5-flash",
-            "gemini-flash-latest",
             "gemini-2.0-flash",
             "gemini-1.5-flash",
-            "gemini-pro-latest",
-            "gemini-3.5-flash-lite",
-            "gemini-3.5-flash"
+            "gemini-2.5-flash",
+            "gemini-flash-latest",
+            "gemini-pro-latest"
         };
 
-        private static string _activeModel = "gemini-2.5-flash";
+        private static string _activeModel = "gemini-2.0-flash";
 
         public static string GetApiKey()
         {

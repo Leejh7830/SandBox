@@ -281,6 +281,12 @@
       <DependentUpon>SandBox.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="App.config" />
+    <Content Include="Resource_TEMP\sandbox_icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resource_TEMP\sandbox_icon_256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

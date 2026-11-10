@@ -38,10 +38,10 @@ namespace GateHelper
             // SandBox 전용 크리스탈 큐브 아이콘 적용
             try
             {
-                string iconPath = System.IO.Path.Combine(Application.StartupPath, "Resource_TEMP", "sandbox_icon.ico");
-                if (System.IO.File.Exists(iconPath))
+                var resIcon = GateHelper.Properties.Resources.sandbox_icon;
+                if (resIcon != null)
                 {
-                    this.Icon = new Icon(iconPath);
+                    this.Icon = (Icon)resIcon.Clone();
                 }
                 else
                 {

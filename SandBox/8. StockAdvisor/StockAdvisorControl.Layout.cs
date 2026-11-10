@@ -263,14 +263,14 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("현재가", 75, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("전일대비", 68, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("평단", 75, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("보유수량", 60, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("보유", 50, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("손익금(원)", 85, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("수익률", 68, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("AI 등급", 55, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("수급(외인·기관)", 85, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("지뢰검증", 82, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("수급(외인·기관)", 108, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("지뢰검증", 88, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("14일 RSI", 62, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("5일 거래량", 68, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("5일 거래량", 80, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("차트", 46, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("뉴스", 46, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("손익비", 50, HorizontalAlignment.Center);

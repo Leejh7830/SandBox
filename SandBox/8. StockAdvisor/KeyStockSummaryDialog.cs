@@ -176,8 +176,8 @@ namespace GateHelper.StockAdvisor
             lv.Columns.Add("현재가", 75, HorizontalAlignment.Right);
             lv.Columns.Add("수익률", 68, HorizontalAlignment.Right);
             lv.Columns.Add("AI 등급", 55, HorizontalAlignment.Center);
-            lv.Columns.Add("수급", 75, HorizontalAlignment.Center);
-            lv.Columns.Add("지뢰검증", 75, HorizontalAlignment.Center);
+            lv.Columns.Add("수급", 85, HorizontalAlignment.Center);
+            lv.Columns.Add("지뢰검증", 85, HorizontalAlignment.Center);
             lv.Columns.Add("14일 RSI", 60, HorizontalAlignment.Right);
             lv.Columns.Add("★종합점수", 70, HorizontalAlignment.Center);
             lv.Columns.Add("타이밍 안전벨트", 110, HorizontalAlignment.Center);

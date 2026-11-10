@@ -165,9 +165,9 @@ namespace GateHelper.StockAdvisor
             _btnImportPortfolio.Dock = DockStyle.Fill;
             _btnImportPortfolio.Click += (s, e) => ShowImportPortfolioDialog();
 
-            _btnEmergencyGuide = CreateNeonButton("▲ 비상 탈출", Color.FromArgb(48, 16, 24), Color.FromArgb(255, 50, 85), Color.FromArgb(255, 220, 230));
+            _btnEmergencyGuide = CreateNeonButton("★ 중요 종목", Color.FromArgb(45, 36, 20), Color.FromArgb(255, 190, 40), Color.FromArgb(255, 245, 210));
             _btnEmergencyGuide.Dock = DockStyle.Fill;
-            _btnEmergencyGuide.Click += (s, e) => ShowPanicExitDialog();
+            _btnEmergencyGuide.Click += (s, e) => ShowKeyStockSummaryDialog();
 
             // 1행: AI 진단(가로 2칸) + [시세 갱신 + ? 도움말](1칸)
             tblButtons.Controls.Add(_btnDiagnose, 0, 0);
@@ -252,6 +252,7 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("코드", 62, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("현재가", 75, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("수익률", 72, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("AI 등급", 60, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("14일 RSI", 74, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("5일 거래량", 84, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("차트", 56, HorizontalAlignment.Center);

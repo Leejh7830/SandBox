@@ -1,9 +1,72 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using Newtonsoft.Json;
 
 namespace GateHelper.StockAdvisor.Models
 {
+    /// <summary>
+    /// AI 6대 종합 등급 (S, A, B, C, D, F)
+    /// - S, A: 초록색 (안전)
+    /// - B, C: 노란색 (주의)
+    /// - D: 주황색 (경고)
+    /// - F: 빨간색 (위험)
+    /// </summary>
+    public enum PositionGrade
+    {
+        S, // 9~10점: 최우수 (안전/초록)
+        A, // 8점: 우수 (안전/초록)
+        B, // 6~7점: 양호/관망 (주의/노랑)
+        C, // 5점: 중립/박스권 (주의/노랑)
+        D, // 3~4점: 경계/축소 (경고/주황)
+        F  // 1~2점: 위험/탈출 (위험/빨강)
+    }
+
+    public static class GradeHelper
+    {
+        public static PositionGrade CalculateGrade(int finalScore, decimal rsi = 50m, decimal profitRate = 0m)
+        {
+            if (finalScore >= 9) return PositionGrade.S;
+            if (finalScore == 8) return PositionGrade.A;
+            if (finalScore >= 6) return PositionGrade.B;
+            if (finalScore == 5) return PositionGrade.C;
+            if (finalScore >= 3) return PositionGrade.D;
+            return PositionGrade.F;
+        }
+
+        public static Color GetGradeColor(PositionGrade grade)
+        {
+            switch (grade)
+            {
+                case PositionGrade.S:
+                case PositionGrade.A:
+                    return Color.FromArgb(0, 230, 118); // 초록색 (안전)
+                case PositionGrade.B:
+                case PositionGrade.C:
+                    return Color.FromArgb(255, 214, 0); // 노란색 (주의)
+                case PositionGrade.D:
+                    return Color.FromArgb(255, 145, 0); // 주황색 (경고)
+                case PositionGrade.F:
+                default:
+                    return Color.FromArgb(255, 68, 68); // 빨간색 (위험)
+            }
+        }
+
+        public static string GetGradeDescription(PositionGrade grade)
+        {
+            switch (grade)
+            {
+                case PositionGrade.S: return "S (최우수/안전)";
+                case PositionGrade.A: return "A (우수/안전)";
+                case PositionGrade.B: return "B (양호/주의)";
+                case PositionGrade.C: return "C (중립/주의)";
+                case PositionGrade.D: return "D (경계/경고)";
+                case PositionGrade.F: return "F (위험/탈출)";
+                default: return "-";
+            }
+        }
+    }
+
     public enum PositionGroup
     {
         GroupA, // 반등 시 손절 / 비중 축소 권고 (적색/주황)
@@ -105,6 +168,17 @@ namespace GateHelper.StockAdvisor.Models
 
         [JsonIgnore]
         public decimal WeightPercent { get; set; } = 0m;
+
+        [JsonIgnore]
+        public PositionGrade Grade
+        {
+            get
+            {
+                if (LastDiagnosis != null && LastDiagnosis.Grade.HasValue)
+                    return LastDiagnosis.Grade.Value;
+                return GradeHelper.CalculateGrade(FinalScore, Rsi, ProfitRate);
+            }
+        }
     }
 
     /// <summary>
@@ -114,6 +188,11 @@ namespace GateHelper.StockAdvisor.Models
     {
         public string StockCode { get; set; } = string.Empty;
         public string StockName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// AI 6대 종합 등급 (S, A, B, C, D, F)
+        /// </summary>
+        public PositionGrade? Grade { get; set; }
 
         /// <summary>
         /// 1. 출처 신뢰도 (1~5점)

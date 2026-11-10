@@ -311,6 +311,7 @@ namespace GateHelper.StockAdvisor.Services
                                 FinalScore = fScore,
                                 TimingWarning = timingWarn,
                                 Group = posGroup,
+                                Grade = GradeHelper.CalculateGrade(fScore, matchedItem?.Rsi ?? 50m, matchedItem?.ProfitRate ?? 0m),
                                 RecommendedAction = act,
                                 TargetCutPrice = cut,
                                 ReasonSummary = rsn,
@@ -478,6 +479,7 @@ namespace GateHelper.StockAdvisor.Services
                 diag.RiskScore = rScore;
                 diag.NewsScore = nScore;
                 diag.FinalScore = fScore;
+                diag.Grade = GradeHelper.CalculateGrade(fScore, item.Rsi, item.ProfitRate);
                 diag.TimingWarning = item.TimingWarning;
 
                 // RSI 과열 안전벨트 적용

@@ -576,6 +576,20 @@ namespace GateHelper.StockAdvisor
             }
         }
 
+        private void ShowKeyStockSummaryDialog()
+        {
+            if (_portfolio.Items.Count == 0)
+            {
+                MessageBox.Show("현재 등록된 종목이 없습니다. 먼저 종목을 추가해주세요.", "중요 종목 브리핑", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var dlg = new KeyStockSummaryDialog(_portfolio.Items))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
         private void ShowPanicExitDialog()
         {
             if (_portfolio.Items.Count == 0)

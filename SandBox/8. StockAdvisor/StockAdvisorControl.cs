@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using GateHelper.StockAdvisor.Models;
@@ -26,6 +27,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblBriefing3;
         private ComboBox _cboAiModel;
         private Button _btnDiagnose;
+        private Button _btnEvaluateStock;
         private Button _btnRefreshPrice;
         private Button _btnScoreHelp;
         private Button _btnAddStock;
@@ -609,6 +611,41 @@ namespace GateHelper.StockAdvisor
             using (var dlg = new KeyStockSummaryDialog(_portfolio.Items))
             {
                 dlg.ShowDialog(this);
+            }
+        }
+
+        private void ShowStockEvaluatorDialog()
+        {
+            string initQuery = "";
+            if (_lvStocks.SelectedItems.Count > 0)
+            {
+                var sel = _lvStocks.SelectedItems[0].Tag as StockHoldingItem;
+                if (sel != null) initQuery = sel.StockName;
+            }
+
+            using (var dlg = new StockEvaluatorDialog(initQuery))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.AddedStockItem != null)
+                {
+                    var newItem = dlg.AddedStockItem;
+                    var existing = _portfolio.Items.FirstOrDefault(x => x.StockCode == newItem.StockCode);
+                    if (existing != null)
+                    {
+                        // 기존 종목 업데이트
+                        existing.BuyPrice = newItem.BuyPrice;
+                        existing.Quantity += newItem.Quantity;
+                        existing.CurrentPrice = newItem.CurrentPrice;
+                        existing.ChangeRate = newItem.ChangeRate;
+                    }
+                    else
+                    {
+                        _portfolio.Items.Add(newItem);
+                    }
+
+                    SavePortfolio();
+                    UpdateUi();
+                    ToastNotification.Show($"[{newItem.StockName}] 종목이 포트폴리오에 성공적으로 추가되었습니다.", "종목 추가 완료", ToastIcon.Success);
+                }
             }
         }
 

@@ -160,6 +160,10 @@ namespace GateHelper.StockAdvisor.Models
         public decimal DebtRatio { get; set; } = 0m;
         public int ConsecutiveLossYears { get; set; } = 0;
 
+        // --- 📊 KB 스타일 퀀트 우량주 8대 필터 요약 ---
+        public string QuantBadge { get; set; } = "⚪ 퀀트대기";
+        public string QuantSummary { get; set; } = string.Empty;
+
         // 최종 AI 진단 결과
         public StockRiskDiagnosis LastDiagnosis { get; set; }
 
@@ -286,6 +290,45 @@ namespace GateHelper.StockAdvisor.Models
         public string KbAppKey { get; set; } = string.Empty;
         public string KbAppSecret { get; set; } = string.Empty;
         public string KbAccountNumber { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// KB증권 스타일 퀀트 조건식 개별 검증 항목
+    /// </summary>
+    public class QuantFilterItem
+    {
+        public string Id { get; set; } = string.Empty;       // A, B, C...
+        public string Name { get; set; } = string.Empty;     // ROE, 부채비율 등
+        public string Criteria { get; set; } = string.Empty; // 10% 이상, 150% 이하 등
+        public string ActualValue { get; set; } = "-";       // 19.09% 등
+        public bool IsPassed { get; set; } = false;
+        public string Description { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// KB증권 스타일 퀀트 8대 황금 필터 종합 분석 결과
+    /// </summary>
+    public class QuantAnalysisResult
+    {
+        public string StockCode { get; set; } = string.Empty;
+        public string StockName { get; set; } = string.Empty;
+        public decimal CurrentPrice { get; set; } = 0m;
+        public string MarketCapText { get; set; } = "-";
+        public decimal Roe { get; set; } = 0m;
+        public decimal OperatingMargin { get; set; } = 0m;
+        public decimal DebtRatio { get; set; } = 0m;
+        public decimal Per { get; set; } = 0m;
+        public decimal Pbr { get; set; } = 0m;
+        public decimal DividendYield { get; set; } = 0m;
+        public decimal ForeignRate { get; set; } = 0m;
+        public decimal Rsi { get; set; } = 0m;
+
+        public int PassCount { get; set; } = 0;
+        public int TotalCount { get; set; } = 8;
+        public string QuantGradeBadge { get; set; } = "⚪ 보통";
+        public List<QuantFilterItem> Items { get; set; } = new List<QuantFilterItem>();
+
+        public decimal PassPercent => (TotalCount > 0) ? ((decimal)PassCount / TotalCount * 100m) : 0m;
     }
 }
 

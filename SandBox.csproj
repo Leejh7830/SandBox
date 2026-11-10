@@ -235,6 +235,9 @@
     <Compile Include="SandBox\8. StockAdvisor\StockScoreHelpDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockEvaluatorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.cs">
       <SubType>UserControl</SubType>
     </Compile>

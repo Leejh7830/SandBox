@@ -365,5 +365,260 @@ namespace GateHelper.StockAdvisor.Services
         }
 
         #endregion
+
+        #region KB Quant 8 Golden Filter Analysis
+
+        /// <summary>
+        /// KB증권 정통 퀀트 8대 황금 필터 실시간 검증 (시총, ROE, 영업이익률, 부채비율, PER, PBR, 배당, 14일 RSI)
+        /// </summary>
+        public static async Task<GateHelper.StockAdvisor.Models.QuantAnalysisResult> AnalyzeQuantAsync(string stockCode, decimal currentRsi = 0m)
+        {
+            var result = new GateHelper.StockAdvisor.Models.QuantAnalysisResult
+            {
+                StockCode = stockCode,
+                Rsi = currentRsi
+            };
+
+            if (string.IsNullOrWhiteSpace(stockCode)) return result;
+
+            try
+            {
+                // integration 및 finance/annual 병렬 조회
+                var integrationTask = FetchIntegrationAsync(stockCode);
+                var financeTask = FetchFinanceRowListAsync(stockCode);
+
+                await Task.WhenAll(integrationTask, financeTask);
+
+                var integ = integrationTask.Result;
+                var finDict = financeTask.Result;
+
+                // 1. 시가총액 (10,000억원 = 1조원 이상)
+                string capRaw = integ.ContainsKey("시총") ? integ["시총"] : "-";
+                result.MarketCapText = capRaw;
+                bool capPassed = false;
+                if (capRaw.Contains("조"))
+                {
+                    capPassed = true; // 1조 이상 무조건 통과
+                }
+                else if (capRaw.Contains("억"))
+                {
+                    string numPart = capRaw.Replace("억", "").Replace(",", "").Trim();
+                    if (decimal.TryParse(numPart, out decimal capEok))
+                    {
+                        capPassed = (capEok >= 10000m);
+                    }
+                }
+
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "E",
+                    Name = "시가총액",
+                    Criteria = "1조원(10,000억) 이상",
+                    ActualValue = capRaw,
+                    IsPassed = capPassed,
+                    Description = "상장폐지 및 세력 장난 차단 (중견·대기업 체급 필터)"
+                });
+
+                // 2. ROE (자기자본이익률 10% 이상)
+                decimal roe = finDict.ContainsKey("ROE") ? finDict["ROE"] : 0m;
+                result.Roe = roe;
+                bool roePassed = (roe >= 10.0m);
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "C",
+                    Name = "ROE (자기자본이익률)",
+                    Criteria = "10.0% 이상",
+                    ActualValue = roe > 0 ? $"{roe:F2}%" : (finDict.ContainsKey("ROE") ? $"{roe:F2}%" : "-"),
+                    IsPassed = roePassed,
+                    Description = "자본을 굴려 연 10% 이상 알짜배기 순이익 창출 여부"
+                });
+
+                // 3. 영업이익률 (5% 이상)
+                decimal opMargin = finDict.ContainsKey("영업이익률") ? finDict["영업이익률"] : 0m;
+                result.OperatingMargin = opMargin;
+                bool opPassed = (opMargin >= 5.0m);
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "D",
+                    Name = "영업이익률",
+                    Criteria = "5.0% 이상",
+                    ActualValue = opMargin != 0m ? $"{opMargin:F2}%" : (finDict.ContainsKey("영업이익률") ? $"{opMargin:F2}%" : "-"),
+                    IsPassed = opPassed,
+                    Description = "비즈니스 마진율 건전성 (경쟁력 및 경제적 해자)"
+                });
+
+                // 4. 부채비율 (150% 이하)
+                decimal debt = finDict.ContainsKey("부채비율") ? finDict["부채비율"] : 0m;
+                result.DebtRatio = debt;
+                bool debtPassed = (debt > 0m && debt <= 150.0m);
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "F",
+                    Name = "부채비율",
+                    Criteria = "150.0% 이하",
+                    ActualValue = debt > 0 ? $"{debt:F2}%" : (finDict.ContainsKey("부채비율") ? $"{debt:F2}%" : "-"),
+                    IsPassed = debtPassed,
+                    Description = "고금리 환경 안전판 (빚이 적은 탄탄한 재무 구조)"
+                });
+
+                // 5. PER (12배 이하 저평가)
+                decimal per = 0m;
+                if (integ.ContainsKey("PER"))
+                {
+                    string pRaw = integ["PER"].Replace("배", "").Trim();
+                    decimal.TryParse(pRaw, out per);
+                }
+                else if (finDict.ContainsKey("PER"))
+                {
+                    per = finDict["PER"];
+                }
+                result.Per = per;
+                bool perPassed = (per > 0m && per <= 12.0m);
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "G",
+                    Name = "PER (주가수익비율)",
+                    Criteria = "12.0배 이하",
+                    ActualValue = per > 0 ? $"{per:F2}배" : "-",
+                    IsPassed = perPassed,
+                    Description = "실적 대비 저평가 안전마진 (거품 및 고평가 배제)"
+                });
+
+                // 6. PBR (1.5배 이하)
+                decimal pbr = 0m;
+                if (integ.ContainsKey("PBR"))
+                {
+                    string pbRaw = integ["PBR"].Replace("배", "").Trim();
+                    decimal.TryParse(pbRaw, out pbr);
+                }
+                else if (finDict.ContainsKey("PBR"))
+                {
+                    pbr = finDict["PBR"];
+                }
+                result.Pbr = pbr;
+                bool pbrPassed = (pbr > 0m && pbr <= 1.5m);
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "H",
+                    Name = "PBR (주가순자산비율)",
+                    Criteria = "1.5배 이하",
+                    ActualValue = pbr > 0 ? $"{pbr:F2}배" : "-",
+                    IsPassed = pbrPassed,
+                    Description = "청산가치 대비 거품 없는 적정 자산 밸류에이션"
+                });
+
+                // 7. 배당수익률 (3% ~ 20%)
+                decimal divYield = 0m;
+                if (integ.ContainsKey("배당수익률"))
+                {
+                    string dRaw = integ["배당수익률"].Replace("%", "").Trim();
+                    decimal.TryParse(dRaw, out divYield);
+                }
+                result.DividendYield = divYield;
+                bool divPassed = (divYield >= 3.0m && divYield <= 20.0m);
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "I",
+                    Name = "배당수익률",
+                    Criteria = "3.0% ~ 20.0%",
+                    ActualValue = divYield > 0 ? $"{divYield:F2}%" : "-",
+                    IsPassed = divPassed,
+                    Description = "주가 하락 시 방어선 역할을 하는 쏠쏠한 배당금 쿠폰"
+                });
+
+                // 8. 14일 RSI (30 이하 극단적 과매도 타이밍 또는 40 이하 저점존)
+                bool rsiPassed = (currentRsi > 0m && currentRsi <= 35.0m);
+                result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
+                {
+                    Id = "B",
+                    Name = "14일 RSI 타이밍",
+                    Criteria = "35.0 이하 (과매도 저점존)",
+                    ActualValue = currentRsi > 0 ? $"{currentRsi:F1}" : "-",
+                    IsPassed = rsiPassed,
+                    Description = "공포 투매 구간에서 저가 분할 매수하는 역발상 타이밍"
+                });
+
+                // 통과 개수 계산
+                int passCount = 0;
+                foreach (var itm in result.Items)
+                {
+                    if (itm.IsPassed) passCount++;
+                }
+                result.PassCount = passCount;
+                result.TotalCount = result.Items.Count;
+
+                // 퀀트 뱃지 등급 부여
+                if (passCount == 8) result.QuantGradeBadge = "👑 퀀트 다이아몬드 (8/8 올패스)";
+                else if (passCount >= 6) result.QuantGradeBadge = "🥇 퀀트 골드 우량주";
+                else if (passCount >= 4) result.QuantGradeBadge = "🥈 퀀트 실버 가치주";
+                else result.QuantGradeBadge = "⚪ 펀더멘털 일반";
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, $"StockIntelligenceService.AnalyzeQuantAsync({stockCode})");
+            }
+
+            return result;
+        }
+
+        private static async Task<Dictionary<string, string>> FetchIntegrationAsync(string stockCode)
+        {
+            var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                string url = $"https://m.stock.naver.com/api/stock/{stockCode}/integration";
+                string json = await _httpClient.GetStringAsync(url);
+                var root = JObject.Parse(json);
+                var totalInfos = root["totalInfos"] as JArray;
+                if (totalInfos != null)
+                {
+                    foreach (var item in totalInfos)
+                    {
+                        string k = item["key"]?.ToString() ?? string.Empty;
+                        string v = item["value"]?.ToString() ?? string.Empty;
+                        if (!string.IsNullOrEmpty(k)) dict[k] = v;
+                    }
+                }
+            }
+            catch { }
+            return dict;
+        }
+
+        private static async Task<Dictionary<string, decimal>> FetchFinanceRowListAsync(string stockCode)
+        {
+            var dict = new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+            try
+            {
+                string url = $"https://m.stock.naver.com/api/stock/{stockCode}/finance/annual";
+                string json = await _httpClient.GetStringAsync(url);
+                var root = JObject.Parse(json);
+                var rowList = root["financeInfo"]?["rowList"] as JArray;
+                if (rowList == null) return dict;
+
+                foreach (var row in rowList)
+                {
+                    string title = row["title"]?.ToString() ?? string.Empty;
+                    var cols = row["columns"] as JObject;
+                    if (cols == null) continue;
+
+                    // 가장 최신 연도 컬럼의 값 파싱
+                    decimal latestVal = 0m;
+                    foreach (var prop in cols.Properties())
+                    {
+                        string valStr = prop.Value["value"]?.ToString()?.Replace(",", "").Trim();
+                        if (decimal.TryParse(valStr, out decimal parsed))
+                        {
+                            latestVal = parsed;
+                        }
+                    }
+                    dict[title] = latestVal;
+                }
+            }
+            catch { }
+            return dict;
+        }
+
+        #endregion
     }
 }
+

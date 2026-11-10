@@ -406,7 +406,12 @@ namespace GateHelper.StockAdvisor
             AppendText($"  • 🌊 수급 주체 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
             AppendText($"{item.MajorSupplyBadge} {(string.IsNullOrEmpty(item.MajorSupplyDetail) ? "" : $"({item.MajorSupplyDetail})")}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.MajorSupplyBadge.Contains("쌍끌이") ? Color.FromArgb(0, 240, 210) : Color.FromArgb(200, 220, 240));
             AppendText($"  • 🛡️ 지뢰 검증 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
-            AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
+            AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
+            if (!string.IsNullOrEmpty(item.QuantSummary))
+            {
+                AppendText($"  • 📊 KB 퀀트 검증 : {item.QuantBadge} ({item.QuantSummary})\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(255, 215, 64));
+            }
+            AppendText("\n", new Font("Segoe UI", 6f), Color.White);
 
             AppendText("💡 상단의 [★ AI 참모 진단] 버튼을 클릭하시면 글로벌 외신 및 실시간 정책 공시를 결합한 최고급 전략 리포트가 완성됩니다.\n", new Font("Malgun Gothic", 9f), Color.FromArgb(130, 190, 255));
 
@@ -463,7 +468,12 @@ namespace GateHelper.StockAdvisor
             AppendText($"  • 🌊 수급 주체 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
             AppendText($"{item.MajorSupplyBadge} {(string.IsNullOrEmpty(item.MajorSupplyDetail) ? "" : $"({item.MajorSupplyDetail})")}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.MajorSupplyBadge.Contains("쌍끌이") ? Color.FromArgb(0, 240, 210) : Color.FromArgb(200, 220, 240));
             AppendText($"  • 🛡️ 지뢰 검증 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
-            AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
+            AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
+            if (!string.IsNullOrEmpty(item.QuantSummary))
+            {
+                AppendText($"  • 📊 KB 퀀트 검증 : {item.QuantBadge} ({item.QuantSummary})\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(255, 215, 64));
+            }
+            AppendText("\n", new Font("Segoe UI", 6f), Color.White);
 
             // 섹션 5: 심층 대응 논리 (굵은 글씨 헤더)
             AppendText("【 5. 심층 대응 논리 및 판단 근거 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(180, 210, 245));

@@ -127,7 +127,14 @@ namespace GateHelper.StockAdvisor
             _btnDiagnose = CreateNeonButton("★ AI 참모 진단\r\n(진단 대기)", Color.FromArgb(14, 38, 56), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
             _btnDiagnose.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
             _btnDiagnose.Dock = DockStyle.Fill;
+            _btnDiagnose.Margin = new Padding(1);
             _btnDiagnose.Click += async (s, e) => await RunAiDiagnosisAsync();
+
+            _btnEvaluateStock = CreateNeonButton("🔍 종목 평가\r\n(KB 퀀트)", Color.FromArgb(16, 44, 58), Color.FromArgb(0, 220, 245), Color.FromArgb(215, 250, 255));
+            _btnEvaluateStock.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
+            _btnEvaluateStock.Dock = DockStyle.Fill;
+            _btnEvaluateStock.Margin = new Padding(1);
+            _btnEvaluateStock.Click += (s, e) => ShowStockEvaluatorDialog();
 
             _btnRefreshPrice = CreateNeonButton("↻ 시세 갱신", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
             _btnRefreshPrice.Dock = DockStyle.Fill;
@@ -159,22 +166,25 @@ namespace GateHelper.StockAdvisor
 
             _btnAddStock = CreateNeonButton("+ 종목 추가", Color.FromArgb(16, 42, 32), Color.FromArgb(0, 230, 118), Color.FromArgb(215, 255, 230));
             _btnAddStock.Dock = DockStyle.Fill;
+            _btnAddStock.Margin = new Padding(1);
             _btnAddStock.Click += (s, e) => ShowAddStockDialog();
 
             _btnImportPortfolio = CreateNeonButton("계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
             _btnImportPortfolio.Dock = DockStyle.Fill;
+            _btnImportPortfolio.Margin = new Padding(1);
             _btnImportPortfolio.Click += (s, e) => ShowImportPortfolioDialog();
 
             _btnEmergencyGuide = CreateNeonButton("★ 중요 종목", Color.FromArgb(45, 36, 20), Color.FromArgb(255, 190, 40), Color.FromArgb(255, 245, 210));
             _btnEmergencyGuide.Dock = DockStyle.Fill;
+            _btnEmergencyGuide.Margin = new Padding(1);
             _btnEmergencyGuide.Click += (s, e) => ShowKeyStockSummaryDialog();
 
-            // 1행: AI 진단(가로 2칸) + [시세 갱신 + ? 도움말](1칸)
+            // 1행: [AI 진단] + [🔍 종목 평가] + [시세 갱신 + ? 도움말]
             tblButtons.Controls.Add(_btnDiagnose, 0, 0);
-            tblButtons.SetColumnSpan(_btnDiagnose, 2);
+            tblButtons.Controls.Add(_btnEvaluateStock, 1, 0);
             tblButtons.Controls.Add(tblRefreshAndHelp, 2, 0);
 
-            // 2행: 종목 추가(1칸) + 계좌 가져오기(1칸) + 비상 탈출(1칸)
+            // 2행: [종목 추가] + [계좌 가져오기] + [★ 중요 종목]
             tblButtons.Controls.Add(_btnAddStock, 0, 1);
             tblButtons.Controls.Add(_btnImportPortfolio, 1, 1);
             tblButtons.Controls.Add(_btnEmergencyGuide, 2, 1);

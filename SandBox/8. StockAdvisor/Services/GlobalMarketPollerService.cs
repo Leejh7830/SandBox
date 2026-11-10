@@ -197,9 +197,12 @@ namespace GateHelper.StockAdvisor.Services
                 var jarr = JArray.Parse(json);
                 if (jarr != null && jarr.Count > 0)
                 {
-                    var items = jarr[0]["items"] as JArray;
-                    if (items != null)
+                    // 네이버 뉴스는 그룹별 JArray로 반환되므로 모든 그룹의 items를 전수 수집
+                    foreach (var group in jarr)
                     {
+                        var items = group["items"] as JArray;
+                        if (items == null) continue;
+
                         foreach (var item in items)
                         {
                             string officeId = item["officeId"]?.ToString() ?? string.Empty;
@@ -240,7 +243,11 @@ namespace GateHelper.StockAdvisor.Services
                                 NewsUrl = newsUrl,
                                 Timestamp = parsedDt != DateTime.MinValue ? parsedDt : DateTime.Now
                             });
+
+                            if (list.Count >= pageSize) break;
                         }
+
+                        if (list.Count >= pageSize) break;
                     }
                 }
             }

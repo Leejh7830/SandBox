@@ -263,25 +263,35 @@ namespace GateHelper.StockAdvisor
             // 3. 글로벌 매크로 대표 엔비디아
             AddFilterButton("NVDA.O", "🟢 엔비디아 (NVDA)", Color.FromArgb(80, 230, 140));
 
-            // 4. 사용자 보유 종목별 개별 필터 버튼 동적 생성
+            // 4. 사용자 보유 종목별 개별 필터 버튼 동적 생성 (수익/손실 상태 직관적 컬러링 반영)
             var addedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            Color[] colors = new[]
-            {
-                Color.FromArgb(100, 180, 255),
-                Color.FromArgb(210, 140, 255),
-                Color.FromArgb(255, 150, 180),
-                Color.FromArgb(130, 220, 230)
-            };
-            int colorIdx = 0;
 
             foreach (var h in _userHoldings)
             {
                 if (string.IsNullOrWhiteSpace(h.StockCode)) continue;
                 if (addedCodes.Add(h.StockCode))
                 {
-                    string label = $"🔵 {h.StockName}";
-                    AddFilterButton(h.StockCode, label, colors[colorIdx % colors.Length]);
-                    colorIdx++;
+                    Color btnColor;
+                    string icon;
+                    if (h.ProfitRate > 0)
+                    {
+                        btnColor = Color.FromArgb(255, 100, 110); // 수익: 붉은 네온
+                        icon = "🔴";
+                    }
+                    else if (h.ProfitRate < 0)
+                    {
+                        btnColor = Color.FromArgb(85, 160, 255);  // 손실: 푸른 네온
+                        icon = "🔵";
+                    }
+                    else
+                    {
+                        btnColor = Color.FromArgb(180, 195, 215); // 보합/신규: 실버
+                        icon = "⚪";
+                    }
+
+                    string rateStr = h.BuyPrice > 0 ? $" ({h.ProfitRate:+0.0;-0.0}%)" : "";
+                    string label = $"{icon} {h.StockName}{rateStr}";
+                    AddFilterButton(h.StockCode, label, btnColor);
                 }
             }
 

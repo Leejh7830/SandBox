@@ -143,6 +143,23 @@ namespace GateHelper.StockAdvisor.Models
         /// </summary>
         public string TimingWarning { get; set; } = string.Empty;
 
+        // --- 🌊 수급 및 스마트 머니(외인/기관) 지표 ---
+        /// <summary>
+        /// 외인/기관 수급 뱃지 (예: 🌊쌍끌이매수, 🦅외인매수, 🏦기관매수, 🐜개미매수, 🌧️쌍끌이매도, ⚪수급대기)
+        /// </summary>
+        public string MajorSupplyBadge { get; set; } = "⚪ 수급대기";
+        public string MajorSupplyDetail { get; set; } = string.Empty;
+
+        // --- 🛡️ 재무 및 공시 지뢰 탐지 지표 ---
+        /// <summary>
+        /// 재무/공시 지뢰 탐지 뱃지 (예: 🛡️클린안전, 💀3년적자, 🚨CB발행, ⚠️부채과다, 💎주주환원)
+        /// </summary>
+        public string LandmineBadge { get; set; } = "🛡️ 클린안전";
+        public string LandmineDetail { get; set; } = string.Empty;
+        public bool HasCriticalLandmine { get; set; } = false;
+        public decimal DebtRatio { get; set; } = 0m;
+        public int ConsecutiveLossYears { get; set; } = 0;
+
         // 최종 AI 진단 결과
         public StockRiskDiagnosis LastDiagnosis { get; set; }
 

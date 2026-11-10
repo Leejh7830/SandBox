@@ -208,6 +208,7 @@
     <Compile Include="SandBox\8. StockAdvisor\Services\GlobalMarketPollerService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\GeminiRiskAdvisorService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\TechnicalIndicatorService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\StockIntelligenceService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingModels.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingClient.cs" />
     <Compile Include="SandBox\8. StockAdvisor\StockItemDialog.cs">

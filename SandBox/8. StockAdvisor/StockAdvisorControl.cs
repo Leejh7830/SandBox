@@ -45,6 +45,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblDetailTimingWarning;
         private Label _lblDetailScores;
         private Label _lblDetailTechnicalFacts;
+        private Label _lblDetailIntelligence;
         private Label _lblDetailGroupBadge;
         private Label _lblDetailAction;
         private Label _lblDetailReliability;
@@ -70,7 +71,7 @@ namespace GateHelper.StockAdvisor
         private static readonly string[] OriginalColumnNames = new[]
         {
             "코드", "종목명", "현재가", "전일대비", "평단", "보유수량", "손익금(원)", "수익률", "AI 등급",
-            "14일 RSI", "5일 거래량", "차트", "뉴스", "손익비", "★종합점수", "타이밍 안전벨트", "권고 지침"
+            "수급(외인·기관)", "지뢰검증", "14일 RSI", "5일 거래량", "차트", "뉴스", "손익비", "★종합점수", "타이밍 안전벨트", "권고 지침"
         };
         private GlobalMarketSnapshot _macroSnapshot;
 
@@ -261,8 +262,14 @@ namespace GateHelper.StockAdvisor
                             }
                         }
 
-                        // 팩트 기술 지표 및 점수 산출 (RSI, 거래량비율, 지지선, 손익비)
-                        var ind = await TechnicalIndicatorService.AnalyzeIndicatorsAsync(item.StockCode, item.CurrentPrice);
+                        // 팩트 기술 지표, 수급 및 지뢰 탐지 병렬 비동기 수집
+                        var indTask = TechnicalIndicatorService.AnalyzeIndicatorsAsync(item.StockCode, item.CurrentPrice);
+                        var intelTask = StockIntelligenceService.AnalyzeAsync(item.StockCode);
+                        await Task.WhenAll(indTask, intelTask);
+
+                        var ind = indTask.Result;
+                        var intel = intelTask.Result;
+
                         item.Rsi = ind.Rsi;
                         item.VolumeRatio = ind.VolumeRatio;
                         item.SupportPrice = ind.SupportPrice;
@@ -273,9 +280,24 @@ namespace GateHelper.StockAdvisor
                         item.TimingBadge = ind.TimingBadge;
                         item.TimingWarning = ind.TimingWarning;
 
+                        // 수급 및 지뢰 탐지 지표 반영
+                        item.MajorSupplyBadge = intel.SupplyBadge;
+                        item.MajorSupplyDetail = intel.SupplyDetail;
+                        item.LandmineBadge = intel.LandmineBadge;
+                        item.LandmineDetail = intel.LandmineDetail;
+                        item.HasCriticalLandmine = intel.HasCriticalLandmine;
+                        item.DebtRatio = intel.DebtRatio;
+                        item.ConsecutiveLossYears = intel.ConsecutiveLossYears;
+
                         // 최종 점수: 차트 40% + 뉴스 30% + 손익비 30%
                         int news = item.NewsScore > 0 ? item.NewsScore : 5;
                         item.FinalScore = (int)Math.Round(item.ChartScore * 0.4 + news * 0.3 + item.RiskScore * 0.3);
+
+                        // 치명적 지뢰(CB/유증/3년적자) 감지 시 F등급 강제 강등 (최대 2점)
+                        if (item.HasCriticalLandmine)
+                        {
+                            item.FinalScore = Math.Min(item.FinalScore, 2);
+                        }
                         item.FinalScore = Math.Max(1, Math.Min(10, item.FinalScore));
                     }
                     catch (Exception ex)

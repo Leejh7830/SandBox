@@ -257,11 +257,13 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("손익금(원)", 85, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("수익률", 68, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("AI 등급", 55, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("14일 RSI", 68, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("5일 거래량", 72, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("차트", 48, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("뉴스", 48, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("손익비", 52, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("수급(외인·기관)", 85, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("지뢰검증", 82, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("14일 RSI", 62, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("5일 거래량", 68, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("차트", 46, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("뉴스", 46, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("손익비", 50, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("★종합점수", 75, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("타이밍 안전벨트", 115, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("권고 지침", 220);
@@ -333,8 +335,8 @@ namespace GateHelper.StockAdvisor
 
             _lblDetailScores = new Label
             {
-                Text = "📊 차트: -점 | 뉴스: -점 | 손익비: -점\n★ 최종 종합 점수 : ★ -점 / 10점",
-                Font = new Font("Segoe UI", 9.2f, FontStyle.Bold),
+                Text = "차트: -점 | 뉴스: -점 | 손익비: -점\n★ 최종 종합 점수 : ★ -점 / 10점",
+                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 225, 120),
                 Dock = DockStyle.Top,
                 Height = 36
@@ -342,9 +344,18 @@ namespace GateHelper.StockAdvisor
 
             _lblDetailTechnicalFacts = new Label
             {
-                Text = "🔍 14일 RSI: - | 거래량: -%\n• 20일 지지선: -원 (하방: -%)",
-                Font = new Font("Segoe UI", 8.5f),
+                Text = "• 14일 RSI: - | 거래량: -%\n• 20일 지지선: -원 (하방: -%)",
+                Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(170, 210, 255),
+                Dock = DockStyle.Top,
+                Height = 34
+            };
+
+            _lblDetailIntelligence = new Label
+            {
+                Text = "수급: 대기 중  |  지뢰: 검증 대기 중",
+                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(140, 230, 220),
                 Dock = DockStyle.Top,
                 Height = 34
             };
@@ -371,8 +382,8 @@ namespace GateHelper.StockAdvisor
 
             _lblDetailReliability = new Label
             {
-                Text = "■ 출처 신뢰도: ★★★☆☆ (3/5)",
-                Font = new Font("Segoe UI", 8.5f),
+                Text = "출처 신뢰도: ★★★☆☆ (3/5)",
+                Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(220, 220, 230),
                 Dock = DockStyle.Top,
                 Height = 20
@@ -380,8 +391,8 @@ namespace GateHelper.StockAdvisor
 
             _lblDetailImpact = new Label
             {
-                Text = "⚡ 정책/실적 직결도: 0 (-5 ~ +5)",
-                Font = new Font("Segoe UI", 8.5f),
+                Text = "정책/실적 직결도: 0 (-5 ~ +5)",
+                Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(220, 220, 230),
                 Dock = DockStyle.Top,
                 Height = 20
@@ -389,8 +400,8 @@ namespace GateHelper.StockAdvisor
 
             _lblDetailTargetCut = new Label
             {
-                Text = "◆ 권고 손절/방어선: - 원",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Text = "권고 손절/방어선: - 원",
+                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 140, 140),
                 Dock = DockStyle.Top,
                 Height = 22
@@ -442,6 +453,7 @@ namespace GateHelper.StockAdvisor
             _pnlDetail.Controls.Add(_lblDetailReliability);
             _pnlDetail.Controls.Add(_lblDetailAction);
             _pnlDetail.Controls.Add(_lblDetailGroupBadge);
+            _pnlDetail.Controls.Add(_lblDetailIntelligence);
             _pnlDetail.Controls.Add(_lblDetailTechnicalFacts);
             _pnlDetail.Controls.Add(_lblDetailScores);
             _pnlDetail.Controls.Add(_lblDetailTimingWarning);
@@ -461,7 +473,7 @@ namespace GateHelper.StockAdvisor
 
         private void AutoFitLastColumn()
         {
-            if (_lvStocks == null || _lvStocks.Columns.Count < 17) return;
+            if (_lvStocks == null || _lvStocks.Columns.Count < 19) return;
             try
             {
                 int fixedWidth = 0;

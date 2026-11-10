@@ -171,20 +171,24 @@ namespace GateHelper.StockAdvisor
                 BorderStyle = BorderStyle.None
             };
 
-            lv.Columns.Add("종목명", 130);
-            lv.Columns.Add("코드", 65, HorizontalAlignment.Center);
-            lv.Columns.Add("현재가", 80, HorizontalAlignment.Right);
-            lv.Columns.Add("수익률", 75, HorizontalAlignment.Right);
-            lv.Columns.Add("14일 RSI", 75, HorizontalAlignment.Right);
-            lv.Columns.Add("★종합점수", 80, HorizontalAlignment.Center);
-            lv.Columns.Add("AI 등급", 65, HorizontalAlignment.Center);
-            lv.Columns.Add("타이밍 안전벨트", 125, HorizontalAlignment.Center);
-            lv.Columns.Add("권고 지침 및 핵심 사유", 280);
+            lv.Columns.Add("종목명", 125);
+            lv.Columns.Add("코드", 62, HorizontalAlignment.Center);
+            lv.Columns.Add("현재가", 75, HorizontalAlignment.Right);
+            lv.Columns.Add("수익률", 68, HorizontalAlignment.Right);
+            lv.Columns.Add("AI 등급", 55, HorizontalAlignment.Center);
+            lv.Columns.Add("수급", 75, HorizontalAlignment.Center);
+            lv.Columns.Add("지뢰검증", 75, HorizontalAlignment.Center);
+            lv.Columns.Add("14일 RSI", 60, HorizontalAlignment.Right);
+            lv.Columns.Add("★종합점수", 70, HorizontalAlignment.Center);
+            lv.Columns.Add("타이밍 안전벨트", 110, HorizontalAlignment.Center);
+            lv.Columns.Add("권고 지침 및 핵심 사유", 260);
 
             foreach (var item in list)
             {
                 string rsiStr = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                 string scoreStr = item.FinalScore > 0 ? $"★ {item.FinalScore}점" : "-";
+                string supplyStr = !string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "⚪ 수급대기";
+                string landmineStr = !string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "🛡️ 클린안전";
                 string actionStr = item.LastDiagnosis?.RecommendedAction;
                 if (string.IsNullOrEmpty(actionStr))
                 {
@@ -197,36 +201,54 @@ namespace GateHelper.StockAdvisor
                     item.StockCode,
                     $"{item.CurrentPrice:N0}원",
                     $"{item.ProfitRate:+0.00;-0.00}%",
+                    item.Grade.ToString(),
+                    supplyStr,
+                    landmineStr,
                     rsiStr,
                     scoreStr,
-                    item.Grade.ToString(),
                     item.TimingBadge,
                     actionStr
                 });
 
                 lvi.Tag = item;
 
-                // 수익률 색상
+                // 수익률 색상 (SubItem 3)
                 if (item.ProfitRate > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 95, 95);
                 else if (item.ProfitRate < 0) lvi.SubItems[3].ForeColor = Color.FromArgb(85, 160, 255);
 
-                // RSI 색상
-                if (item.Rsi >= 70m) lvi.SubItems[4].ForeColor = Color.FromArgb(255, 80, 80);
-                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[4].ForeColor = Color.FromArgb(80, 180, 255);
+                // AI 등급 (SubItem 4)
+                lvi.SubItems[4].ForeColor = GradeHelper.GetGradeColor(item.Grade);
+                lvi.SubItems[4].Font = new Font(lv.Font, FontStyle.Bold);
 
-                // 종합점수
-                if (item.FinalScore >= 8) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 215, 0);
-                else if (item.FinalScore <= 3) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 110, 110);
+                // 수급 (SubItem 5)
+                if (supplyStr.Contains("쌍끌이")) lvi.SubItems[5].ForeColor = Color.FromArgb(0, 240, 210);
+                else if (supplyStr.Contains("외인")) lvi.SubItems[5].ForeColor = Color.FromArgb(120, 210, 255);
+                else if (supplyStr.Contains("기관")) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 215, 100);
+                else if (supplyStr.Contains("개미")) lvi.SubItems[5].ForeColor = Color.FromArgb(210, 170, 255);
+                else lvi.SubItems[5].ForeColor = Color.FromArgb(180, 195, 215);
 
-                // AI 등급 (S,A:초록 / B,C:노랑 / D:주황 / F:빨강)
-                lvi.SubItems[6].ForeColor = GradeHelper.GetGradeColor(item.Grade);
-                lvi.SubItems[6].Font = new Font(lv.Font, FontStyle.Bold);
+                // 지뢰검증 (SubItem 6)
+                if (item.HasCriticalLandmine || landmineStr.Contains("적자") || landmineStr.Contains("CB") || landmineStr.Contains("유상"))
+                {
+                    lvi.SubItems[6].ForeColor = Color.FromArgb(255, 75, 75);
+                    lvi.SubItems[6].Font = new Font(lv.Font, FontStyle.Bold);
+                }
+                else if (landmineStr.Contains("부채")) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 180, 60);
+                else lvi.SubItems[6].ForeColor = Color.FromArgb(100, 240, 140);
 
-                // 타이밍 뱃지 색상
+                // RSI 색상 (SubItem 7)
+                if (item.Rsi >= 70m) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 80, 80);
+                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[7].ForeColor = Color.FromArgb(80, 180, 255);
+
+                // 종합점수 (SubItem 8)
+                if (item.FinalScore >= 8) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 215, 0);
+                else if (item.FinalScore <= 3) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 110, 110);
+
+                // 타이밍 뱃지 색상 (SubItem 9)
                 string tb = item.TimingBadge ?? string.Empty;
-                if (tb.Contains("과열")) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 75, 95);
-                else if (tb.Contains("골든")) lvi.SubItems[7].ForeColor = Color.FromArgb(0, 230, 118);
-                else if (tb.Contains("눌림목")) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 210, 60);
+                if (tb.Contains("과열")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 75, 95);
+                else if (tb.Contains("골든")) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
+                else if (tb.Contains("눌림목")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 210, 60);
 
                 lvi.UseItemStyleForSubItems = false;
                 lv.Items.Add(lvi);

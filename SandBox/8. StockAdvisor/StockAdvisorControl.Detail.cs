@@ -74,6 +74,8 @@ namespace GateHelper.StockAdvisor
                 }
 
                 string gradeText = item.Grade.ToString();
+                string supplyText = !string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "⚪ 수급대기";
+                string landmineText = !string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "🛡️ 클린안전";
 
                 var lvi = new ListViewItem(new[]
                 {
@@ -86,14 +88,16 @@ namespace GateHelper.StockAdvisor
                     $"{item.ProfitAmount:+0,0;-0,0;0}",                 // 6: 손익금(원)
                     $"{item.ProfitRate:+0.00;-0.00;0.00}%",             // 7: 수익률
                     gradeText,                                           // 8: AI 등급
-                    rsiText,                                             // 9: 14일 RSI
-                    volText,                                             // 10: 5일 거래량
-                    chartText,                                           // 11: 차트
-                    newsText,                                            // 12: 뉴스
-                    riskText,                                            // 13: 손익비
-                    finalScoreText,                                      // 14: ★종합점수
-                    item.TimingBadge,                                    // 15: 타이밍 안전벨트
-                    actionText                                           // 16: 권고 지침
+                    supplyText,                                          // 9: 수급(외인·기관)
+                    landmineText,                                        // 10: 지뢰검증
+                    rsiText,                                             // 11: 14일 RSI
+                    volText,                                             // 12: 5일 거래량
+                    chartText,                                           // 13: 차트
+                    newsText,                                            // 14: 뉴스
+                    riskText,                                            // 15: 손익비
+                    finalScoreText,                                      // 16: ★종합점수
+                    item.TimingBadge,                                    // 17: 타이밍 안전벨트
+                    actionText                                           // 18: 권고 지침
                 });
 
                 lvi.Tag = item;
@@ -132,44 +136,66 @@ namespace GateHelper.StockAdvisor
                 lvi.SubItems[8].ForeColor = GradeHelper.GetGradeColor(item.Grade);
                 lvi.SubItems[8].Font = new Font(_lvStocks.Font, FontStyle.Bold);
 
-                // 9: 14일 RSI
-                if (item.Rsi >= 70m) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 80, 80);
-                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[9].ForeColor = Color.FromArgb(80, 180, 255);
-                else lvi.SubItems[9].ForeColor = Color.FromArgb(120, 230, 150);
+                // 9: 수급 (외인·기관)
+                if (supplyText.Contains("쌍끌이매수") || supplyText.Contains("메이저쌍끌이"))
+                {
+                    lvi.SubItems[9].ForeColor = Color.FromArgb(0, 240, 210); // 청록 네온
+                    lvi.SubItems[9].Font = new Font(_lvStocks.Font, FontStyle.Bold);
+                }
+                else if (supplyText.Contains("외인")) lvi.SubItems[9].ForeColor = Color.FromArgb(120, 210, 255);
+                else if (supplyText.Contains("기관")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 215, 100);
+                else if (supplyText.Contains("개미")) lvi.SubItems[9].ForeColor = Color.FromArgb(210, 170, 255);
+                else if (supplyText.Contains("매도")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 110, 110);
+                else lvi.SubItems[9].ForeColor = Color.FromArgb(180, 195, 215);
 
-                // 10: 5일 거래량
-                if (item.VolumeRatio >= 140m) lvi.SubItems[10].ForeColor = Color.FromArgb(0, 230, 200);
-                else lvi.SubItems[10].ForeColor = Color.FromArgb(200, 215, 235);
+                // 10: 지뢰검증
+                if (item.HasCriticalLandmine || landmineText.Contains("적자") || landmineText.Contains("CB") || landmineText.Contains("유상") || landmineText.Contains("위기") || landmineText.Contains("횡령"))
+                {
+                    lvi.SubItems[10].ForeColor = Color.FromArgb(255, 75, 75);
+                    lvi.SubItems[10].Font = new Font(_lvStocks.Font, FontStyle.Bold);
+                }
+                else if (landmineText.Contains("부채")) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 180, 60);
+                else if (landmineText.Contains("환원")) lvi.SubItems[10].ForeColor = Color.FromArgb(0, 230, 180);
+                else lvi.SubItems[10].ForeColor = Color.FromArgb(100, 240, 140);
 
-                // 11: 차트 점수
-                if (item.ChartScore >= 7) lvi.SubItems[11].ForeColor = Color.FromArgb(120, 215, 255);
-                else if (item.ChartScore <= 3) lvi.SubItems[11].ForeColor = Color.FromArgb(255, 110, 110);
+                // 11: 14일 RSI
+                if (item.Rsi >= 70m) lvi.SubItems[11].ForeColor = Color.FromArgb(255, 80, 80);
+                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[11].ForeColor = Color.FromArgb(80, 180, 255);
+                else lvi.SubItems[11].ForeColor = Color.FromArgb(120, 230, 150);
 
-                // 12: 뉴스 점수
-                if (item.NewsScore >= 7) lvi.SubItems[12].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.NewsScore <= 3) lvi.SubItems[12].ForeColor = Color.FromArgb(255, 110, 110);
+                // 12: 5일 거래량
+                if (item.VolumeRatio >= 140m) lvi.SubItems[12].ForeColor = Color.FromArgb(0, 230, 200);
+                else lvi.SubItems[12].ForeColor = Color.FromArgb(200, 215, 235);
 
-                // 13: 손익비 점수
-                if (item.RiskScore >= 8) lvi.SubItems[13].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.RiskScore <= 3) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 170, 70);
+                // 13: 차트 점수
+                if (item.ChartScore >= 7) lvi.SubItems[13].ForeColor = Color.FromArgb(120, 215, 255);
+                else if (item.ChartScore <= 3) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 110, 110);
 
-                // 14: ★ 최종점수
-                if (item.FinalScore >= 8) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 215, 0); // 골드
-                else if (item.FinalScore <= 3) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 110, 110);
-                else lvi.SubItems[14].ForeColor = Color.FromArgb(235, 240, 255);
+                // 14: 뉴스 점수
+                if (item.NewsScore >= 7) lvi.SubItems[14].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.NewsScore <= 3) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 110, 110);
 
-                // 15: 타이밍 안전벨트
+                // 15: 손익비 점수
+                if (item.RiskScore >= 8) lvi.SubItems[15].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.RiskScore <= 3) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 170, 70);
+
+                // 16: ★ 최종점수
+                if (item.FinalScore >= 8) lvi.SubItems[16].ForeColor = Color.FromArgb(255, 215, 0); // 골드
+                else if (item.FinalScore <= 3) lvi.SubItems[16].ForeColor = Color.FromArgb(255, 110, 110);
+                else lvi.SubItems[16].ForeColor = Color.FromArgb(235, 240, 255);
+
+                // 17: 타이밍 안전벨트
                 string tb = item.TimingBadge ?? string.Empty;
-                if (tb.Contains("과열")) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 75, 95);
-                else if (tb.Contains("골든")) lvi.SubItems[15].ForeColor = Color.FromArgb(0, 230, 118);
-                else if (tb.Contains("눌림목")) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 210, 60);
-                else if (tb.Contains("과매도")) lvi.SubItems[15].ForeColor = Color.FromArgb(70, 180, 255);
-                else if (tb.Contains("보유불필요")) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 90, 90);
-                else lvi.SubItems[15].ForeColor = Color.FromArgb(190, 200, 215);
+                if (tb.Contains("과열")) lvi.SubItems[17].ForeColor = Color.FromArgb(255, 75, 95);
+                else if (tb.Contains("골든")) lvi.SubItems[17].ForeColor = Color.FromArgb(0, 230, 118);
+                else if (tb.Contains("눌림목")) lvi.SubItems[17].ForeColor = Color.FromArgb(255, 210, 60);
+                else if (tb.Contains("과매도")) lvi.SubItems[17].ForeColor = Color.FromArgb(70, 180, 255);
+                else if (tb.Contains("보유불필요")) lvi.SubItems[17].ForeColor = Color.FromArgb(255, 90, 90);
+                else lvi.SubItems[17].ForeColor = Color.FromArgb(190, 200, 215);
 
-                // 16: 권고 지침
-                if (tb.Contains("과열")) lvi.SubItems[16].ForeColor = Color.FromArgb(255, 130, 130);
-                else lvi.SubItems[16].ForeColor = Color.FromArgb(220, 225, 235);
+                // 18: 권고 지침
+                if (tb.Contains("과열")) lvi.SubItems[18].ForeColor = Color.FromArgb(255, 130, 130);
+                else lvi.SubItems[18].ForeColor = Color.FromArgb(220, 225, 235);
 
                 lvi.UseItemStyleForSubItems = false;
                 _lvStocks.Items.Add(lvi);
@@ -234,6 +260,8 @@ namespace GateHelper.StockAdvisor
                 _lblDetailTimingWarning.ForeColor = Color.Silver;
                 _lblDetailScores.Text = "📊 [3대 정량점수] 차트: -점 | 뉴스: -점 | 손익비: -점\n★ 최종 종합점수: -점 / 10점";
                 _lblDetailTechnicalFacts.Text = "🔍 [팩트] 14일 RSI: - | 거래량: -%\n• 20일 지지선: -원 (하방위험: -%)";
+                _lblDetailIntelligence.Text = "🌊 [수급] 대기 중  |  🛡️ [지뢰] 검증 대기 중";
+                _lblDetailIntelligence.ForeColor = Color.FromArgb(140, 230, 220);
                 _lblDetailGroupBadge.Text = "포지션: -";
                 _lblDetailAction.Text = "권고 액션: -";
                 _lblDetailReliability.Text = "■ 출처 신뢰도: -";
@@ -280,12 +308,31 @@ namespace GateHelper.StockAdvisor
             }
 
             // 3대 정량 점수 라벨 (2줄 배치로 텍스트 잘림 0%)
-            _lblDetailScores.Text = $"📊 차트: {item.ChartScore}점  |  뉴스: {item.NewsScore}점  |  손익비: {item.RiskScore}점\n★ 최종 종합 점수 : ★ {item.FinalScore}점 / 10점";
+            _lblDetailScores.Text = $"• 차트: {item.ChartScore}점  |  뉴스: {item.NewsScore}점  |  손익비: {item.RiskScore}점\n★ 최종 종합 점수 : ★ {item.FinalScore}점 / 10점";
             _lblDetailScores.ForeColor = item.FinalScore >= 8 ? Color.FromArgb(255, 215, 0) : Color.FromArgb(255, 225, 130);
 
             // 팩트 지표 라벨 (2줄 배치로 텍스트 잘림 0%)
             string suppStr = item.SupportPrice > 0 ? $"{item.SupportPrice:N0}원" : "-";
-            _lblDetailTechnicalFacts.Text = $"🔍 14일 RSI: {item.Rsi:F1}  |  5일대비 거래량: {item.VolumeRatio:F0}%\n• 20일 지지선: {suppStr} (하방위험: -{item.DownsideRiskPercent:F1}%)";
+            _lblDetailTechnicalFacts.Text = $"• 14일 RSI: {item.Rsi:F1}  |  5일대비 거래량: {item.VolumeRatio:F0}%\n• 20일 지지선: {suppStr} (하방위험: -{item.DownsideRiskPercent:F1}%)";
+
+            // 수급 및 지뢰 검증 인텔 라벨
+            string supBadge = !string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "⚪ 수급대기";
+            string mineBadge = !string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "🛡️ 클린안전";
+            string supDet = !string.IsNullOrEmpty(item.MajorSupplyDetail) ? $" ({item.MajorSupplyDetail})" : "";
+            string mineDet = !string.IsNullOrEmpty(item.LandmineDetail) ? $" - {item.LandmineDetail}" : "";
+            _lblDetailIntelligence.Text = $"• 수급: {supBadge}{supDet}\n• 지뢰: {mineBadge}{mineDet}";
+            if (item.HasCriticalLandmine)
+            {
+                _lblDetailIntelligence.ForeColor = Color.FromArgb(255, 95, 95);
+            }
+            else if (supBadge.Contains("쌍끌이"))
+            {
+                _lblDetailIntelligence.ForeColor = Color.FromArgb(0, 240, 210);
+            }
+            else
+            {
+                _lblDetailIntelligence.ForeColor = Color.FromArgb(140, 230, 220);
+            }
 
             // AI 등급 표시 (사용자 지정 4색: S,A(초록) / B,C(노랑) / D(주황) / F(빨강))
             _lblDetailGroupBadge.Text = $"AI 등급: {GradeHelper.GetGradeDescription(item.Grade)}";
@@ -354,6 +401,13 @@ namespace GateHelper.StockAdvisor
             AppendText($"  • 20일 지지선 (손절 기준선) : {item.SupportPrice:N0}원 (현재가 대비 -{item.DownsideRiskPercent:F1}%)\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             AppendText($"  • 20일 저항선 (단기 목표선) : {item.ResistancePrice:N0}원\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
 
+            // 수급 & 지뢰 탐지 섹션
+            AppendText("【 3. 수급 인텔 & 재무·공시 지뢰 검증 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(0, 230, 210));
+            AppendText($"  • 🌊 수급 주체 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
+            AppendText($"{item.MajorSupplyBadge} {(string.IsNullOrEmpty(item.MajorSupplyDetail) ? "" : $"({item.MajorSupplyDetail})")}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.MajorSupplyBadge.Contains("쌍끌이") ? Color.FromArgb(0, 240, 210) : Color.FromArgb(200, 220, 240));
+            AppendText($"  • 🛡️ 지뢰 검증 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
+            AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
+
             AppendText("💡 상단의 [★ AI 참모 진단] 버튼을 클릭하시면 글로벌 외신 및 실시간 정책 공시를 결합한 최고급 전략 리포트가 완성됩니다.\n", new Font("Malgun Gothic", 9f), Color.FromArgb(130, 190, 255));
 
             _rtbDetailReason.Select(0, 0);
@@ -404,8 +458,15 @@ namespace GateHelper.StockAdvisor
             string impactDesc = diag.PolicyImpact > 0 ? "호재성 정책/실적 수혜" : (diag.PolicyImpact < 0 ? "악재성 규제/비용 충격" : "중립 영향");
             AppendText($"  • 정책/실적 직결도 : {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactDesc})\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
 
-            // 섹션 4: 심층 대응 논리 (굵은 글씨 헤더)
-            AppendText("【 4. 심층 대응 논리 및 판단 근거 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(180, 210, 245));
+            // 섹션 4: 수급 인텔 & 재무·공시 지뢰 검증
+            AppendText("【 4. 메이저 수급 인텔 & 재무·공시 지뢰 검증 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(0, 230, 210));
+            AppendText($"  • 🌊 수급 주체 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
+            AppendText($"{item.MajorSupplyBadge} {(string.IsNullOrEmpty(item.MajorSupplyDetail) ? "" : $"({item.MajorSupplyDetail})")}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.MajorSupplyBadge.Contains("쌍끌이") ? Color.FromArgb(0, 240, 210) : Color.FromArgb(200, 220, 240));
+            AppendText($"  • 🛡️ 지뢰 검증 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
+            AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
+
+            // 섹션 5: 심층 대응 논리 (굵은 글씨 헤더)
+            AppendText("【 5. 심층 대응 논리 및 판단 근거 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(180, 210, 245));
             string reasonText = diag.ReasonSummary ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(reasonText))
             {
@@ -473,9 +534,9 @@ namespace GateHelper.StockAdvisor
             else
             {
                 _sortColumn = e.Column;
-                // 금액/수익률/지표/점수 컬럼(2~7번, 9~14번)은 높은 값(내림차순) 우선
-                // 8번(AI 등급: A->B->C->F) 및 텍스트 컬럼(0:코드, 1:종목명, 15:타이밍, 16:권고)은 오름차순 우선
-                _sortOrder = (e.Column >= 2 && e.Column <= 14 && e.Column != 8) ? SortOrder.Descending : SortOrder.Ascending;
+                // 금액/수익률/지표/점수 컬럼(2~7번, 11~16번)은 높은 값(내림차순) 우선
+                // 8번(AI 등급: A->B->C->F) 및 텍스트 컬럼(0:코드, 1:종목명, 9:수급, 10:지뢰, 17:타이밍, 18:권고)은 오름차순 우선
+                _sortOrder = ((e.Column >= 2 && e.Column <= 7) || (e.Column >= 11 && e.Column <= 16)) ? SortOrder.Descending : SortOrder.Ascending;
             }
 
             UpdateColumnHeaderSortArrows();
@@ -561,28 +622,34 @@ namespace GateHelper.StockAdvisor
                 case 8: // AI 등급 (A, B, C, F)
                     result = itemX.Grade.CompareTo(itemY.Grade);
                     break;
-                case 9: // 14일 RSI (수치 정렬)
+                case 9: // 수급(외인·기관) (문자열 정렬)
+                    result = string.Compare(itemX.MajorSupplyBadge, itemY.MajorSupplyBadge, StringComparison.CurrentCultureIgnoreCase);
+                    break;
+                case 10: // 지뢰검증 (문자열 정렬)
+                    result = string.Compare(itemX.LandmineBadge, itemY.LandmineBadge, StringComparison.CurrentCultureIgnoreCase);
+                    break;
+                case 11: // 14일 RSI (수치 정렬)
                     result = itemX.Rsi.CompareTo(itemY.Rsi);
                     break;
-                case 10: // 5일 거래량 (수치 정렬)
+                case 12: // 5일 거래량 (수치 정렬)
                     result = itemX.VolumeRatio.CompareTo(itemY.VolumeRatio);
                     break;
-                case 11: // 차트 점수 (수치 정렬)
+                case 13: // 차트 점수 (수치 정렬)
                     result = itemX.ChartScore.CompareTo(itemY.ChartScore);
                     break;
-                case 12: // 뉴스 점수 (수치 정렬)
+                case 14: // 뉴스 점수 (수치 정렬)
                     result = itemX.NewsScore.CompareTo(itemY.NewsScore);
                     break;
-                case 13: // 손익비 점수 (수치 정렬)
+                case 15: // 손익비 점수 (수치 정렬)
                     result = itemX.RiskScore.CompareTo(itemY.RiskScore);
                     break;
-                case 14: // ★종합점수 (수치 정렬)
+                case 16: // ★종합점수 (수치 정렬)
                     result = itemX.FinalScore.CompareTo(itemY.FinalScore);
                     break;
-                case 15: // 타이밍 안전벨트
+                case 17: // 타이밍 안전벨트
                     result = string.Compare(itemX.TimingBadge, itemY.TimingBadge, StringComparison.CurrentCultureIgnoreCase);
                     break;
-                case 16: // 권고 지침
+                case 18: // 권고 지침
                     string actX = itemX.LastDiagnosis?.RecommendedAction ?? string.Empty;
                     string actY = itemY.LastDiagnosis?.RecommendedAction ?? string.Empty;
                     result = string.Compare(actX, actY, StringComparison.CurrentCultureIgnoreCase);

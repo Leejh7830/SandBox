@@ -11,7 +11,7 @@ namespace GateHelper.StockAdvisor
 {
     /// <summary>
     /// 보유 여부와 무관하게 모든 종목을 즉시 검색하여
-    /// 팩트 시세 + 14일 RSI + 외인/기관 수급 + 재무·공시 지뢰 + KB 퀀트 8대 우량주 필터를 1초 만에 원스톱 진단하는 다이얼로그
+    /// 팩트 시세 + 14일 RSI + 외인/기관 수급 + 재무·공시 지뢰 + 정통 퀀트 8대 우량주 필터를 1초 만에 원스톱 진단하는 다이얼로그
     /// </summary>
     public class StockEvaluatorDialog : Form
     {
@@ -40,7 +40,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblLandmineDetails;
         private Label _lblDisclosures;
 
-        // 우측: KB 퀀트 8대 황금 필터 체크리스트 카드
+        // 우측: 정통 퀀트 8대 황금 필터 체크리스트 카드
         private Panel _pnlCard3;
         private Label _lblQuantHeader;
         private ListView _lvQuantFilters;
@@ -65,7 +65,7 @@ namespace GateHelper.StockAdvisor
 
         private void InitializeCustomComponent()
         {
-            this.Text = "종목 AI 즉시 진단 & KB 퀀트 8대 우량주 스캐너";
+            this.Text = "종목 AI 즉시 진단 & 정통 퀀트 8대 우량주 스캐너";
             this.Size = new Size(1120, 740);
             this.MinimumSize = new Size(1000, 660);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -78,33 +78,33 @@ namespace GateHelper.StockAdvisor
             var pnlTop = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
+                Height = 126,
                 BackColor = Color.FromArgb(24, 30, 44),
-                Padding = new Padding(16, 12, 16, 10)
+                Padding = new Padding(16, 10, 16, 8)
             };
 
             var lblTitle = new Label
             {
-                Text = "🔍 종목 AI 즉시 진단 & KB증권 퀀트 8대 우량주 스캐너",
+                Text = "🔍 종목 AI 즉시 진단 & 정통 퀀트 8대 우량주 스캐너",
                 Font = new Font("Malgun Gothic", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 230, 255),
                 Dock = DockStyle.Top,
-                Height = 26
+                Height = 24
             };
 
             var lblSubtitle = new Label
             {
-                Text = "보유 종목 외에도 관심 있는 어떤 종목이든 검색만 하면 실시간 팩트 시세, 수급, 지뢰, KB 퀀트 8대 황금 필터를 1초 만에 종합 진단합니다.",
+                Text = "보유 종목 외에도 관심 있는 어떤 종목이든 검색만 하면 실시간 팩트 시세, 수급, 지뢰, 8대 황금 필터를 1초 만에 종합 진단합니다.",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(170, 190, 220),
                 Dock = DockStyle.Top,
-                Height = 20
+                Height = 18
             };
 
             var pnlSearchInput = new Panel
             {
                 Dock = DockStyle.Fill,
-                Padding = new Padding(0, 8, 0, 0)
+                Padding = new Padding(0, 2, 0, 0)
             };
 
             _txtSearch = new TextBox
@@ -114,8 +114,8 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.FromArgb(240, 245, 255),
                 BorderStyle = BorderStyle.FixedSingle,
                 Width = 280,
-                Height = 32,
-                Location = new Point(0, 8)
+                Height = 30,
+                Location = new Point(2, 4)
             };
             _txtSearch.KeyDown += async (s, e) =>
             {
@@ -127,18 +127,18 @@ namespace GateHelper.StockAdvisor
             };
 
             _btnSearch = CreateNeonButton("🔍 AI 즉시 진단", Color.FromArgb(14, 46, 68), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
-            _btnSearch.Location = new Point(290, 6);
-            _btnSearch.Size = new Size(130, 32);
+            _btnSearch.Location = new Point(288, 3);
+            _btnSearch.Size = new Size(130, 31);
             _btnSearch.Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
             _btnSearch.Click += async (s, e) => await ExecuteDiagnosisAsync(_txtSearch.Text);
 
             // 빠른 추천 태그
-            int tagX = 430;
+            int tagX = 428;
             string[] quickTags = { "기아", "SK하이닉스", "현대차", "삼성전자", "NAVER" };
             foreach (var tag in quickTags)
             {
                 var btnTag = CreateTagButton(tag);
-                btnTag.Location = new Point(tagX, 8);
+                btnTag.Location = new Point(tagX, 4);
                 btnTag.Click += async (s, e) =>
                 {
                     _txtSearch.Text = tag;
@@ -153,7 +153,7 @@ namespace GateHelper.StockAdvisor
                 Text = "💡 종목명(예: 기아) 또는 6자리 코드(000270)를 입력하고 [AI 즉시 진단]을 누르세요.",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(140, 215, 255),
-                Location = new Point(0, 44),
+                Location = new Point(2, 40),
                 AutoSize = true
             };
 
@@ -180,7 +180,7 @@ namespace GateHelper.StockAdvisor
 
             _pnlCard1 = CreateCardPanel("【 1. 기술적 AI 종합 점수 】");
             _pnlCard2 = CreateCardPanel("【 2. 메이저 수급 & 재무·지뢰 검증 】");
-            _pnlCard3 = CreateCardPanel("【 3. KB 퀀트 8대 황금 필터 】");
+            _pnlCard3 = CreateCardPanel("【 3. 정통 퀀트 8대 황금 필터 】");
 
             BuildCard1Content(_pnlCard1);
             BuildCard2Content(_pnlCard2);
@@ -301,11 +301,11 @@ namespace GateHelper.StockAdvisor
 
             _lblTechnicalFacts = new Label
             {
-                Text = "• 14일 RSI: -\n• 5일대비 거래량: -\n• 20일 지지선: -원",
+                Text = "• 14일 RSI: - | 5일 거래량: -\n• 20일 지지선: -원 (하방 -%)\n• 🎯 AI 권고 1차 매수가: -원 (손절선: -원)",
                 Font = new Font("Malgun Gothic", 9f),
                 ForeColor = Color.FromArgb(170, 205, 245),
                 Dock = DockStyle.Top,
-                Height = 62
+                Height = 68
             };
 
             _lblTimingGuide = new Label
@@ -415,12 +415,13 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(14, 18, 26),
                 ForeColor = Color.White,
                 Font = new Font("Malgun Gothic", 8.8f),
-                BorderStyle = BorderStyle.None
+                BorderStyle = BorderStyle.None,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable
             };
-            _lvQuantFilters.Columns.Add("판정", 78, HorizontalAlignment.Center);
-            _lvQuantFilters.Columns.Add("조건 항목", 125);
-            _lvQuantFilters.Columns.Add("기준", 92);
-            _lvQuantFilters.Columns.Add("실제 수치", 85, HorizontalAlignment.Right);
+            _lvQuantFilters.Columns.Add("검증 항목", 96, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("합격 기준", 94, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("현재값", 78, HorizontalAlignment.Right);
+            _lvQuantFilters.Columns.Add("판정", 68, HorizontalAlignment.Center);
 
             // 더블 버퍼링
             typeof(ListView).InvokeMember("DoubleBuffered",
@@ -470,7 +471,7 @@ namespace GateHelper.StockAdvisor
             if (string.IsNullOrWhiteSpace(query)) return;
 
             string cleanQuery = query.Trim();
-            _lblStatus.Text = $"⏳ [{cleanQuery}] 실시간 시세, 외인·기관 수급, DART 공시, KB 퀀트 8대 팩트 수집 중...";
+            _lblStatus.Text = $"⏳ [{cleanQuery}] 실시간 시세, 외인·기관 수급, DART 공시, 정통 퀀트 8대 팩트 수집 중...";
             _lblStatus.ForeColor = Color.FromArgb(0, 230, 255);
             _btnSearch.Enabled = false;
 
@@ -490,7 +491,7 @@ namespace GateHelper.StockAdvisor
                 decimal currentPrice = priceInfo.CurrentPrice;
                 decimal changeRate = priceInfo.ChangeRate;
 
-                // 2. 기술적 지표, 수급·지뢰 인텔, KB 퀀트 병렬 비동기 수집
+                // 2. 기술적 지표, 수급·지뢰 인텔, 정통 퀀트 병렬 비동기 수집
                 var techTask = TechnicalIndicatorService.AnalyzeIndicatorsAsync(stockCode, currentPrice);
                 var intelTask = StockIntelligenceService.AnalyzeAsync(stockCode);
 
@@ -499,7 +500,7 @@ namespace GateHelper.StockAdvisor
                 var tech = techTask.Result;
                 var intel = intelTask.Result;
 
-                // 3. KB 퀀트 8대 필터 분석 (14일 RSI 연동)
+                // 3. 정통 퀀트 8대 필터 분석 (14일 RSI 연동)
                 var quant = await StockIntelligenceService.AnalyzeQuantAsync(stockCode, tech.Rsi);
 
                 // 4. 점수 및 등급 산출
@@ -545,6 +546,10 @@ namespace GateHelper.StockAdvisor
                     SupportPrice = tech.SupportPrice,
                     ResistancePrice = tech.ResistancePrice,
                     DownsideRiskPercent = tech.DownsideRiskPercent,
+                    RecommendedBuyPrice = tech.RecommendedBuyPrice,
+                    TargetStopPrice = tech.TargetStopPrice,
+                    EntryTimingBadge = tech.EntryTimingBadge,
+                    EntryTimingGuide = tech.EntryTimingGuide,
                     TimingBadge = tech.TimingBadge,
                     TimingWarning = tech.TimingWarning,
                     MajorSupplyBadge = intel.SupplyBadge,
@@ -555,13 +560,13 @@ namespace GateHelper.StockAdvisor
                     DebtRatio = intel.DebtRatio,
                     ConsecutiveLossYears = intel.ConsecutiveLossYears,
                     QuantBadge = quant.QuantGradeBadge,
-                    QuantSummary = $"KB 퀀트 {quant.PassCount}/{quant.TotalCount} PASS"
+                    QuantSummary = $"정통 퀀트 {quant.PassCount}/{quant.TotalCount} PASS"
                 };
 
                 // UI 3개 카드에 렌더링
                 RenderResults(priceInfo, tech, intel, quant, finalScore, grade);
 
-                _lblStatus.Text = $"✔ [{stockName} ({stockCode})] 종합 진단 완료 (시세·수급·지뢰·KB 퀀트 전수 검증)";
+                _lblStatus.Text = $"✔ [{stockName} ({stockCode})] 종합 진단 완료 (시세·수급·지뢰·정통 퀀트 전수 검증)";
                 _lblStatus.ForeColor = Color.FromArgb(100, 255, 180);
                 _btnAddToPortfolio.Enabled = true;
                 _btnOpenNaverWeb.Enabled = true;
@@ -592,16 +597,22 @@ namespace GateHelper.StockAdvisor
             _lblGradeBadge.ForeColor = GradeHelper.GetGradeColor(grade);
 
             _lblThreeScores.Text = $"• 차트 점수: {tech.ChartScore}점 | 뉴스: {_currentEvaluatedItem.NewsScore}점 | 손익비: {tech.RiskScore}점";
-            _lblTechnicalFacts.Text = $"• 14일 RSI: {tech.Rsi:F1}\n• 5일대비 거래량: {tech.VolumeRatio:F0}%\n• 20일 지지선: {(tech.SupportPrice > 0 ? $"{tech.SupportPrice:N0}원" : "-")} (하방 -{tech.DownsideRiskPercent:F1}%)";
+            
+            string buyPriceStr = tech.RecommendedBuyPrice > 0 ? $"{tech.RecommendedBuyPrice:N0}원" : "시장가 분할";
+            string stopPriceStr = tech.TargetStopPrice > 0 ? $"{tech.TargetStopPrice:N0}원" : "20일선 이탈";
+            _lblTechnicalFacts.Text = $"• 14일 RSI: {tech.Rsi:F1} | 5일 거래량: {tech.VolumeRatio:F0}%\n" +
+                                       $"• 20일 지지선: {(tech.SupportPrice > 0 ? $"{tech.SupportPrice:N0}원" : "-")} (하방 -{tech.DownsideRiskPercent:F1}%)\n" +
+                                       $"• 🎯 AI 권고 1차 매수가: {buyPriceStr} (손절선: {stopPriceStr})";
 
-            string tb = tech.TimingBadge ?? "⚪ 관망유지";
-            _lblTimingGuide.Text = $"🚨 [타이밍 안전벨트 지침: {tb}]\n{tech.TimingWarning}";
+            string tb = tech.EntryTimingBadge ?? tech.TimingBadge ?? "⚪ 관망유지";
+            string tg = !string.IsNullOrEmpty(tech.EntryTimingGuide) ? tech.EntryTimingGuide : tech.TimingWarning;
+            _lblTimingGuide.Text = $"🚨 [타이밍 안전벨트 지침: {tb}]\n{tg}";
             if (tb.Contains("과열"))
             {
                 _lblTimingGuide.BackColor = Color.FromArgb(58, 20, 28);
                 _lblTimingGuide.ForeColor = Color.FromArgb(255, 120, 130);
             }
-            else if (tb.Contains("골든"))
+            else if (tb.Contains("골든") || tb.Contains("눌림목") || tb.Contains("매수권"))
             {
                 _lblTimingGuide.BackColor = Color.FromArgb(16, 46, 32);
                 _lblTimingGuide.ForeColor = Color.FromArgb(100, 255, 180);
@@ -632,7 +643,7 @@ namespace GateHelper.StockAdvisor
                 ? "• 최근 20건 DART 공시 중 특이 지뢰 사항 없음 (정상)"
                 : $"• 최신 공시: {intel.RecentDisclosuresSummary}";
 
-            // 카드 3 갱신 (KB 퀀트 8대 필터 리스트뷰)
+            // 카드 3 갱신 (정통 퀀트 8대 필터 리스트뷰)
             _lblQuantHeader.Text = $"통과율: {quant.PassCount} / {quant.TotalCount} PASS ({quant.PassPercent:F1}%)  |  {quant.QuantGradeBadge}";
             _lblQuantHeader.ForeColor = quant.PassCount >= 7 ? Color.FromArgb(255, 215, 0) : (quant.PassCount >= 4 ? Color.FromArgb(100, 240, 160) : Color.FromArgb(255, 120, 120));
 
@@ -642,12 +653,16 @@ namespace GateHelper.StockAdvisor
                 string passMark = itm.IsPassed ? "PASS ✅" : "FAIL ❌";
                 var lvi = new ListViewItem(new[]
                 {
-                    passMark,
                     $"{itm.Id}. {itm.Name}",
                     itm.Criteria,
-                    itm.ActualValue
+                    itm.ActualValue,
+                    passMark
                 });
-                lvi.ForeColor = itm.IsPassed ? Color.FromArgb(120, 255, 170) : Color.FromArgb(255, 110, 110);
+                lvi.UseItemStyleForSubItems = false;
+                lvi.SubItems[0].ForeColor = Color.FromArgb(220, 235, 255);
+                lvi.SubItems[1].ForeColor = Color.FromArgb(170, 195, 225);
+                lvi.SubItems[2].ForeColor = itm.IsPassed ? Color.FromArgb(120, 240, 255) : Color.FromArgb(255, 170, 170);
+                lvi.SubItems[3].ForeColor = itm.IsPassed ? Color.FromArgb(100, 255, 160) : Color.FromArgb(255, 95, 95);
                 _lvQuantFilters.Items.Add(lvi);
             }
         }

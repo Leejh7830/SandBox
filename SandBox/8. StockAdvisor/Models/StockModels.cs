@@ -160,7 +160,13 @@ namespace GateHelper.StockAdvisor.Models
         public decimal DebtRatio { get; set; } = 0m;
         public int ConsecutiveLossYears { get; set; } = 0;
 
-        // --- 📊 KB 스타일 퀀트 우량주 8대 필터 요약 ---
+        // --- 🎯 AI 퀀트 권고 매수가 및 진입 타점 ---
+        public decimal RecommendedBuyPrice { get; set; } = 0m;  // 1차 눌림목 권고 매수가
+        public decimal TargetStopPrice { get; set; } = 0m;       // 2차 방어선 / 손절 기준가
+        public string EntryTimingBadge { get; set; } = "⚪ 관망대기"; // 진입 판정 뱃지
+        public string EntryTimingGuide { get; set; } = string.Empty; // 구체적 매수 가이드 문구
+
+        // --- 📊 정통 퀀트 우량주 8대 필터 요약 ---
         public string QuantBadge { get; set; } = "⚪ 퀀트대기";
         public string QuantSummary { get; set; } = string.Empty;
 
@@ -293,12 +299,12 @@ namespace GateHelper.StockAdvisor.Models
     }
 
     /// <summary>
-    /// KB증권 스타일 퀀트 조건식 개별 검증 항목
+    /// 정통 퀀트 조건식 개별 검증 항목
     /// </summary>
     public class QuantFilterItem
     {
-        public string Id { get; set; } = string.Empty;       // A, B, C...
-        public string Name { get; set; } = string.Empty;     // ROE, 부채비율 등
+        public string Id { get; set; } = string.Empty;       // E, C, D, F, G, H, I, B
+        public string Name { get; set; } = string.Empty;     // 시가총액, ROE, 부채비율 등
         public string Criteria { get; set; } = string.Empty; // 10% 이상, 150% 이하 등
         public string ActualValue { get; set; } = "-";       // 19.09% 등
         public bool IsPassed { get; set; } = false;
@@ -306,7 +312,7 @@ namespace GateHelper.StockAdvisor.Models
     }
 
     /// <summary>
-    /// KB증권 스타일 퀀트 8대 황금 필터 종합 분석 결과
+    /// 정통 퀀트 8대 황금 필터 종합 분석 결과
     /// </summary>
     public class QuantAnalysisResult
     {

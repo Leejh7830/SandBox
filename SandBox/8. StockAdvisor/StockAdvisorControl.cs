@@ -281,6 +281,10 @@ namespace GateHelper.StockAdvisor
                         item.RiskScore = ind.RiskScore;
                         item.TimingBadge = ind.TimingBadge;
                         item.TimingWarning = ind.TimingWarning;
+                        item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
+                        item.TargetStopPrice = ind.TargetStopPrice;
+                        item.EntryTimingBadge = ind.EntryTimingBadge;
+                        item.EntryTimingGuide = ind.EntryTimingGuide;
 
                         // 수급 및 지뢰 탐지 지표 반영
                         item.MajorSupplyBadge = intel.SupplyBadge;

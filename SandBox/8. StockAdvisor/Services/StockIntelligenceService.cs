@@ -366,10 +366,10 @@ namespace GateHelper.StockAdvisor.Services
 
         #endregion
 
-        #region KB Quant 8 Golden Filter Analysis
+        #region Quant 8 Golden Filter Analysis
 
         /// <summary>
-        /// KB증권 정통 퀀트 8대 황금 필터 실시간 검증 (시총, ROE, 영업이익률, 부채비율, PER, PBR, 배당, 14일 RSI)
+        /// 정통 퀀트 8대 황금 필터 실시간 검증 (시총, ROE, 영업이익률, 부채비율, PER, PBR, 배당, 14일 RSI)
         /// </summary>
         public static async Task<GateHelper.StockAdvisor.Models.QuantAnalysisResult> AnalyzeQuantAsync(string stockCode, decimal currentRsi = 0m)
         {

@@ -52,6 +52,12 @@ namespace GateHelper.StockAdvisor.Services
             public int RiskScore { get; set; } = 5;
             public string TimingBadge { get; set; } = "⚪ 관망유지";
             public string TimingWarning { get; set; } = string.Empty;
+
+            // 🎯 AI 퀀트 권고 매수가 및 진입 타점
+            public decimal RecommendedBuyPrice { get; set; } = 0m;
+            public decimal TargetStopPrice { get; set; } = 0m;
+            public string EntryTimingBadge { get; set; } = "⚪ 관망대기";
+            public string EntryTimingGuide { get; set; } = string.Empty;
         }
 
         /// <summary>
@@ -216,6 +222,33 @@ namespace GateHelper.StockAdvisor.Services
                 {
                     result.TimingBadge = "⚪ 관망유지";
                     result.TimingWarning = $"[관망] 뚜렷한 추세 모멘텀 형성 전까지 시장 관망";
+                }
+
+                // 8. 🎯 AI 퀀트 권고 매수가 및 진입 타점 계산
+                decimal stopBase = result.SupportPrice > 0 ? result.SupportPrice : currentPrice * 0.95m;
+                result.TargetStopPrice = Math.Round(stopBase * 0.97m, 0); // 지지선 -3% 이탈 시 손절선
+
+                if (result.Rsi >= 68.0m || (result.Ma20 > 0 && currentPrice > result.Ma20 * 1.12m))
+                {
+                    decimal pullbackPrice = result.Ma20 > 0 ? result.Ma20 : currentPrice * 0.93m;
+                    result.RecommendedBuyPrice = Math.Round(pullbackPrice, 0);
+                    result.EntryTimingBadge = "⛔ 추격매수 금지 (대기)";
+                    result.EntryTimingGuide = $"현재가 과열권! 지금 사지 말고 20일선({result.RecommendedBuyPrice:N0}원)까지 눌림목 도달 시 진입 권고";
+                }
+                else if (result.Rsi <= 35.0m && result.Rsi > 0m)
+                {
+                    result.RecommendedBuyPrice = currentPrice;
+                    result.EntryTimingBadge = "💎 스나이퍼 바닥 매수존";
+                    result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 공포 구간! 현재가({currentPrice:N0}원) 분할 매수 유효 (방어선: {result.TargetStopPrice:N0}원)";
+                }
+                else
+                {
+                    decimal safeEntry = (result.Ma20 > 0 && result.SupportPrice > 0)
+                        ? (result.Ma20 + result.SupportPrice) / 2m
+                        : currentPrice * 0.97m;
+                    result.RecommendedBuyPrice = Math.Round(safeEntry, 0);
+                    result.EntryTimingBadge = "🟢 눌림목 분할 진입존";
+                    result.EntryTimingGuide = $"20일 지지선 부근({result.RecommendedBuyPrice:N0}원) 도달 시 분할 진입 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
             }
             catch (Exception ex)

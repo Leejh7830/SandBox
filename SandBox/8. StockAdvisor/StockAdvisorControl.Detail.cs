@@ -276,33 +276,34 @@ namespace GateHelper.StockAdvisor
             // 타이밍 안전벨트 가이드 라벨
             string tb = item.TimingBadge ?? "⚪ 관망유지";
             string warnText = !string.IsNullOrEmpty(item.TimingWarning) ? item.TimingWarning : "추세 및 지지선 모니터링 중";
+            string buyText = item.RecommendedBuyPrice > 0 ? $"\n🎯 [권고 매수타점] {item.RecommendedBuyPrice:N0}원 (방어선: {item.TargetStopPrice:N0}원)" : "";
             if (tb.Contains("과열"))
             {
-                _lblDetailTimingWarning.Text = $"🚨 {warnText}";
+                _lblDetailTimingWarning.Text = $"🚨 {warnText}{buyText}";
                 _lblDetailTimingWarning.BackColor = Color.FromArgb(58, 20, 28);
                 _lblDetailTimingWarning.ForeColor = Color.FromArgb(255, 120, 130);
             }
             else if (tb.Contains("골든"))
             {
-                _lblDetailTimingWarning.Text = $"🟢 {warnText}";
+                _lblDetailTimingWarning.Text = $"🟢 {warnText}{buyText}";
                 _lblDetailTimingWarning.BackColor = Color.FromArgb(16, 46, 32);
                 _lblDetailTimingWarning.ForeColor = Color.FromArgb(100, 255, 180);
             }
             else if (tb.Contains("눌림목"))
             {
-                _lblDetailTimingWarning.Text = $"🟡 {warnText}";
+                _lblDetailTimingWarning.Text = $"🟡 {warnText}{buyText}";
                 _lblDetailTimingWarning.BackColor = Color.FromArgb(46, 40, 20);
                 _lblDetailTimingWarning.ForeColor = Color.FromArgb(255, 230, 110);
             }
             else if (tb.Contains("과매도"))
             {
-                _lblDetailTimingWarning.Text = $"🔵 {warnText}";
+                _lblDetailTimingWarning.Text = $"🔵 {warnText}{buyText}";
                 _lblDetailTimingWarning.BackColor = Color.FromArgb(20, 36, 56);
                 _lblDetailTimingWarning.ForeColor = Color.FromArgb(120, 210, 255);
             }
             else
             {
-                _lblDetailTimingWarning.Text = $"⚪ {warnText}";
+                _lblDetailTimingWarning.Text = $"⚪ {warnText}{buyText}";
                 _lblDetailTimingWarning.BackColor = Color.FromArgb(26, 30, 42);
                 _lblDetailTimingWarning.ForeColor = Color.FromArgb(200, 215, 235);
             }
@@ -399,7 +400,16 @@ namespace GateHelper.StockAdvisor
             AppendText($"  • 14일 RSI : {item.Rsi:F1} {(item.Rsi >= 70 ? "(과열 구간 - 추격매수 금지!)" : (item.Rsi <= 30 ? "(과매도 침체 구간)" : "(안정 추세)"))}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             AppendText($"  • 5일 평균대비 거래량 : {item.VolumeRatio:F0}% {(item.VolumeRatio >= 140 ? "(대량 수급 유입)" : "")}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             AppendText($"  • 20일 지지선 (손절 기준선) : {item.SupportPrice:N0}원 (현재가 대비 -{item.DownsideRiskPercent:F1}%)\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
-            AppendText($"  • 20일 저항선 (단기 목표선) : {item.ResistancePrice:N0}원\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 20일 저항선 (단기 목표선) : {item.ResistancePrice:N0}원\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            if (item.RecommendedBuyPrice > 0)
+            {
+                AppendText($"  ▶ 🎯 AI 권고 1차 매수가 : {item.RecommendedBuyPrice:N0}원  (2차 방어선/손절선: {item.TargetStopPrice:N0}원)\n", new Font("Malgun Gothic", 9.5f, FontStyle.Bold), Color.FromArgb(0, 240, 210));
+                if (!string.IsNullOrEmpty(item.EntryTimingGuide))
+                {
+                    AppendText($"  ▶ 진입 가이드 : {item.EntryTimingGuide}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(215, 235, 255));
+                }
+            }
+            AppendText("\n", new Font("Segoe UI", 6f), Color.White);
 
             // 수급 & 지뢰 탐지 섹션
             AppendText("【 3. 수급 인텔 & 재무·공시 지뢰 검증 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(0, 230, 210));
@@ -409,7 +419,7 @@ namespace GateHelper.StockAdvisor
             AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
             if (!string.IsNullOrEmpty(item.QuantSummary))
             {
-                AppendText($"  • 📊 KB 퀀트 검증 : {item.QuantBadge} ({item.QuantSummary})\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(255, 215, 64));
+                AppendText($"  • 📊 퀀트 우량주 검증 : {item.QuantBadge} ({item.QuantSummary})\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(255, 215, 64));
             }
             AppendText("\n", new Font("Segoe UI", 6f), Color.White);
 
@@ -454,6 +464,10 @@ namespace GateHelper.StockAdvisor
             {
                 AppendText($"  ▶ 권고 손절/방어선 : {diag.TargetCutPrice:N0}원\n", new Font("Malgun Gothic", 9.5f, FontStyle.Bold), Color.FromArgb(255, 140, 140));
             }
+            if (item.RecommendedBuyPrice > 0)
+            {
+                AppendText($"  ▶ 🎯 AI 권고 1차 매수가 : {item.RecommendedBuyPrice:N0}원  (방어선: {item.TargetStopPrice:N0}원)\n", new Font("Malgun Gothic", 9.5f, FontStyle.Bold), Color.FromArgb(0, 240, 210));
+            }
             AppendText("\n", new Font("Segoe UI", 6f), Color.White);
 
             // 섹션 3: 거시 지표 (굵은 글씨 헤더)
@@ -471,7 +485,7 @@ namespace GateHelper.StockAdvisor
             AppendText($"{item.LandmineBadge} - {(string.IsNullOrEmpty(item.LandmineDetail) ? "지뢰 없음" : item.LandmineDetail)}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.HasCriticalLandmine ? Color.FromArgb(255, 90, 90) : Color.FromArgb(100, 240, 140));
             if (!string.IsNullOrEmpty(item.QuantSummary))
             {
-                AppendText($"  • 📊 KB 퀀트 검증 : {item.QuantBadge} ({item.QuantSummary})\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(255, 215, 64));
+                AppendText($"  • 📊 퀀트 우량주 검증 : {item.QuantBadge} ({item.QuantSummary})\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(255, 215, 64));
             }
             AppendText("\n", new Font("Segoe UI", 6f), Color.White);
 

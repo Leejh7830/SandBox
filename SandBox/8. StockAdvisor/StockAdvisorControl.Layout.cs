@@ -130,7 +130,7 @@ namespace GateHelper.StockAdvisor
             _btnDiagnose.Margin = new Padding(1);
             _btnDiagnose.Click += async (s, e) => await RunAiDiagnosisAsync();
 
-            _btnEvaluateStock = CreateNeonButton("🔍 종목 평가\r\n(KB 퀀트)", Color.FromArgb(16, 44, 58), Color.FromArgb(0, 220, 245), Color.FromArgb(215, 250, 255));
+            _btnEvaluateStock = CreateNeonButton("🔍 종목 평가\r\n(퀀트 스캐너)", Color.FromArgb(16, 44, 58), Color.FromArgb(0, 220, 245), Color.FromArgb(215, 250, 255));
             _btnEvaluateStock.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
             _btnEvaluateStock.Dock = DockStyle.Fill;
             _btnEvaluateStock.Margin = new Padding(1);

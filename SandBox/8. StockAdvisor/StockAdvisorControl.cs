@@ -27,6 +27,7 @@ namespace GateHelper.StockAdvisor
         private ComboBox _cboAiModel;
         private Button _btnDiagnose;
         private Button _btnRefreshPrice;
+        private Button _btnScoreHelp;
         private Button _btnAddStock;
         private Button _btnImportPortfolio;
         private Button _btnEmergencyGuide;
@@ -581,6 +582,14 @@ namespace GateHelper.StockAdvisor
                     SavePortfolio();
                     UpdateUi();
                 }
+            }
+        }
+
+        private void ShowScoreHelpDialog()
+        {
+            using (var dlg = new StockScoreHelpDialog())
+            {
+                dlg.ShowDialog(this);
             }
         }
 

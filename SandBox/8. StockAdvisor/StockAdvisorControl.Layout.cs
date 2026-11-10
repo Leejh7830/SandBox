@@ -131,7 +131,31 @@ namespace GateHelper.StockAdvisor
 
             _btnRefreshPrice = CreateNeonButton("↻ 시세 갱신", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
             _btnRefreshPrice.Dock = DockStyle.Fill;
+            _btnRefreshPrice.Margin = new Padding(1);
             _btnRefreshPrice.Click += async (s, e) => await RefreshPricesAsync();
+
+            _btnScoreHelp = CreateNeonButton("?", Color.FromArgb(24, 38, 55), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 245, 255));
+            _btnScoreHelp.Dock = DockStyle.Fill;
+            _btnScoreHelp.Margin = new Padding(1);
+            _btnScoreHelp.Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold);
+            _btnScoreHelp.Cursor = Cursors.Hand;
+            _btnScoreHelp.Click += (s, e) => ShowScoreHelpDialog();
+
+            var ttHelp = new ToolTip();
+            ttHelp.SetToolTip(_btnScoreHelp, "4대 진단 점수(차트/뉴스/손익비/종합) 산출 기준 및 대응 가이드 열기");
+
+            var tblRefreshAndHelp = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
+                ColumnCount = 2,
+                RowCount = 1
+            };
+            tblRefreshAndHelp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            tblRefreshAndHelp.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 38f));
+            tblRefreshAndHelp.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            tblRefreshAndHelp.Controls.Add(_btnRefreshPrice, 0, 0);
+            tblRefreshAndHelp.Controls.Add(_btnScoreHelp, 1, 0);
 
             _btnAddStock = CreateNeonButton("+ 종목 추가", Color.FromArgb(16, 42, 32), Color.FromArgb(0, 230, 118), Color.FromArgb(215, 255, 230));
             _btnAddStock.Dock = DockStyle.Fill;
@@ -145,10 +169,10 @@ namespace GateHelper.StockAdvisor
             _btnEmergencyGuide.Dock = DockStyle.Fill;
             _btnEmergencyGuide.Click += (s, e) => ShowPanicExitDialog();
 
-            // 1행: AI 진단(가로 2칸) + 시세 갱신(1칸)
+            // 1행: AI 진단(가로 2칸) + [시세 갱신 + ? 도움말](1칸)
             tblButtons.Controls.Add(_btnDiagnose, 0, 0);
             tblButtons.SetColumnSpan(_btnDiagnose, 2);
-            tblButtons.Controls.Add(_btnRefreshPrice, 2, 0);
+            tblButtons.Controls.Add(tblRefreshAndHelp, 2, 0);
 
             // 2행: 종목 추가(1칸) + 계좌 가져오기(1칸) + 비상 탈출(1칸)
             tblButtons.Controls.Add(_btnAddStock, 0, 1);

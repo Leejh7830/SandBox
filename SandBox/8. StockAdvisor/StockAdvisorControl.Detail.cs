@@ -191,7 +191,7 @@ namespace GateHelper.StockAdvisor
                 _lblDetailReliability.Text = "■ 출처 신뢰도: -";
                 _lblDetailImpact.Text = "⚡ 정책/실적 직결도: -";
                 _lblDetailTargetCut.Text = "◆ 권고 손절/방어선: - 원";
-                _txtDetailReason.Text = "좌측 목록에서 종목을 선택하시면 객관적 3대 점수와 AI 참모 진단 리포트를 열람할 수 있습니다.";
+                RenderEmptyReport();
                 return;
             }
 
@@ -256,7 +256,7 @@ namespace GateHelper.StockAdvisor
                 _lblDetailImpact.Text = $"⚡ 정책/실적 직결도: {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactShort})";
                 _lblDetailTargetCut.Text = diag.TargetCutPrice > 0 ? $"◆ 권고 손절/방어선: {diag.TargetCutPrice:N0}원" : $"◆ 20일 지지 기준선: {suppStr}";
 
-                _txtDetailReason.Text = FormatDetailReasonReport(item, diag);
+                RenderRichDetailReport(item, diag);
             }
             else
             {
@@ -266,74 +266,101 @@ namespace GateHelper.StockAdvisor
                 _lblDetailReliability.Text = "■ 출처 신뢰도: 대기 중";
                 _lblDetailImpact.Text = "⚡ 정책/실적 직결도: 대기 중";
                 _lblDetailTargetCut.Text = $"◆ 20일 지지 기준선: {suppStr}";
-                _txtDetailReason.Text = FormatPreDiagnosisReport(item);
+                RenderRichPreDiagnosisReport(item);
             }
         }
 
-        private string FormatPreDiagnosisReport(StockHoldingItem item)
+        private void RenderEmptyReport()
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("----------------------------------------");
-            sb.AppendLine($"  [정량 기술 지표 진단]  {DateTime.Now:yyyy-MM-dd HH:mm}");
-            sb.AppendLine("----------------------------------------");
-            sb.AppendLine();
-            sb.AppendLine("【 1. 객관적 3대 정량 점수 】");
-            sb.AppendLine($"  ▶ ★ 최종 종목 점수 : ★ {item.FinalScore} / 10점 (가중치: 차트 40% + 뉴스 30% + 손익비 30%)");
-            sb.AppendLine($"  • 📈 차트 점수 : {item.ChartScore} / 10점 (5일/20일선 정배열 및 거래량 수급)");
-            sb.AppendLine($"  • 📰 뉴스 점수 : {item.NewsScore} / 10점 (AI 심층 진단 시 정밀 분석 반영)");
-            sb.AppendLine($"  • 🛡️ 손익비 점수 : {item.RiskScore} / 10점 (지지선 대비 하방 안전마진)");
-            sb.AppendLine();
-            sb.AppendLine("【 2. 팩트 데이터 및 타이밍 안전벨트 】");
-            sb.AppendLine($"  • 타이밍 판정 : {item.TimingBadge}");
-            if (!string.IsNullOrEmpty(item.TimingWarning))
-            {
-                sb.AppendLine($"  • 안전 가이드 : {item.TimingWarning}");
-            }
-            sb.AppendLine($"  • 14일 RSI : {item.Rsi:F1}% {(item.Rsi >= 70 ? "(과열 구간 - 추격매수 금지!)" : (item.Rsi <= 30 ? "(과매도 침체 구간)" : "(안정 추세)"))}");
-            sb.AppendLine($"  • 5일 평균대비 거래량 : {item.VolumeRatio:F0}% {(item.VolumeRatio >= 140 ? "(대량 수급 유입)" : "")}");
-            sb.AppendLine($"  • 20일 지지선(손절 기준) : {item.SupportPrice:N0}원 (현재가 대비 -{item.DownsideRiskPercent:F1}%)");
-            sb.AppendLine($"  • 20일 저항선(목표 기준) : {item.ResistancePrice:N0}원");
-            sb.AppendLine();
-            sb.AppendLine("상단 [★ AI 참모 진단]을 클릭하시면 글로벌 매크로 및 외신 뉴스 감성을 결합한 심층 리포트가 완성됩니다.");
-            return sb.ToString();
+            if (_rtbDetailReason == null) return;
+            _rtbDetailReason.Clear();
+            AppendText("좌측 종목 목록에서 항목을 선택하시면 객관적 3대 지표 분석과 AI 참모 심층 리포트가 열람됩니다.", new Font("Malgun Gothic", 9.5f), Color.FromArgb(170, 185, 205));
         }
 
-        private string FormatDetailReasonReport(StockHoldingItem item, StockRiskDiagnosis diag)
+        private void RenderRichPreDiagnosisReport(StockHoldingItem item)
         {
-            var sb = new StringBuilder();
-            sb.AppendLine("----------------------------------------");
-            sb.AppendLine($"  [AI 주식 참모 진단 리포트]  {diag.DiagnosedAt:yyyy-MM-dd HH:mm}");
-            sb.AppendLine("----------------------------------------");
-            sb.AppendLine();
+            if (_rtbDetailReason == null) return;
+            _rtbDetailReason.SuspendLayout();
+            _rtbDetailReason.Clear();
 
-            sb.AppendLine("【 1. 객관적 3대 정량 점수 및 타이밍 】");
-            sb.AppendLine($"  ▶ ★ 최종 종목 점수 : ★ {item.FinalScore} / 10점");
-            sb.AppendLine($"  • 📈 차트 점수 : {item.ChartScore} / 10점  |  📰 뉴스 점수 : {item.NewsScore} / 10점  |  🛡️ 손익비 : {item.RiskScore} / 10점");
-            sb.AppendLine($"  • 타이밍 안전벨트 : {item.TimingBadge}");
+            AppendText($"--------------------------------------------------------------------------------\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
+            AppendText($"  [정량 기술 지표 진단 리포트]  {DateTime.Now:yyyy-MM-dd HH:mm}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(140, 190, 240));
+            AppendText($"--------------------------------------------------------------------------------\n\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
+
+            // 섹션 1: 3대 점수 (굵은 글씨 헤더)
+            AppendText("【 1. 객관적 3대 정량 점수 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(100, 215, 255));
+            AppendText($"  ▶ ★ 최종 종목 점수 : ", new Font("Malgun Gothic", 9.5f), Color.FromArgb(200, 215, 235));
+            AppendText($"★ {item.FinalScore} / 10점", new Font("Malgun Gothic", 10f, FontStyle.Bold), item.FinalScore >= 8 ? Color.FromArgb(255, 215, 0) : Color.FromArgb(255, 225, 120));
+            AppendText($"  (차트 40% + 뉴스 30% + 손익비 30%)\n", new Font("Malgun Gothic", 8.8f), Color.FromArgb(150, 170, 195));
+            AppendText($"  • 📈 차트 기술 점수 : {item.ChartScore} / 10점  (5일/20일선 정배열 및 거래량 수급)\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 📰 뉴스 감성 점수 : {item.NewsScore} / 10점  (AI 심층 진단 시 정밀 분석 반영)\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 🛡️ 손익비 안전 점수 : {item.RiskScore} / 10점  (지지선 대비 하방 안전마진)\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+
+            // 섹션 2: 팩트 데이터 및 타이밍 (굵은 글씨 헤더)
+            AppendText("【 2. 팩트 데이터 및 타이밍 안전벨트 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(255, 215, 100));
+            AppendText($"  ▶ 타이밍 안전 판정 : ", new Font("Malgun Gothic", 9.5f), Color.FromArgb(200, 215, 235));
+            AppendText($"{item.TimingBadge}\n", new Font("Malgun Gothic", 9.8f, FontStyle.Bold), item.TimingBadge.Contains("과열") ? Color.FromArgb(255, 95, 95) : Color.FromArgb(100, 255, 180));
             if (!string.IsNullOrEmpty(item.TimingWarning))
             {
-                sb.AppendLine($"  • 타이밍 가이드 : {item.TimingWarning}");
+                AppendText($"  ▶ 안전 가이드 : {item.TimingWarning}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.TimingBadge.Contains("과열") ? Color.FromArgb(255, 130, 130) : Color.FromArgb(255, 230, 110));
             }
-            sb.AppendLine($"  • 14일 RSI : {item.Rsi:F1}%  |  5일대비 거래량 : {item.VolumeRatio:F0}%");
-            sb.AppendLine($"  • 20일 지지선 : {item.SupportPrice:N0}원 (하방 위험 -{item.DownsideRiskPercent:F1}%)  |  저항선 : {item.ResistancePrice:N0}원");
-            sb.AppendLine();
+            AppendText($"  • 14일 RSI : {item.Rsi:F1}% {(item.Rsi >= 70 ? "(과열 구간 - 추격매수 금지!)" : (item.Rsi <= 30 ? "(과매도 침체 구간)" : "(안정 추세)"))}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 5일 평균대비 거래량 : {item.VolumeRatio:F0}% {(item.VolumeRatio >= 140 ? "(대량 수급 유입)" : "")}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 20일 지지선 (손절 기준선) : {item.SupportPrice:N0}원 (현재가 대비 -{item.DownsideRiskPercent:F1}%)\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 20일 저항선 (단기 목표선) : {item.ResistancePrice:N0}원\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
 
-            sb.AppendLine("【 2. 핵심 권고 행동 지침 】");
-            sb.AppendLine($"  ▶ 권고 액션 : {diag.RecommendedAction}");
+            AppendText("💡 상단의 [★ AI 참모 진단] 버튼을 클릭하시면 글로벌 외신 및 실시간 정책 공시를 결합한 최고급 전략 리포트가 완성됩니다.\n", new Font("Malgun Gothic", 9f), Color.FromArgb(130, 190, 255));
+
+            _rtbDetailReason.Select(0, 0);
+            _rtbDetailReason.ScrollToCaret();
+            _rtbDetailReason.ResumeLayout();
+        }
+
+        private void RenderRichDetailReport(StockHoldingItem item, StockRiskDiagnosis diag)
+        {
+            if (_rtbDetailReason == null) return;
+            _rtbDetailReason.SuspendLayout();
+            _rtbDetailReason.Clear();
+
+            AppendText($"--------------------------------------------------------------------------------\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
+            AppendText($"  [AI 주식 참모 심층 진단 리포트]  {diag.DiagnosedAt:yyyy-MM-dd HH:mm}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(140, 190, 240));
+            AppendText($"--------------------------------------------------------------------------------\n\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
+
+            // 섹션 1: 3대 점수 (굵은 글씨 헤더)
+            AppendText("【 1. 객관적 3대 정량 점수 및 타이밍 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(100, 215, 255));
+            AppendText($"  ▶ ★ 최종 종합 점수 : ", new Font("Malgun Gothic", 9.5f), Color.FromArgb(200, 215, 235));
+            AppendText($"★ {item.FinalScore} / 10점", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), item.FinalScore >= 8 ? Color.FromArgb(255, 215, 0) : (item.FinalScore <= 3 ? Color.FromArgb(255, 100, 100) : Color.FromArgb(255, 225, 120)));
+            AppendText($"  (가중치: 차트 40% + 뉴스 30% + 손익비 30%)\n", new Font("Malgun Gothic", 8.8f), Color.FromArgb(150, 170, 195));
+            AppendText($"  • 📈 차트 점수 : {item.ChartScore} / 10점   |   📰 뉴스 점수 : {item.NewsScore} / 10점   |   🛡️ 손익비 점수 : {item.RiskScore} / 10점\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 타이밍 안전벨트 : ", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 215, 235));
+            AppendText($"{item.TimingBadge}\n", new Font("Malgun Gothic", 9.5f, FontStyle.Bold), item.TimingBadge.Contains("과열") ? Color.FromArgb(255, 95, 95) : Color.FromArgb(100, 255, 180));
+            if (!string.IsNullOrEmpty(item.TimingWarning))
+            {
+                AppendText($"  • 타이밍 가이드 : {item.TimingWarning}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), item.TimingBadge.Contains("과열") ? Color.FromArgb(255, 130, 130) : Color.FromArgb(255, 230, 110));
+            }
+            AppendText($"  • 14일 RSI : {item.Rsi:F1}%   |   5일대비 거래량 : {item.VolumeRatio:F0}%\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 20일 지지선 : {item.SupportPrice:N0}원 (하방 위험 -{item.DownsideRiskPercent:F1}%)   |   저항선 : {item.ResistancePrice:N0}원\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+
+            // 섹션 2: 행동 지침 (굵은 글씨 헤더)
+            AppendText("【 2. 핵심 권고 행동 지침 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(255, 215, 100));
+            AppendText($"  ▶ 권고 액션 : ", new Font("Malgun Gothic", 9.5f), Color.FromArgb(200, 215, 235));
+            Color actColor = diag.Group == PositionGroup.GroupA ? Color.FromArgb(255, 95, 95) : (diag.Group == PositionGroup.GroupC ? Color.FromArgb(100, 255, 180) : Color.FromArgb(255, 220, 100));
+            AppendText($"{diag.RecommendedAction}\n", new Font("Malgun Gothic", 10f, FontStyle.Bold), actColor);
             if (diag.TargetCutPrice > 0)
             {
-                sb.AppendLine($"  ▶ 권고 손절/방어선 : {diag.TargetCutPrice:N0}원");
+                AppendText($"  ▶ 권고 손절/방어선 : {diag.TargetCutPrice:N0}원\n", new Font("Malgun Gothic", 9.5f, FontStyle.Bold), Color.FromArgb(255, 140, 140));
             }
-            sb.AppendLine();
+            AppendText("\n", new Font("Segoe UI", 6f), Color.White);
 
-            sb.AppendLine("【 3. 거시 지표 & 정책 영향 】");
+            // 섹션 3: 거시 지표 (굵은 글씨 헤더)
+            AppendText("【 3. 거시 지표 & 정책 영향 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(120, 230, 160));
             string stars = new string('★', diag.SourceReliability) + new string('☆', 5 - diag.SourceReliability);
-            sb.AppendLine($"  • 정보 출처 신뢰도 : {stars} ({diag.SourceReliability} / 5점)");
+            AppendText($"  • 정보 출처 신뢰도 : {stars} ({diag.SourceReliability} / 5점)\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
             string impactDesc = diag.PolicyImpact > 0 ? "호재성 정책/실적 수혜" : (diag.PolicyImpact < 0 ? "악재성 규제/비용 충격" : "중립 영향");
-            sb.AppendLine($"  • 정책/실적 직결도 : {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactDesc})");
-            sb.AppendLine();
+            AppendText($"  • 정책/실적 직결도 : {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactDesc})\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
 
-            sb.AppendLine("【 4. 심층 대응 논리 및 판단 근거 】");
+            // 섹션 4: 심층 대응 논리 (굵은 글씨 헤더)
+            AppendText("【 4. 심층 대응 논리 및 판단 근거 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(180, 210, 245));
             string reasonText = diag.ReasonSummary ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(reasonText))
             {
@@ -343,24 +370,33 @@ namespace GateHelper.StockAdvisor
                     string trimmed = s.Trim().TrimEnd('.');
                     if (!string.IsNullOrWhiteSpace(trimmed))
                     {
-                        sb.AppendLine($"  • {trimmed}.");
-                        sb.AppendLine();
+                        AppendText($"  • {trimmed}.\n\n", new Font("Malgun Gothic", 9.3f), Color.FromArgb(235, 240, 252));
                     }
                 }
             }
             else
             {
-                sb.AppendLine("  • 상세 대응 논리가 기록되지 않았습니다.");
-                sb.AppendLine();
+                AppendText("  • 상세 대응 논리가 기록되지 않았습니다.\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(180, 190, 205));
             }
 
+            // 섹션 5: 사용자 메모 (굵은 글씨 헤더)
             if (!string.IsNullOrWhiteSpace(item.Memo))
             {
-                sb.AppendLine("【 5. 사용자 투자 메모 】");
-                sb.AppendLine($"  • {item.Memo}");
+                AppendText("【 5. 사용자 투자 메모 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(240, 200, 140));
+                AppendText($"  • {item.Memo}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(225, 230, 240));
             }
 
-            return sb.ToString().TrimEnd();
+            _rtbDetailReason.Select(0, 0);
+            _rtbDetailReason.ScrollToCaret();
+            _rtbDetailReason.ResumeLayout();
+        }
+
+        private void AppendText(string text, Font font, Color color)
+        {
+            if (_rtbDetailReason == null) return;
+            _rtbDetailReason.SelectionFont = font;
+            _rtbDetailReason.SelectionColor = color;
+            _rtbDetailReason.AppendText(text);
         }
 
         private void UpdateMacroTicker(GlobalMarketSnapshot intel)

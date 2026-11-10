@@ -190,8 +190,9 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("손익비", 52, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("★종합점수", 76, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("타이밍 안전벨트", 125, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("권고 지침", 150);
+            _lvStocks.Columns.Add("권고 지침", 260);
 
+            _lvStocks.Resize += (s, e) => AutoFitLastColumn();
             _lvStocks.SelectedIndexChanged += LvStocks_SelectedIndexChanged;
             _lvStocks.DoubleClick += (s, e) => EditSelectedStock();
             _lvStocks.KeyDown += (s, e) =>
@@ -329,16 +330,16 @@ namespace GateHelper.StockAdvisor
                 Height = 22
             };
 
-            _txtDetailReason = new TextBox
+            _rtbDetailReason = new RichTextBox
             {
                 Dock = DockStyle.Fill,
-                Multiline = true,
                 ReadOnly = true,
                 BackColor = Color.FromArgb(14, 18, 26),
                 ForeColor = Color.FromArgb(235, 240, 252),
                 Font = new Font("Malgun Gothic", 9.5f),
                 BorderStyle = BorderStyle.FixedSingle,
-                ScrollBars = ScrollBars.Vertical
+                ScrollBars = RichTextBoxScrollBars.Vertical,
+                DetectUrls = false
             };
 
             var pnlDetailBtns = new FlowLayoutPanel
@@ -359,7 +360,7 @@ namespace GateHelper.StockAdvisor
             pnlDetailBtns.Controls.Add(_btnDeleteItem);
             pnlDetailBtns.Controls.Add(_btnEditItem);
 
-            _pnlDetail.Controls.Add(_txtDetailReason);
+            _pnlDetail.Controls.Add(_rtbDetailReason);
             _pnlDetail.Controls.Add(lblReasonTitle);
             _pnlDetail.Controls.Add(_lblDetailTargetCut);
             _pnlDetail.Controls.Add(_lblDetailImpact);
@@ -381,6 +382,22 @@ namespace GateHelper.StockAdvisor
             this.Controls.Add(_pnlHeader);
 
             this.ResumeLayout(false);
+        }
+
+        private void AutoFitLastColumn()
+        {
+            if (_lvStocks == null || _lvStocks.Columns.Count < 11) return;
+            try
+            {
+                int fixedWidth = 0;
+                for (int i = 0; i < 10; i++)
+                {
+                    fixedWidth += _lvStocks.Columns[i].Width;
+                }
+                int remain = _lvStocks.ClientSize.Width - fixedWidth - 4;
+                _lvStocks.Columns[10].Width = Math.Max(240, remain);
+            }
+            catch { }
         }
 
         private Button CreateNeonButton(string text, Color bg, Color borderColor, Color foreColor, int width = 0)
@@ -418,3 +435,4 @@ namespace GateHelper.StockAdvisor
         #endregion
     }
 }
+

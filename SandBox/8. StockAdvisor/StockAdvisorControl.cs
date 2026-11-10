@@ -46,7 +46,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblDetailReliability;
         private Label _lblDetailImpact;
         private Label _lblDetailTargetCut;
-        private TextBox _txtDetailReason;
+        private RichTextBox _rtbDetailReason;
         private Button _btnEditItem;
         private Button _btnDeleteItem;
 
@@ -79,9 +79,14 @@ namespace GateHelper.StockAdvisor
             if (_splitMain == null || this.Width < 600) return;
             try
             {
-                // 우측 상세 패널에 440px를 보장하여 가독성 리포트가 잘리지 않도록 동적 분할
-                int targetDist = this.Width - 440;
-                if (targetDist >= 400 && targetDist < this.Width - 150)
+                // 화면 전체 너비에 따른 최적 반응형 분할:
+                // 넓은 화면(FHD 1920px 등 최대화)에서는 우측 리포트 패널에 36% (최대 720px)를 할당하여 줄바꿈 최소화 및 시원한 가독성 확보
+                // 좁은 화면에서도 최소 460px를 보장
+                int rightWidth = (int)(this.Width * 0.36);
+                rightWidth = Math.Max(460, Math.Min(720, rightWidth));
+                int targetDist = this.Width - rightWidth;
+
+                if (targetDist >= 500 && targetDist < this.Width - 200)
                 {
                     _splitMain.SplitterDistance = targetDist;
                 }

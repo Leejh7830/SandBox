@@ -265,18 +265,21 @@ namespace GateHelper.StockAdvisor
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 60,
+                Height = 74,
                 BackColor = Color.FromArgb(24, 28, 40),
-                Padding = new Padding(12, 10, 12, 10)
+                Padding = new Padding(14, 8, 14, 8)
             };
 
-            var pnlRadio = new FlowLayoutPanel
+            var tblRadio = new TableLayoutPanel
             {
                 Dock = DockStyle.Left,
-                AutoSize = true,
-                FlowDirection = FlowDirection.LeftToRight,
-                Padding = new Padding(0, 4, 0, 0)
+                Width = 480,
+                ColumnCount = 1,
+                RowCount = 2,
+                Margin = new Padding(0)
             };
+            tblRadio.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
+            tblRadio.RowStyles.Add(new RowStyle(SizeType.Absolute, 28f));
 
             _rbAppendMerge = new RadioButton
             {
@@ -285,7 +288,8 @@ namespace GateHelper.StockAdvisor
                 AutoSize = true,
                 ForeColor = Color.FromArgb(220, 230, 245),
                 Cursor = Cursors.Hand,
-                Margin = new Padding(0, 0, 16, 0)
+                Margin = new Padding(0, 2, 0, 2),
+                Font = new Font("Malgun Gothic", 9f)
             };
 
             _rbReplaceAll = new RadioButton
@@ -294,11 +298,13 @@ namespace GateHelper.StockAdvisor
                 Checked = false,
                 AutoSize = true,
                 ForeColor = Color.FromArgb(255, 170, 170),
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 2, 0, 2),
+                Font = new Font("Malgun Gothic", 9f)
             };
 
-            pnlRadio.Controls.Add(_rbAppendMerge);
-            pnlRadio.Controls.Add(_rbReplaceAll);
+            tblRadio.Controls.Add(_rbAppendMerge, 0, 0);
+            tblRadio.Controls.Add(_rbReplaceAll, 0, 1);
 
             var pnlButtons = new Panel
             {
@@ -320,7 +326,7 @@ namespace GateHelper.StockAdvisor
             pnlButtons.Controls.Add(_btnCancel);
 
             pnlBottom.Controls.Add(pnlButtons);
-            pnlBottom.Controls.Add(pnlRadio);
+            pnlBottom.Controls.Add(tblRadio);
 
             // 전체 폼에 추가
             this.Controls.Add(pnlCenter);

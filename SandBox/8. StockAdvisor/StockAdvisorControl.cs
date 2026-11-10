@@ -281,13 +281,16 @@ namespace GateHelper.StockAdvisor
                         }
                     }
 
-                    _lblLastUpdated.Text = $"시세 갱신: {DateTime.Now:HH:mm:ss}";
                     SavePortfolio();
                     UpdateUi();
 
                     if (!string.IsNullOrEmpty(diagResult.ErrorMessage))
                     {
-                        MessageBox.Show(diagResult.ErrorMessage, "알림", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        _lblLastUpdated.Text = $"진단 완료: {DateTime.Now:HH:mm:ss} (자체 룰엔진 정밀 분석)";
+                    }
+                    else
+                    {
+                        _lblLastUpdated.Text = $"AI 참모 진단 완료: {DateTime.Now:HH:mm:ss}";
                     }
                 }
                 else

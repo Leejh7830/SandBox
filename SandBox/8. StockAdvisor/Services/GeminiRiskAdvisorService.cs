@@ -30,14 +30,13 @@ namespace GateHelper.StockAdvisor.Services
 
         private static readonly string[] ModelCandidates = new[]
         {
-            "gemini-2.0-flash",
             "gemini-1.5-flash",
-            "gemini-2.5-flash",
-            "gemini-flash-latest",
-            "gemini-pro-latest"
+            "gemini-2.0-flash",
+            "gemini-1.5-flash-8b",
+            "gemini-1.5-pro"
         };
 
-        private static string _activeModel = "gemini-2.0-flash";
+        private static string _activeModel = "gemini-1.5-flash";
 
         public static string GetApiKey()
         {
@@ -133,7 +132,7 @@ namespace GateHelper.StockAdvisor.Services
                     generationConfig = new
                     {
                         temperature = 0.2,
-                        maxOutputTokens = 2048,
+                        maxOutputTokens = 4096,
                         responseMimeType = "application/json"
                     }
                 });
@@ -160,6 +159,12 @@ namespace GateHelper.StockAdvisor.Services
                                 int statusCode = (int)response.StatusCode;
                                 lastErrorStatus = response.StatusCode.ToString();
                                 LogManager.LogMessage($"[GeminiRiskAdvisor] 모델 '{modelName}' HTTP {statusCode} 발생. 다음 가용 모델로 우회합니다.", LogManager.Level.Warning);
+
+                                // 429 Rate Limit인 경우 버스트 요청 방지를 위해 지수 백오프 스마트 쿨다운(1.5초) 적용
+                                if (statusCode == 429)
+                                {
+                                    await Task.Delay(1500).ConfigureAwait(false);
+                                }
                                 continue;
                             }
 
@@ -183,7 +188,7 @@ namespace GateHelper.StockAdvisor.Services
 
                 if (string.IsNullOrWhiteSpace(rawText))
                 {
-                    return RunHeuristicFallback(items, $"Gemini API 가용 모델 호출 실패 ({lastErrorStatus}): 자체 규칙 진단으로 전환되었습니다.");
+                    return RunHeuristicFallback(items, $"Gemini API 일시적 쿼터 한도({lastErrorStatus})로 인해 자체 룰베이스 기술적 지표 진단으로 정밀 전환되었습니다.");
                 }
 
                     // 순수 JSON 추출

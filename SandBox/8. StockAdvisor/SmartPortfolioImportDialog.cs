@@ -45,6 +45,7 @@ namespace GateHelper.StockAdvisor
         private Button _btnCancel;
 
         // 내부 파싱 상태
+        private readonly List<StockHoldingItem> _currentPortfolio;
         private List<string[]> _rawRows = new List<string[]>();
         private string[] _detectedHeaders = new string[0];
         private CancellationTokenSource _ctsResolve;
@@ -60,8 +61,10 @@ namespace GateHelper.StockAdvisor
         /// </summary>
         public bool IsReplaceMode => _rbReplaceAll.Checked;
 
-        public SmartPortfolioImportDialog()
+        public SmartPortfolioImportDialog(List<StockHoldingItem> currentPortfolio = null)
         {
+            _currentPortfolio = currentPortfolio ?? new List<StockHoldingItem>();
+
             this.Text = "📂 지능형 계좌 잔고 일괄 가져오기 (Universal Smart Portfolio Importer)";
             this.Size = new Size(950, 680);
             this.MinimumSize = new Size(880, 580);
@@ -303,7 +306,7 @@ namespace GateHelper.StockAdvisor
                 Width = 320
             };
 
-            _btnApply = CreateButton("★ 선택한 종목 등록 (0개)", Color.FromArgb(14, 52, 42), Color.FromArgb(0, 230, 118));
+            _btnApply = CreateButton("다음: 최종 표 미리보기 ▶ (0개)", Color.FromArgb(14, 52, 42), Color.FromArgb(0, 230, 118));
             _btnApply.Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
             _btnApply.Dock = DockStyle.Fill;
             _btnApply.Click += (s, e) => ApplySelectedStocks();
@@ -852,7 +855,7 @@ namespace GateHelper.StockAdvisor
             }
 
             _lblSelectionSummary.Text = $"선택: {selectedCount:N0}개 종목 | 매입총액: {totalAmount:N0}원";
-            _btnApply.Text = $"★ 선택한 종목 등록 ({selectedCount}개)";
+            _btnApply.Text = $"다음: 최종 표 미리보기 ▶ ({selectedCount}개)";
             _btnApply.Enabled = (selectedCount > 0);
         }
 
@@ -895,12 +898,21 @@ namespace GateHelper.StockAdvisor
 
             if (invalidCount > 0)
             {
-                var dr = MessageBox.Show(this, $"종목코드를 확인하지 못한 {invalidCount}개 종목은 제외하고,\n유효한 {ResultItems.Count}개 종목만 등록하시겠습니까?", "확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                var dr = MessageBox.Show(this, $"종목코드를 확인하지 못한 {invalidCount}개 종목은 제외하고,\n유효한 {ResultItems.Count}개 종목만 미리보기를 진행하시겠습니까?", "확인", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
                 if (dr != DialogResult.Yes) return;
             }
 
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            // 2단계: 최종 표 반영 시뮬레이션 미리보기 팝업 출력!
+            using (var previewDlg = new PortfolioImportPreviewDialog(_currentPortfolio, ResultItems, IsReplaceMode))
+            {
+                var pr = previewDlg.ShowDialog(this);
+                if (pr == DialogResult.OK && previewDlg.IsConfirmed)
+                {
+                    this.DialogResult = DialogResult.OK;
+                    this.Close();
+                }
+                // 만약 취소/이전 버튼을 누르면 아무것도 하지 않고 현재 화면(SmartPortfolioImportDialog)에 그대로 머무름
+            }
         }
 
         #endregion

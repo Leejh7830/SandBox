@@ -377,7 +377,7 @@ namespace GateHelper.StockAdvisor
 
         private void ShowImportPortfolioDialog()
         {
-            using (var dlg = new SmartPortfolioImportDialog())
+            using (var dlg = new SmartPortfolioImportDialog(_portfolio.Items))
             {
                 var parentForm = this.FindForm();
                 var result = parentForm != null ? dlg.ShowDialog(parentForm) : dlg.ShowDialog(this);

@@ -1,8 +1,22 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace GateHelper.StockAdvisor.Trading
 {
+    public class KbSecApiConfig
+    {
+        public string AppKey { get; set; } = string.Empty;
+        public string AppSecret { get; set; } = string.Empty;
+        public string AccountNumber { get; set; } = string.Empty;
+        public bool IsMockTrading { get; set; } = false; // 기본 실전투자
+        public int AutoSyncIntervalMinutes { get; set; } = 0; // 0: 수동, 1: 1분, 5: 5분
+        public bool EnableSimulationWhenNoKey { get; set; } = true;
+
+        [JsonIgnore]
+        public bool IsConfigured => !string.IsNullOrWhiteSpace(AppKey) && !string.IsNullOrWhiteSpace(AppSecret);
+    }
+
     public class KbAuthTokenResponse
     {
         public bool IsSuccess { get; set; } = false;

@@ -98,7 +98,22 @@ namespace GateHelper.StockAdvisor
                 else if (_cboAiModel.SelectedIndex == 2) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-2.0-flash";
             };
 
+            _btnKbSetting = new Button
+            {
+                Text = "⚡ KB 연동",
+                Dock = DockStyle.Right,
+                Width = 85,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(24, 38, 56),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            _btnKbSetting.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 220);
+            _btnKbSetting.Click += (s, e) => ShowKbSettingDialog();
+
             pnlTitleRow.Controls.Add(_cboAiModel);
+            pnlTitleRow.Controls.Add(_btnKbSetting);
             pnlTitleRow.Controls.Add(lblHeaderTitle);
 
             _lblBriefing1 = new Label { Text = "• 1행: 글로벌 매크로 및 미 수출통제(BIS) 동향 점검 중", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(220, 225, 235), Dock = DockStyle.Top, Height = 20 };

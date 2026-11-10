@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using GateHelper.StockAdvisor.Models;
 using GateHelper.StockAdvisor.Security;
 using GateHelper.StockAdvisor.Services;
+using GateHelper.StockAdvisor.Trading;
 using Newtonsoft.Json;
 
 namespace GateHelper.StockAdvisor
@@ -56,6 +57,8 @@ namespace GateHelper.StockAdvisor
         private Panel _pnlFooter;
         private Label _lblAccountSummary;
         private Label _lblLastUpdated;
+        private Button _btnKbSetting;
+        private Timer _kbSyncTimer;
 
         // 비동기 작업 상태 플래그 (멀티태스킹 분리)
         private bool _isAiDiagnosing = false;
@@ -68,6 +71,19 @@ namespace GateHelper.StockAdvisor
             BuildUiLayout();
             LoadPortfolio();
             UpdateUi();
+
+            SetupKbSyncTimer();
+            this.VisibleChanged += (s, e) =>
+            {
+                if (!this.Visible)
+                {
+                    _kbSyncTimer?.Stop();
+                }
+                else
+                {
+                    SetupKbSyncTimer();
+                }
+            };
         }
 
         protected override void OnSizeChanged(EventArgs e)
@@ -443,6 +459,80 @@ namespace GateHelper.StockAdvisor
                         "계좌 가져오기 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
+        }
+
+        private void ShowKbSettingDialog()
+        {
+            using (var dlg = new KbSecSettingDialog())
+            {
+                var parentForm = this.FindForm();
+                if (parentForm != null) dlg.ShowDialog(parentForm);
+                else dlg.ShowDialog(this);
+
+                SetupKbSyncTimer();
+            }
+        }
+
+        private void SetupKbSyncTimer()
+        {
+            try
+            {
+                var config = KbTradingClient.LoadConfig();
+                if (config.AutoSyncIntervalMinutes > 0 && (config.IsConfigured || config.EnableSimulationWhenNoKey))
+                {
+                    if (_kbSyncTimer == null)
+                    {
+                        _kbSyncTimer = new Timer();
+                        _kbSyncTimer.Tick += async (s, e) => await SyncFromKbOpenApiBackgroundAsync();
+                    }
+                    _kbSyncTimer.Interval = config.AutoSyncIntervalMinutes * 60 * 1000;
+                    _kbSyncTimer.Start();
+                }
+                else
+                {
+                    _kbSyncTimer?.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.SetupKbSyncTimer");
+            }
+        }
+
+        private async Task SyncFromKbOpenApiBackgroundAsync()
+        {
+            if (_isAiDiagnosing || _isRefreshingPrice) return;
+            try
+            {
+                var config = KbTradingClient.LoadConfig();
+                var client = new KbTradingClient(config.AppKey, config.AppSecret, config.IsMockTrading);
+                var balance = await client.FetchBalanceAsync(config.AccountNumber);
+
+                if (balance.IsSuccess && balance.Holdings != null && balance.Holdings.Count > 0)
+                {
+                    bool changed = false;
+                    foreach (var h in balance.Holdings)
+                    {
+                        var existing = _portfolio.Items.Find(x => x.StockCode.TrimStart('0').Equals(h.StockCode.TrimStart('0'), StringComparison.OrdinalIgnoreCase));
+                        if (existing != null)
+                        {
+                            if (existing.Quantity != h.HoldingQuantity || existing.BuyPrice != h.BuyAveragePrice)
+                            {
+                                existing.Quantity = h.HoldingQuantity;
+                                existing.BuyPrice = h.BuyAveragePrice;
+                                changed = true;
+                            }
+                        }
+                    }
+
+                    if (changed)
+                    {
+                        SavePortfolio();
+                        UpdateUi();
+                    }
+                }
+            }
+            catch { }
         }
 
         private void EditSelectedStock()

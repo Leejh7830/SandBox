@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using GateHelper.StockAdvisor.Models;
 using GateHelper.StockAdvisor.Services;
+using GateHelper.StockAdvisor.Trading;
 
 namespace GateHelper.StockAdvisor
 {
@@ -20,6 +21,8 @@ namespace GateHelper.StockAdvisor
     /// </summary>
     public class SmartPortfolioImportDialog : Form
     {
+        private Button _btnKbSync;
+        private Button _btnKbSetting;
         private Button _btnOpenFile;
         private Button _btnPasteClipboard;
         private Button _btnClear;
@@ -101,25 +104,38 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(12, 10, 12, 10)
             };
 
-            _btnOpenFile = CreateButton("📂 CSV / TXT 파일 열기", Color.FromArgb(20, 48, 70), Color.FromArgb(0, 216, 255));
-            _btnOpenFile.Width = 170;
+            _btnKbSync = CreateButton("⚡ KB증권 실시간 연동", Color.FromArgb(28, 48, 75), Color.FromArgb(0, 220, 255));
+            _btnKbSync.Width = 165;
+            _btnKbSync.Dock = DockStyle.Left;
+            _btnKbSync.Click += async (s, e) => await SyncFromKbOpenApiAsync();
+
+            _btnKbSetting = CreateButton("KB 설정", Color.FromArgb(34, 40, 56), Color.FromArgb(140, 195, 255));
+            _btnKbSetting.Width = 72;
+            _btnKbSetting.Dock = DockStyle.Left;
+            _btnKbSetting.Margin = new Padding(6, 0, 0, 0);
+            _btnKbSetting.Click += (s, e) => ShowKbSettingDialog();
+
+            _btnOpenFile = CreateButton("CSV 파일 열기", Color.FromArgb(20, 48, 70), Color.FromArgb(100, 210, 240));
+            _btnOpenFile.Width = 120;
             _btnOpenFile.Dock = DockStyle.Left;
+            _btnOpenFile.Margin = new Padding(6, 0, 0, 0);
             _btnOpenFile.Click += (s, e) => OpenDataFile();
 
-            _btnPasteClipboard = CreateButton("📋 클립보드 붙여넣기 (엑셀 복사)", Color.FromArgb(20, 52, 40), Color.FromArgb(0, 230, 118));
-            _btnPasteClipboard.Width = 210;
+            _btnPasteClipboard = CreateButton("클립보드 붙여넣기", Color.FromArgb(20, 52, 40), Color.FromArgb(0, 230, 118));
+            _btnPasteClipboard.Width = 145;
             _btnPasteClipboard.Dock = DockStyle.Left;
-            _btnPasteClipboard.Margin = new Padding(8, 0, 0, 0);
+            _btnPasteClipboard.Margin = new Padding(6, 0, 0, 0);
             _btnPasteClipboard.Click += (s, e) => PasteFromClipboard();
 
             _btnClear = CreateButton("초기화", Color.FromArgb(40, 44, 56), Color.FromArgb(180, 190, 210));
-            _btnClear.Width = 75;
+            _btnClear.Width = 65;
             _btnClear.Dock = DockStyle.Left;
+            _btnClear.Margin = new Padding(6, 0, 0, 0);
             _btnClear.Click += (s, e) => ClearData();
 
             _lblStatus = new Label
             {
-                Text = "💡 증권사 HTS의 잔고 내역을 복사(Ctrl+C)한 후 '클립보드 붙여넣기'를 누르거나 CSV 파일을 여세요.",
+                Text = "• [⚡ KB증권 실시간 연동] 또는 HTS 잔고 복사 후 [클립보드 붙여넣기]를 누르세요.",
                 ForeColor = Color.FromArgb(170, 185, 210),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
@@ -130,6 +146,8 @@ namespace GateHelper.StockAdvisor
             pnlTop.Controls.Add(_btnClear);
             pnlTop.Controls.Add(_btnPasteClipboard);
             pnlTop.Controls.Add(_btnOpenFile);
+            pnlTop.Controls.Add(_btnKbSetting);
+            pnlTop.Controls.Add(_btnKbSync);
 
             // 지능형 컬럼 매핑 바 (헤더 감지 및 사용자 매핑 지정)
             var pnlMapping = new Panel
@@ -919,6 +937,102 @@ namespace GateHelper.StockAdvisor
                 }
                 // 만약 취소/이전 버튼을 누르면 아무것도 하지 않고 현재 화면(SmartPortfolioImportDialog)에 그대로 머무름
             }
+        }
+
+        private void ShowKbSettingDialog()
+        {
+            using (var dlg = new KbSecSettingDialog())
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _lblStatus.Text = "✔ KB증권 연동 설정이 저장되었습니다. [⚡ KB증권 실시간 연동]을 눌러 계좌를 조회하세요.";
+                }
+            }
+        }
+
+        private async Task SyncFromKbOpenApiAsync()
+        {
+            var config = KbTradingClient.LoadConfig();
+
+            // 설정 미완료 및 시뮬레이션도 허용하지 않은 경우 설정창 먼저 유도
+            if (!config.IsConfigured && !config.EnableSimulationWhenNoKey)
+            {
+                var dr = MessageBox.Show(this,
+                    "KB증권 Open API 인증정보가 등록되지 않았습니다.\n\n" +
+                    "[설정창 열기]를 눌러 App Key/Secret을 등록하시거나,\n" +
+                    "'가상 시뮬레이션 모드'를 활성화하여 즉시 테스트해보시겠습니까?",
+                    "KB증권 연동 안내",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
+                if (dr == DialogResult.Yes)
+                {
+                    ShowKbSettingDialog();
+                    config = KbTradingClient.LoadConfig();
+                    if (!config.IsConfigured && !config.EnableSimulationWhenNoKey) return;
+                }
+                else return;
+            }
+
+            _btnKbSync.Enabled = false;
+            _lblStatus.Text = "⏳ KB증권 Open API 실시간 잔고 조회 중...";
+
+            try
+            {
+                var client = new KbTradingClient(config.AppKey, config.AppSecret, config.IsMockTrading);
+                var balance = await client.FetchBalanceAsync(config.AccountNumber);
+
+                if (!balance.IsSuccess)
+                {
+                    MessageBox.Show(this, $"KB증권 잔고 조회 실패:\n\n{balance.ErrorMessage}", "동기화 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    _lblStatus.Text = "❌ KB증권 잔고 조회 실패: " + balance.ErrorMessage;
+                    return;
+                }
+
+                LoadKbHoldings(balance.Holdings, client.IsSimulationMode);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"연동 처리 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _lblStatus.Text = "❌ 오류: " + ex.Message;
+            }
+            finally
+            {
+                _btnKbSync.Enabled = true;
+            }
+        }
+
+        private void LoadKbHoldings(List<KbHoldingBalanceDto> holdings, bool isSimulation)
+        {
+            if (holdings == null || holdings.Count == 0)
+            {
+                MessageBox.Show(this, "KB증권 계좌에서 조회된 보유 종목이 없습니다.", "안내", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                _lblStatus.Text = "ℹ 조회된 보유 종목이 없습니다.";
+                return;
+            }
+
+            _detectedHeaders = new[] { "종목명", "종목코드", "보유수량", "매수평균단가", "현재가", "평가금액" };
+            _rawRows.Clear();
+
+            foreach (var h in holdings)
+            {
+                _rawRows.Add(new[]
+                {
+                    h.StockName,
+                    h.StockCode,
+                    h.HoldingQuantity.ToString(),
+                    h.BuyAveragePrice.ToString("F0"),
+                    h.CurrentPrice.ToString("F0"),
+                    h.TotalEvalAmount.ToString("F0")
+                });
+            }
+
+            _lblStatus.Text = isSimulation
+                ? $"💡 [가상 연동] KB증권 가상 계좌 {holdings.Count}개 종목 로드 완료 (미리보기 확인 후 최종 반영)"
+                : $"⚡ [KB증권 실시간] {holdings.Count}개 보유 종목 실시간 조회 완료 (미리보기 확인 후 최종 반영)";
+
+            SetupMappingDropdowns();
+            RebuildPreviewList();
         }
 
         #endregion

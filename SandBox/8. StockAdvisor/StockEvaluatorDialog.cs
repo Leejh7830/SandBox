@@ -397,13 +397,62 @@ namespace GateHelper.StockAdvisor
 
         private void BuildCard3Content(Panel card)
         {
+            card.Controls.Clear();
+
+            var lblCardTitle = new Label
+            {
+                Text = "【 3. 정통 퀀트 8대 황금 필터 】",
+                Font = new Font("Malgun Gothic", 10.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Dock = DockStyle.Top,
+                Height = 26
+            };
+
             _lblQuantHeader = new Label
             {
                 Text = "통과율: - / 8 통과 (-%)",
-                Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 10.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 64),
                 Dock = DockStyle.Top,
-                Height = 32
+                Height = 26
+            };
+
+            // 독립 커스텀 헤더 테이블 (어떤 윈도우 OS/테마에서도 100% 선명하게 노출)
+            var tblHeader = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                Height = 26,
+                BackColor = Color.FromArgb(30, 38, 56),
+                ColumnCount = 4,
+                RowCount = 1,
+                Margin = new Padding(0, 4, 0, 0),
+                Padding = new Padding(0)
+            };
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 94f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 104f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70f));
+            tblHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
+            var lblH1 = new Label { Text = "검증항목", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255), Padding = new Padding(6, 0, 0, 0) };
+            var lblH2 = new Label { Text = "조건값", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255), Padding = new Padding(4, 0, 0, 0) };
+            var lblH3 = new Label { Text = "현재값", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleRight, Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255), Padding = new Padding(0, 0, 4, 0) };
+            var lblH4 = new Label { Text = "검증결과", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleCenter, Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255) };
+
+            tblHeader.Controls.Add(lblH1, 0, 0);
+            tblHeader.Controls.Add(lblH2, 1, 0);
+            tblHeader.Controls.Add(lblH3, 2, 0);
+            tblHeader.Controls.Add(lblH4, 3, 0);
+
+            tblHeader.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(55, 70, 100)))
+                {
+                    e.Graphics.DrawLine(pen, 0, tblHeader.Height - 1, tblHeader.Width, tblHeader.Height - 1);
+                    e.Graphics.DrawLine(pen, 94, 3, 94, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 94 + 104, 3, 94 + 104, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 94 + 104 + 72, 3, 94 + 104 + 72, tblHeader.Height - 4);
+                }
             };
 
             _lvQuantFilters = new ListView
@@ -416,37 +465,12 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.White,
                 Font = new Font("Malgun Gothic", 8.8f),
                 BorderStyle = BorderStyle.None,
-                OwnerDraw = true
+                HeaderStyle = ColumnHeaderStyle.None // ListView 자체 OS 헤더는 숨김!
             };
-            _lvQuantFilters.Columns.Add("검증항목", 94, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("조건값", 100, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("현재값", 78, HorizontalAlignment.Right);
-            _lvQuantFilters.Columns.Add("검증결과", 66, HorizontalAlignment.Center);
-
-            // 헤더 커스텀 페인팅 (어떤 윈도우 테마 환경에서도 100% 선명 노출)
-            _lvQuantFilters.DrawColumnHeader += (s, e) =>
-            {
-                using (var backBrush = new SolidBrush(Color.FromArgb(28, 36, 52)))
-                using (var linePen = new Pen(Color.FromArgb(50, 65, 95)))
-                using (var textBrush = new SolidBrush(Color.FromArgb(0, 230, 255)))
-                using (var font = new Font("Malgun Gothic", 9f, FontStyle.Bold))
-                {
-                    e.Graphics.FillRectangle(backBrush, e.Bounds);
-                    e.Graphics.DrawLine(linePen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
-                    e.Graphics.DrawLine(linePen, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom);
-
-                    var sf = new StringFormat
-                    {
-                        LineAlignment = StringAlignment.Center,
-                        Alignment = e.Header.TextAlign == HorizontalAlignment.Right ? StringAlignment.Far :
-                                    (e.Header.TextAlign == HorizontalAlignment.Center ? StringAlignment.Center : StringAlignment.Near)
-                    };
-                    var textRect = new Rectangle(e.Bounds.Left + 4, e.Bounds.Top, e.Bounds.Width - 8, e.Bounds.Height);
-                    e.Graphics.DrawString(e.Header.Text, font, textBrush, textRect, sf);
-                }
-            };
-            _lvQuantFilters.DrawItem += (s, e) => e.DrawDefault = true;
-            _lvQuantFilters.DrawSubItem += (s, e) => e.DrawDefault = true;
+            _lvQuantFilters.Columns.Add("", 94, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 104, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 72, HorizontalAlignment.Right);
+            _lvQuantFilters.Columns.Add("", 70, HorizontalAlignment.Center);
 
             // 더블 버퍼링
             typeof(ListView).InvokeMember("DoubleBuffered",
@@ -454,7 +478,9 @@ namespace GateHelper.StockAdvisor
                 null, _lvQuantFilters, new object[] { true });
 
             card.Controls.Add(_lvQuantFilters);
+            card.Controls.Add(tblHeader);
             card.Controls.Add(_lblQuantHeader);
+            card.Controls.Add(lblCardTitle);
         }
 
         private Button CreateNeonButton(string text, Color back, Color border, Color fore)
@@ -645,7 +671,7 @@ namespace GateHelper.StockAdvisor
             string tb = tech.EntryTimingBadge ?? tech.TimingBadge ?? "⚪ 관망유지";
             string tg = !string.IsNullOrEmpty(tech.EntryTimingGuide) ? tech.EntryTimingGuide : tech.TimingWarning;
             string exitGuide = !string.IsNullOrEmpty(tech.ExitTimingGuide) ? tech.ExitTimingGuide : tech.ExitTimingBadge;
-            _lblTimingGuide.Text = $"🚨 【 🎯 진입 지침: {tb} 】\n{tg}\n\n【 🚀 청산 지침: {tech.ExitTimingBadge} 】\n{exitGuide}";
+            _lblTimingGuide.Text = $"【 🎯 진입 지침: {tb} 】\n{tg}\n\n【 🚀 청산 지침: {tech.ExitTimingBadge} 】\n{exitGuide}";
             if (tb.Contains("과열"))
             {
                 _lblTimingGuide.BackColor = Color.FromArgb(58, 20, 28);

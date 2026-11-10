@@ -90,3 +90,16 @@
 - **해결 공식**:
   1. 하단 바 패널은 반드시 `pnlFooter.SendToBack();`을 호출하여 외곽 도킹 우선권을 부여할 것.
   2. 우측 정렬 버튼은 불필요하게 `Anchor = Right`를 쓰지 말고 `btn.Dock = DockStyle.Right;`와 부모 패널의 `Padding`을 활용하거나 `FlowLayoutPanel(FlowDirection.RightToLeft)`를 사용할 것.
+
+---
+
+### 12. `FlowLayoutPanel` 기본 마진(Top=3px)에 의한 버튼 Y축 삐뚤어짐 및 UI 정적 눈대중 검사의 함정
+- **증상**: 
+  1. 다이얼로그 하단에 `[✔ 등록/저장]`과 `[취소]` 버튼을 나란히 배치했을 때, `[✔ 등록/저장]`이 `[취소]`보다 위로 3px 붕 떠서 상단 테두리가 어긋남.
+  2. 텍스트가 조금 긴 버튼에서 끝 글자가 잘리거나 부모 패널 밖으로 삐져나가는 현상이 발생함.
+- **원인**:
+  1. `FlowLayoutPanel`은 자식 컨트롤의 `Margin.Top`을 기준으로 세로 위치를 잡음. `btnCancel`은 기본 마진(Top=3px)이 적용되고, `btnSave`는 커스텀 마진(Top=0px)이 적용되어 3px Y축 어긋남이 발생.
+  2. UX 감리관이 정적 코드 리뷰(눈대중)로 "Width가 140이면 대충 맞겠지"라고 추정하여, 실제 GDI+ 렌더링 픽셀(`TextRenderer.MeasureText`)과 Windows 폰트 패딩의 누적 오차를 사전에 잡아내지 못함.
+- **해결 공식**:
+  1. 액션 버튼군은 `FlowLayoutPanel`의 가변 마진에 맡기지 말고, 명시적 `Panel`에서 `Location = new Point(..., btnY)`로 **절대 Y좌표(`btnY = 5`)와 동일 높이(`Height = 34`)를 칼같이 고정**할 것.
+  2. 모든 UI 검증 시 단순 눈대중 확인을 금지하고, 메모리 상에서 폼을 인스턴스화하여 `(TextRenderer.MeasureText.Width + 14 > btn.ClientSize.Width)` 및 인접 버튼 Y좌표 일치 여부를 1px 단위로 기계적 실측(`UI Pixel Auditor`)할 것.

@@ -52,20 +52,18 @@ namespace GateHelper.StockAdvisor
                 Height = 24
             };
 
-            int countS = _items.Count(x => x.Grade == PositionGrade.S);
             int countA = _items.Count(x => x.Grade == PositionGrade.A);
             int countB = _items.Count(x => x.Grade == PositionGrade.B);
             int countC = _items.Count(x => x.Grade == PositionGrade.C);
-            int countD = _items.Count(x => x.Grade == PositionGrade.D);
             int countF = _items.Count(x => x.Grade == PositionGrade.F);
 
             var lblSummary = new Label
             {
                 Text = $"• 보유: {_items.Count}개 종목  |  " +
-                       $"[안전] S/A: {countS + countA}개  |  " +
-                       $"[주의] B/C: {countB + countC}개  |  " +
-                       $"[경고] D: {countD}개  |  " +
-                       $"[위험] F: {countF}개",
+                       $"[초록:안전] A: {countA}개  |  " +
+                       $"[노랑:주의] B: {countB}개  |  " +
+                       $"[주황:경고] C: {countC}개  |  " +
+                       $"[빨강:위험] F: {countF}개",
                 Font = new Font("Segoe UI", 9.5f),
                 ForeColor = Color.FromArgb(210, 225, 245),
                 Dock = DockStyle.Fill,
@@ -124,9 +122,9 @@ namespace GateHelper.StockAdvisor
 
         private void PopulateData()
         {
-            // 탭 1: 🚨 즉각 주의 / 리스크 경계 종목 (D, F 등급 또는 과열 RSI >= 70% 또는 손실률 <= -7%)
+            // 탭 1: 즉각 주의 / 리스크 경계 종목 (C, F 등급 또는 과열 RSI >= 70% 또는 손실률 <= -7%)
             var alertItems = _items
-                .Where(x => x.Grade == PositionGrade.D || x.Grade == PositionGrade.F || x.Rsi >= 70m || x.ProfitRate <= -7m)
+                .Where(x => x.Grade == PositionGrade.C || x.Grade == PositionGrade.F || x.Rsi >= 70m || x.ProfitRate <= -7m)
                 .OrderBy(x => x.Grade)
                 .ThenBy(x => x.ProfitRate)
                 .ToList();
@@ -136,11 +134,10 @@ namespace GateHelper.StockAdvisor
             tabAlert.Controls.Add(CreateListView(alertItems, true));
             _tabControl.TabPages.Add(tabAlert);
 
-            // 탭 2: 핵심 유망 / 주도주 (S, A 등급 또는 종합점수 >= 8)
+            // 탭 2: 핵심 유망 / 주도주 (A 등급 또는 종합점수 >= 8)
             var leaderItems = _items
-                .Where(x => x.Grade == PositionGrade.S || x.Grade == PositionGrade.A || x.FinalScore >= 8)
-                .OrderBy(x => x.Grade)
-                .ThenByDescending(x => x.FinalScore)
+                .Where(x => x.Grade == PositionGrade.A || x.FinalScore >= 8)
+                .OrderByDescending(x => x.FinalScore)
                 .ToList();
 
             var tabLeader = new TabPage($"[핵심 유망/주도주] ({leaderItems.Count})");

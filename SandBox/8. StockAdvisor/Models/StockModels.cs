@@ -6,49 +6,43 @@ using Newtonsoft.Json;
 namespace GateHelper.StockAdvisor.Models
 {
     /// <summary>
-    /// AI 6대 종합 등급 (S, A, B, C, D, F)
-    /// - S, A: 초록색 (안전)
-    /// - B, C: 노란색 (주의)
-    /// - D: 주황색 (경고)
-    /// - F: 빨간색 (위험)
+    /// AI 4대 종합 등급 (A, B, C, F)
+    /// - 🟢 A (8, 9, 10점): 초록색 (우수/안전)
+    /// - 🟡 B (6, 7점): 노란색 (주의/관망)
+    /// - 🟠 C (3, 4, 5점): 주황색 (경고/경계)
+    /// - 🔴 F (0, 1, 2점): 빨간색 (위험/탈출)
     /// </summary>
     public enum PositionGrade
     {
-        S, // 9~10점: 최우수 (안전/초록)
-        A, // 8점: 우수 (안전/초록)
-        B, // 6~7점: 양호/관망 (주의/노랑)
-        C, // 5점: 중립/박스권 (주의/노랑)
-        D, // 3~4점: 경계/축소 (경고/주황)
-        F  // 1~2점: 위험/탈출 (위험/빨강)
+        A, // 8, 9, 10점: 우수/안전 (초록)
+        B, // 6, 7점: 양호/관망 (노랑)
+        C, // 3, 4, 5점: 주의/경계 (주황)
+        F  // 0, 1, 2점: 위험/손절 (빨강)
     }
 
     public static class GradeHelper
     {
         public static PositionGrade CalculateGrade(int finalScore, decimal rsi = 50m, decimal profitRate = 0m)
         {
-            if (finalScore >= 9) return PositionGrade.S;
-            if (finalScore == 8) return PositionGrade.A;
-            if (finalScore >= 6) return PositionGrade.B;
-            if (finalScore == 5) return PositionGrade.C;
-            if (finalScore >= 3) return PositionGrade.D;
-            return PositionGrade.F;
+            if (finalScore >= 8) return PositionGrade.A; // 8, 9, 10점
+            if (finalScore >= 6) return PositionGrade.B; // 6, 7점
+            if (finalScore >= 3) return PositionGrade.C; // 3, 4, 5점
+            return PositionGrade.F; // 0, 1, 2점
         }
 
         public static Color GetGradeColor(PositionGrade grade)
         {
             switch (grade)
             {
-                case PositionGrade.S:
                 case PositionGrade.A:
-                    return Color.FromArgb(0, 230, 118); // 초록색 (안전)
+                    return Color.FromArgb(0, 230, 118); // 초록색 (8,9,10점)
                 case PositionGrade.B:
+                    return Color.FromArgb(255, 214, 0); // 노란색 (6,7점)
                 case PositionGrade.C:
-                    return Color.FromArgb(255, 214, 0); // 노란색 (주의)
-                case PositionGrade.D:
-                    return Color.FromArgb(255, 145, 0); // 주황색 (경고)
+                    return Color.FromArgb(255, 145, 0); // 주황색 (3,4,5점)
                 case PositionGrade.F:
                 default:
-                    return Color.FromArgb(255, 68, 68); // 빨간색 (위험)
+                    return Color.FromArgb(255, 68, 68); // 빨간색 (0,1,2점)
             }
         }
 
@@ -56,12 +50,10 @@ namespace GateHelper.StockAdvisor.Models
         {
             switch (grade)
             {
-                case PositionGrade.S: return "S (최우수/안전)";
-                case PositionGrade.A: return "A (우수/안전)";
-                case PositionGrade.B: return "B (양호/주의)";
-                case PositionGrade.C: return "C (중립/주의)";
-                case PositionGrade.D: return "D (경계/경고)";
-                case PositionGrade.F: return "F (위험/탈출)";
+                case PositionGrade.A: return "A (우수/안전: 8~10점)";
+                case PositionGrade.B: return "B (양호/주의: 6~7점)";
+                case PositionGrade.C: return "C (경계/경고: 3~5점)";
+                case PositionGrade.F: return "F (위험/탈출: 0~2점)";
                 default: return "-";
             }
         }

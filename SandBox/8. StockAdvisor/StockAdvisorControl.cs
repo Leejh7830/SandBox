@@ -143,6 +143,28 @@ namespace GateHelper.StockAdvisor
                 LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.LoadPortfolio");
                 _portfolio = new PortfolioData();
             }
+
+            UpdateDiagnoseButtonText();
+        }
+
+        private void UpdateDiagnoseButtonText(string customStatus = null)
+        {
+            if (_btnDiagnose == null) return;
+
+            if (!string.IsNullOrEmpty(customStatus))
+            {
+                _btnDiagnose.Text = $"★ AI 참모 진단\r\n{customStatus}";
+                return;
+            }
+
+            if (_portfolio?.LastBriefing != null && _portfolio.LastBriefing.GeneratedAt != default && _portfolio.LastBriefing.GeneratedAt.Year > 2000)
+            {
+                _btnDiagnose.Text = $"★ AI 참모 진단\r\n✓ 진단 완료 ({_portfolio.LastBriefing.GeneratedAt:HH:mm:ss})";
+            }
+            else
+            {
+                _btnDiagnose.Text = "★ AI 참모 진단\r\n(진단 대기)";
+            }
         }
 
         private void SavePortfolio()
@@ -251,8 +273,7 @@ namespace GateHelper.StockAdvisor
 
             _isAiDiagnosing = true;
             _btnDiagnose.Enabled = false;
-            _btnDiagnose.Text = "AI 분석 중...";
-            _lblLastUpdated.Text = "AI 리스크 진단 분석 중...";
+            UpdateDiagnoseButtonText("⏳ 실시간 분석 중...");
 
             try
             {
@@ -285,29 +306,28 @@ namespace GateHelper.StockAdvisor
                     SavePortfolio();
                     UpdateUi();
 
-                    if (!string.IsNullOrEmpty(diagResult.ErrorMessage))
-                    {
-                        _lblLastUpdated.Text = $"진단 완료: {DateTime.Now:HH:mm:ss} (자체 룰엔진 정밀 분석)";
-                    }
-                    else
-                    {
-                        _lblLastUpdated.Text = $"AI 참모 진단 완료: {DateTime.Now:HH:mm:ss}";
-                    }
+                    // 버튼 텍스트에 완료 상태와 시간 즉시 반영 (우하단 시선 분산 방지)
+                    string timeStr = DateTime.Now.ToString("HH:mm:ss");
+                    string finishNote = !string.IsNullOrEmpty(diagResult.ErrorMessage)
+                        ? $"✓ 룰엔진 완료 ({timeStr})"
+                        : $"✓ 진단 완료 ({timeStr})";
+                    UpdateDiagnoseButtonText(finishNote);
                 }
                 else
                 {
+                    UpdateDiagnoseButtonText("❌ 진단 실패 (재시도)");
                     MessageBox.Show(diagResult.ErrorMessage, "진단 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)
             {
+                UpdateDiagnoseButtonText("❌ 통신 오류");
                 MessageBox.Show($"진단 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             finally
             {
                 _isAiDiagnosing = false;
                 _btnDiagnose.Enabled = true;
-                _btnDiagnose.Text = "★ AI 참모 진단";
             }
         }
 

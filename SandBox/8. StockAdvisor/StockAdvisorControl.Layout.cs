@@ -124,7 +124,8 @@ namespace GateHelper.StockAdvisor
             tblButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             tblButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
-            _btnDiagnose = CreateNeonButton("★ AI 참모 진단", Color.FromArgb(14, 38, 56), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
+            _btnDiagnose = CreateNeonButton("★ AI 참모 진단\r\n(진단 대기)", Color.FromArgb(14, 38, 56), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
+            _btnDiagnose.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
             _btnDiagnose.Dock = DockStyle.Fill;
             _btnDiagnose.Click += async (s, e) => await RunAiDiagnosisAsync();
 
@@ -197,15 +198,10 @@ namespace GateHelper.StockAdvisor
 
             _lblLastUpdated = new Label
             {
-                Text = "시세 갱신: 대기 중",
-                Font = new Font("Segoe UI", 8.5f),
-                ForeColor = Color.FromArgb(140, 150, 165),
-                Dock = DockStyle.Right,
-                AutoSize = true
+                Visible = false
             };
 
             _pnlFooter.Controls.Add(_lblAccountSummary);
-            _pnlFooter.Controls.Add(_lblLastUpdated);
 
             // 3. 중앙 분할 컨테이너 (좌측 리스트뷰 최적폭 820px, 우측 상세 카드 440px 쾌적 확보)
             _splitMain = new SplitContainer

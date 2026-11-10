@@ -24,7 +24,7 @@ namespace GateHelper.StockAdvisor
             };
             tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));   // 신호등
             tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));   // 3줄 브리핑 (가변)
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 280f));  // 우측 버튼 (고정)
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360f));  // 우측 버튼 (고정 확장)
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             // 신호등 뱃지 (클릭 시 글로벌 인텔 & 실시간 반도체 뉴스 브리핑 팝업)
@@ -72,16 +72,17 @@ namespace GateHelper.StockAdvisor
             pnlBriefingText.Controls.Add(_lblBriefing1);
             pnlBriefingText.Controls.Add(lblHeaderTitle);
 
-            // 우측 상단 액션 버튼 영역 (네온 사이버 스타일 2행 2열 그리드)
+            // 우측 상단 액션 버튼 영역 (네온 사이버 스타일 2행 3열 반응형 그리드)
             var tblButtons = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                ColumnCount = 2,
+                ColumnCount = 3,
                 RowCount = 2,
                 Margin = new Padding(0)
             };
-            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
-            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
+            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
             tblButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
             tblButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
 
@@ -97,14 +98,23 @@ namespace GateHelper.StockAdvisor
             _btnAddStock.Dock = DockStyle.Fill;
             _btnAddStock.Click += (s, e) => ShowAddStockDialog();
 
+            _btnImportPortfolio = CreateNeonButton("📂 계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
+            _btnImportPortfolio.Dock = DockStyle.Fill;
+            _btnImportPortfolio.Click += (s, e) => ShowImportPortfolioDialog();
+
             _btnEmergencyGuide = CreateNeonButton("▲ 비상 탈출", Color.FromArgb(48, 16, 24), Color.FromArgb(255, 50, 85), Color.FromArgb(255, 220, 230));
             _btnEmergencyGuide.Dock = DockStyle.Fill;
             _btnEmergencyGuide.Click += (s, e) => ShowPanicExitDialog();
 
+            // 1행: AI 진단(가로 2칸) + 시세 갱신(1칸)
             tblButtons.Controls.Add(_btnDiagnose, 0, 0);
-            tblButtons.Controls.Add(_btnRefreshPrice, 1, 0);
+            tblButtons.SetColumnSpan(_btnDiagnose, 2);
+            tblButtons.Controls.Add(_btnRefreshPrice, 2, 0);
+
+            // 2행: 종목 추가(1칸) + 계좌 가져오기(1칸) + 비상 탈출(1칸)
             tblButtons.Controls.Add(_btnAddStock, 0, 1);
-            tblButtons.Controls.Add(_btnEmergencyGuide, 1, 1);
+            tblButtons.Controls.Add(_btnImportPortfolio, 1, 1);
+            tblButtons.Controls.Add(_btnEmergencyGuide, 2, 1);
 
             tblHeader.Controls.Add(_lblTrafficLight, 0, 0);
             tblHeader.Controls.Add(pnlBriefingText, 1, 0);

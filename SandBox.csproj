@@ -213,6 +213,9 @@
     <Compile Include="SandBox\8. StockAdvisor\StockItemDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\SmartPortfolioImportDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="SandBox\8. StockAdvisor\PanicExitDialog.cs">
       <SubType>Form</SubType>
     </Compile>

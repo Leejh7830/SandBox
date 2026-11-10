@@ -26,6 +26,7 @@ namespace GateHelper.StockAdvisor
         private Button _btnDiagnose;
         private Button _btnRefreshPrice;
         private Button _btnAddStock;
+        private Button _btnImportPortfolio;
         private Button _btnEmergencyGuide;
 
         // 글로벌 매크로 티커 바
@@ -370,6 +371,52 @@ namespace GateHelper.StockAdvisor
                     SavePortfolio();
                     UpdateUi(); // AI 진단 중이더라도 등록 즉시 화면에 0.01초 만에 표시!
                     _ = RefreshPricesAsync();
+                }
+            }
+        }
+
+        private void ShowImportPortfolioDialog()
+        {
+            using (var dlg = new SmartPortfolioImportDialog())
+            {
+                var parentForm = this.FindForm();
+                var result = parentForm != null ? dlg.ShowDialog(parentForm) : dlg.ShowDialog(this);
+                if (result == DialogResult.OK && dlg.ResultItems != null && dlg.ResultItems.Count > 0)
+                {
+                    if (dlg.IsReplaceMode)
+                    {
+                        _portfolio.Items.Clear();
+                    }
+
+                    int addedCount = 0;
+                    int updatedCount = 0;
+
+                    foreach (var imported in dlg.ResultItems)
+                    {
+                        var existing = _portfolio.Items.Find(x =>
+                            x.StockCode.TrimStart('0').Equals(imported.StockCode.TrimStart('0'), StringComparison.OrdinalIgnoreCase));
+
+                        if (existing != null)
+                        {
+                            existing.Quantity = imported.Quantity;
+                            existing.BuyPrice = imported.BuyPrice;
+                            if (!string.IsNullOrEmpty(imported.Memo)) existing.Memo = imported.Memo;
+                            updatedCount++;
+                        }
+                        else
+                        {
+                            _portfolio.Items.Add(imported);
+                            addedCount++;
+                        }
+                    }
+
+                    SavePortfolio();
+                    UpdateUi();
+                    _ = RefreshPricesAsync();
+
+                    MessageBox.Show(parentForm ?? (IWin32Window)this,
+                        $"총 {dlg.ResultItems.Count}개 종목이 성공적으로 반영되었습니다.\n(신규 추가: {addedCount}건, 기존 갱신: {updatedCount}건)\n실시간 시세 조회가 백그라운드에서 진행됩니다.",
+                        "계좌 가져오기 완료", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             }
         }

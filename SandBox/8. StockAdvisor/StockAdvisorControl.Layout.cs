@@ -24,7 +24,7 @@ namespace GateHelper.StockAdvisor
             };
             tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));   // 신호등
             tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));   // 3줄 브리핑 (가변)
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 360f));  // 우측 버튼 (고정 확장)
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 450f));  // 우측 버튼 (150px*3열 여유 너비 확보)
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             // 신호등 뱃지 (클릭 시 글로벌 인텔 & 실시간 반도체 뉴스 브리핑 팝업)
@@ -98,7 +98,7 @@ namespace GateHelper.StockAdvisor
             _btnAddStock.Dock = DockStyle.Fill;
             _btnAddStock.Click += (s, e) => ShowAddStockDialog();
 
-            _btnImportPortfolio = CreateNeonButton("📂 계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
+            _btnImportPortfolio = CreateNeonButton("계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
             _btnImportPortfolio.Dock = DockStyle.Fill;
             _btnImportPortfolio.Click += (s, e) => ShowImportPortfolioDialog();
 
@@ -418,10 +418,12 @@ namespace GateHelper.StockAdvisor
                 BackColor = bg,
                 ForeColor = foreColor,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 9.0f, FontStyle.Bold),
                 Width = width,
                 Height = 34,
-                Margin = new Padding(3),
+                Margin = new Padding(2),
+                Padding = new Padding(0),
+                TextAlign = ContentAlignment.MiddleCenter,
                 Cursor = Cursors.Hand
             };
             btn.FlatAppearance.BorderSize = 1;

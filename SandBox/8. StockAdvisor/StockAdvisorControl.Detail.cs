@@ -77,73 +77,99 @@ namespace GateHelper.StockAdvisor
 
                 var lvi = new ListViewItem(new[]
                 {
-                    item.StockName,
-                    item.StockCode,
-                    $"{item.CurrentPrice:N0}",
-                    $"{item.ProfitRate:+0.00;-0.00}%",
-                    gradeText,
-                    rsiText,
-                    volText,
-                    chartText,
-                    newsText,
-                    riskText,
-                    finalScoreText,
-                    item.TimingBadge,
-                    actionText
+                    item.StockCode,                                      // 0: 코드
+                    item.StockName,                                      // 1: 종목명
+                    $"{item.CurrentPrice:N0}",                          // 2: 현재가
+                    $"{item.ChangeRate:+0.00;-0.00;0.00}%",              // 3: 전일대비
+                    $"{item.BuyPrice:N0}",                              // 4: 평단
+                    $"{item.Quantity:N0}",                              // 5: 보유수량
+                    $"{item.ProfitAmount:+0,0;-0,0;0}",                 // 6: 손익금(원)
+                    $"{item.ProfitRate:+0.00;-0.00;0.00}%",             // 7: 수익률
+                    gradeText,                                           // 8: AI 등급
+                    rsiText,                                             // 9: 14일 RSI
+                    volText,                                             // 10: 5일 거래량
+                    chartText,                                           // 11: 차트
+                    newsText,                                            // 12: 뉴스
+                    riskText,                                            // 13: 손익비
+                    finalScoreText,                                      // 14: ★종합점수
+                    item.TimingBadge,                                    // 15: 타이밍 안전벨트
+                    actionText                                           // 16: 권고 지침
                 });
 
                 lvi.Tag = item;
 
-                // 종목코드 색상 (SubItem 1 - 차분한 청회색)
-                lvi.SubItems[1].ForeColor = Color.FromArgb(145, 165, 195);
+                // 0: 종목코드 (차분한 청회색)
+                lvi.SubItems[0].ForeColor = Color.FromArgb(145, 165, 195);
 
-                // 손익률 색상 (SubItem 3)
-                if (item.ProfitRate > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 95, 95);
-                else if (item.ProfitRate < 0) lvi.SubItems[3].ForeColor = Color.FromArgb(85, 160, 255);
+                // 1: 종목명 (밝은 텍스트)
+                lvi.SubItems[1].ForeColor = Color.FromArgb(235, 240, 255);
 
-                // AI 등급 (SubItem 4: S, A, B, C, D, F)
-                // 사용자 지정 4색: S,A(초록) / B,C(노랑) / D(주황) / F(빨강)
-                lvi.SubItems[4].ForeColor = GradeHelper.GetGradeColor(item.Grade);
-                lvi.SubItems[4].Font = new Font(_lvStocks.Font, FontStyle.Bold);
+                // 2: 현재가 (화이트)
+                lvi.SubItems[2].ForeColor = Color.White;
 
-                // 14일 RSI 색상 (SubItem 5)
-                if (item.Rsi >= 70m) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 80, 80);
-                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[5].ForeColor = Color.FromArgb(80, 180, 255);
-                else lvi.SubItems[5].ForeColor = Color.FromArgb(120, 230, 150);
+                // 3: 전일대비 상승퍼센트
+                if (item.ChangeRate > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 95, 95);
+                else if (item.ChangeRate < 0) lvi.SubItems[3].ForeColor = Color.FromArgb(85, 160, 255);
+                else lvi.SubItems[3].ForeColor = Color.FromArgb(180, 190, 205);
 
-                // 거래량 색상 (SubItem 6)
-                if (item.VolumeRatio >= 140m) lvi.SubItems[6].ForeColor = Color.FromArgb(0, 230, 200);
-                else lvi.SubItems[6].ForeColor = Color.FromArgb(200, 215, 235);
+                // 4: 평단 (부드러운 실버)
+                lvi.SubItems[4].ForeColor = Color.FromArgb(215, 220, 230);
 
-                // 차트 점수 (SubItem 7)
-                if (item.ChartScore >= 7) lvi.SubItems[7].ForeColor = Color.FromArgb(120, 215, 255);
-                else if (item.ChartScore <= 3) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 110, 110);
+                // 5: 보유수량 (청록 실버)
+                lvi.SubItems[5].ForeColor = Color.FromArgb(190, 215, 235);
 
-                // 뉴스 점수 (SubItem 8)
-                if (item.NewsScore >= 7) lvi.SubItems[8].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.NewsScore <= 3) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 110, 110);
+                // 6: 손익금(원) (수익 빨강 / 손실 파랑)
+                if (item.ProfitAmount > 0) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 95, 95);
+                else if (item.ProfitAmount < 0) lvi.SubItems[6].ForeColor = Color.FromArgb(85, 160, 255);
+                else lvi.SubItems[6].ForeColor = Color.FromArgb(180, 190, 205);
 
-                // 손익비 점수 (SubItem 9)
-                if (item.RiskScore >= 8) lvi.SubItems[9].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.RiskScore <= 3) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 170, 70);
+                // 7: 수익률 (수익 빨강 / 손실 파랑)
+                if (item.ProfitRate > 0) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 95, 95);
+                else if (item.ProfitRate < 0) lvi.SubItems[7].ForeColor = Color.FromArgb(85, 160, 255);
+                else lvi.SubItems[7].ForeColor = Color.FromArgb(180, 190, 205);
 
-                // ★ 최종점수 (SubItem 10)
-                if (item.FinalScore >= 8) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 215, 0); // 골드
-                else if (item.FinalScore <= 3) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 110, 110);
-                else lvi.SubItems[10].ForeColor = Color.FromArgb(235, 240, 255);
+                // 8: AI 등급 (A, B, C, F 4색)
+                lvi.SubItems[8].ForeColor = GradeHelper.GetGradeColor(item.Grade);
+                lvi.SubItems[8].Font = new Font(_lvStocks.Font, FontStyle.Bold);
 
-                // 타이밍 안전벨트 (SubItem 11)
+                // 9: 14일 RSI
+                if (item.Rsi >= 70m) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 80, 80);
+                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[9].ForeColor = Color.FromArgb(80, 180, 255);
+                else lvi.SubItems[9].ForeColor = Color.FromArgb(120, 230, 150);
+
+                // 10: 5일 거래량
+                if (item.VolumeRatio >= 140m) lvi.SubItems[10].ForeColor = Color.FromArgb(0, 230, 200);
+                else lvi.SubItems[10].ForeColor = Color.FromArgb(200, 215, 235);
+
+                // 11: 차트 점수
+                if (item.ChartScore >= 7) lvi.SubItems[11].ForeColor = Color.FromArgb(120, 215, 255);
+                else if (item.ChartScore <= 3) lvi.SubItems[11].ForeColor = Color.FromArgb(255, 110, 110);
+
+                // 12: 뉴스 점수
+                if (item.NewsScore >= 7) lvi.SubItems[12].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.NewsScore <= 3) lvi.SubItems[12].ForeColor = Color.FromArgb(255, 110, 110);
+
+                // 13: 손익비 점수
+                if (item.RiskScore >= 8) lvi.SubItems[13].ForeColor = Color.FromArgb(120, 230, 150);
+                else if (item.RiskScore <= 3) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 170, 70);
+
+                // 14: ★ 최종점수
+                if (item.FinalScore >= 8) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 215, 0); // 골드
+                else if (item.FinalScore <= 3) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 110, 110);
+                else lvi.SubItems[14].ForeColor = Color.FromArgb(235, 240, 255);
+
+                // 15: 타이밍 안전벨트
                 string tb = item.TimingBadge ?? string.Empty;
-                if (tb.Contains("과열")) lvi.SubItems[11].ForeColor = Color.FromArgb(255, 75, 95);
-                else if (tb.Contains("골든")) lvi.SubItems[11].ForeColor = Color.FromArgb(0, 230, 118);
-                else if (tb.Contains("눌림목")) lvi.SubItems[11].ForeColor = Color.FromArgb(255, 210, 60);
-                else if (tb.Contains("과매도")) lvi.SubItems[11].ForeColor = Color.FromArgb(70, 180, 255);
-                else if (tb.Contains("보유불필요")) lvi.SubItems[11].ForeColor = Color.FromArgb(255, 90, 90);
-                else lvi.SubItems[11].ForeColor = Color.FromArgb(190, 200, 215);
+                if (tb.Contains("과열")) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 75, 95);
+                else if (tb.Contains("골든")) lvi.SubItems[15].ForeColor = Color.FromArgb(0, 230, 118);
+                else if (tb.Contains("눌림목")) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 210, 60);
+                else if (tb.Contains("과매도")) lvi.SubItems[15].ForeColor = Color.FromArgb(70, 180, 255);
+                else if (tb.Contains("보유불필요")) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 90, 90);
+                else lvi.SubItems[15].ForeColor = Color.FromArgb(190, 200, 215);
 
-                // 권고 지침 (SubItem 12)
-                if (tb.Contains("과열")) lvi.SubItems[12].ForeColor = Color.FromArgb(255, 130, 130);
-                else lvi.SubItems[12].ForeColor = Color.FromArgb(220, 225, 235);
+                // 16: 권고 지침
+                if (tb.Contains("과열")) lvi.SubItems[16].ForeColor = Color.FromArgb(255, 130, 130);
+                else lvi.SubItems[16].ForeColor = Color.FromArgb(220, 225, 235);
 
                 lvi.UseItemStyleForSubItems = false;
                 _lvStocks.Items.Add(lvi);
@@ -447,9 +473,9 @@ namespace GateHelper.StockAdvisor
             else
             {
                 _sortColumn = e.Column;
-                // 금액/수익률/지표/점수 컬럼(2,3, 5~10번)은 높은 값(내림차순) 우선
-                // 4번(AI 등급: A->B->C->F) 및 텍스트 컬럼은 오름차순 우선
-                _sortOrder = (e.Column >= 2 && e.Column <= 10 && e.Column != 4) ? SortOrder.Descending : SortOrder.Ascending;
+                // 금액/수익률/지표/점수 컬럼(2~7번, 9~14번)은 높은 값(내림차순) 우선
+                // 8번(AI 등급: A->B->C->F) 및 텍스트 컬럼(0:코드, 1:종목명, 15:타이밍, 16:권고)은 오름차순 우선
+                _sortOrder = (e.Column >= 2 && e.Column <= 14 && e.Column != 8) ? SortOrder.Descending : SortOrder.Ascending;
             }
 
             UpdateColumnHeaderSortArrows();
@@ -508,43 +534,55 @@ namespace GateHelper.StockAdvisor
             int result = 0;
             switch (ColumnIndex)
             {
-                case 0: // 종목명 (한글 가나다순)
-                    result = string.Compare(itemX.StockName, itemY.StockName, StringComparison.CurrentCultureIgnoreCase);
-                    break;
-                case 1: // 코드
+                case 0: // 코드 (문자열 정렬)
                     result = string.Compare(itemX.StockCode, itemY.StockCode, StringComparison.OrdinalIgnoreCase);
+                    break;
+                case 1: // 종목명 (한글 가나다순)
+                    result = string.Compare(itemX.StockName, itemY.StockName, StringComparison.CurrentCultureIgnoreCase);
                     break;
                 case 2: // 현재가 (수치 정렬)
                     result = itemX.CurrentPrice.CompareTo(itemY.CurrentPrice);
                     break;
-                case 3: // 수익률 (수치 정렬)
+                case 3: // 전일대비 상승률 (수치 정렬)
+                    result = itemX.ChangeRate.CompareTo(itemY.ChangeRate);
+                    break;
+                case 4: // 평단 (수치 정렬)
+                    result = itemX.BuyPrice.CompareTo(itemY.BuyPrice);
+                    break;
+                case 5: // 보유수량 (수치 정렬)
+                    result = itemX.Quantity.CompareTo(itemY.Quantity);
+                    break;
+                case 6: // 손익금(원) (수치 정렬)
+                    result = itemX.ProfitAmount.CompareTo(itemY.ProfitAmount);
+                    break;
+                case 7: // 수익률 (수치 정렬)
                     result = itemX.ProfitRate.CompareTo(itemY.ProfitRate);
                     break;
-                case 4: // AI 등급 (A, B, C, F)
+                case 8: // AI 등급 (A, B, C, F)
                     result = itemX.Grade.CompareTo(itemY.Grade);
                     break;
-                case 5: // 14일 RSI (수치 정렬)
+                case 9: // 14일 RSI (수치 정렬)
                     result = itemX.Rsi.CompareTo(itemY.Rsi);
                     break;
-                case 6: // 5일 거래량 (수치 정렬)
+                case 10: // 5일 거래량 (수치 정렬)
                     result = itemX.VolumeRatio.CompareTo(itemY.VolumeRatio);
                     break;
-                case 7: // 차트 점수 (수치 정렬)
+                case 11: // 차트 점수 (수치 정렬)
                     result = itemX.ChartScore.CompareTo(itemY.ChartScore);
                     break;
-                case 8: // 뉴스 점수 (수치 정렬)
+                case 12: // 뉴스 점수 (수치 정렬)
                     result = itemX.NewsScore.CompareTo(itemY.NewsScore);
                     break;
-                case 9: // 손익비 점수 (수치 정렬)
+                case 13: // 손익비 점수 (수치 정렬)
                     result = itemX.RiskScore.CompareTo(itemY.RiskScore);
                     break;
-                case 10: // ★종합점수 (수치 정렬)
+                case 14: // ★종합점수 (수치 정렬)
                     result = itemX.FinalScore.CompareTo(itemY.FinalScore);
                     break;
-                case 11: // 타이밍 안전벨트
+                case 15: // 타이밍 안전벨트
                     result = string.Compare(itemX.TimingBadge, itemY.TimingBadge, StringComparison.CurrentCultureIgnoreCase);
                     break;
-                case 12: // 권고 지침
+                case 16: // 권고 지침
                     string actX = itemX.LastDiagnosis?.RecommendedAction ?? string.Empty;
                     string actY = itemY.LastDiagnosis?.RecommendedAction ?? string.Empty;
                     result = string.Compare(actX, actY, StringComparison.CurrentCultureIgnoreCase);
@@ -554,7 +592,7 @@ namespace GateHelper.StockAdvisor
                     break;
             }
 
-            if (result == 0 && ColumnIndex != 0)
+            if (result == 0 && ColumnIndex != 1)
             {
                 // 동률 시 2차 정렬: 종합점수 내림차순 -> 종목명 가나다순 안정 정렬
                 result = itemY.FinalScore.CompareTo(itemX.FinalScore);

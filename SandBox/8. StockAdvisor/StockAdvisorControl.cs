@@ -69,8 +69,8 @@ namespace GateHelper.StockAdvisor
         private SortOrder _sortOrder = SortOrder.None;
         private static readonly string[] OriginalColumnNames = new[]
         {
-            "종목명", "코드", "현재가", "수익률", "AI 등급", "14일 RSI", "5일 거래량",
-            "차트", "뉴스", "손익비", "★종합점수", "타이밍 안전벨트", "권고 지침"
+            "코드", "종목명", "현재가", "전일대비", "평단", "보유수량", "손익금(원)", "수익률", "AI 등급",
+            "14일 RSI", "5일 거래량", "차트", "뉴스", "손익비", "★종합점수", "타이밍 안전벨트", "권고 지침"
         };
         private GlobalMarketSnapshot _macroSnapshot;
 

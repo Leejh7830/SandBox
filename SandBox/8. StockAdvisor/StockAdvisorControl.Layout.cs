@@ -227,16 +227,16 @@ namespace GateHelper.StockAdvisor
 
             _pnlFooter.Controls.Add(_lblAccountSummary);
 
-            // 3. 중앙 분할 컨테이너 (좌측 리스트뷰 최적폭 820px, 우측 상세 카드 440px 쾌적 확보)
+            // 3. 중앙 분할 컨테이너 (좌측 리스트뷰 최적폭 880px, 우측 상세 카드 380px 쾌적 확보)
             _splitMain = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 820,
+                SplitterDistance = 880,
                 BackColor = Color.FromArgb(30, 34, 46)
             };
 
-            // 좌측: 종목 리스트뷰 (11대 컬럼 구성)
+            // 좌측: 종목 리스트뷰 (17대 컬럼 구성: 코드 맨앞, 평단/손익금/보유수량/전일대비 탑재)
             _lvStocks = new ListView
             {
                 Dock = DockStyle.Fill,
@@ -248,19 +248,23 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Segoe UI", 9.2f),
                 BorderStyle = BorderStyle.None
             };
-            _lvStocks.Columns.Add("종목명", 125);
             _lvStocks.Columns.Add("코드", 62, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("종목명", 120);
             _lvStocks.Columns.Add("현재가", 75, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("수익률", 72, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("AI 등급", 60, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("14일 RSI", 74, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("5일 거래량", 84, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("차트", 56, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("뉴스", 56, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("손익비", 62, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("★종합점수", 88, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("타이밍 안전벨트", 125, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("권고 지침", 240);
+            _lvStocks.Columns.Add("전일대비", 68, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("평단", 75, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("보유수량", 60, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("손익금(원)", 85, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("수익률", 68, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("AI 등급", 55, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("14일 RSI", 68, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("5일 거래량", 72, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("차트", 48, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("뉴스", 48, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("손익비", 52, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("★종합점수", 75, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("타이밍 안전벨트", 115, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("권고 지침", 220);
 
             _lvStocks.Resize += (s, e) => AutoFitLastColumn();
             _lvStocks.SelectedIndexChanged += LvStocks_SelectedIndexChanged;
@@ -457,7 +461,7 @@ namespace GateHelper.StockAdvisor
 
         private void AutoFitLastColumn()
         {
-            if (_lvStocks == null || _lvStocks.Columns.Count < 13) return;
+            if (_lvStocks == null || _lvStocks.Columns.Count < 17) return;
             try
             {
                 int fixedWidth = 0;
@@ -467,7 +471,7 @@ namespace GateHelper.StockAdvisor
                     fixedWidth += _lvStocks.Columns[i].Width;
                 }
                 int remain = _lvStocks.ClientSize.Width - fixedWidth - 4;
-                _lvStocks.Columns[lastIdx].Width = Math.Max(240, remain);
+                _lvStocks.Columns[lastIdx].Width = Math.Max(220, remain);
             }
             catch { }
         }

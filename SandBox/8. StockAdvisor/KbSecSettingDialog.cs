@@ -37,8 +37,8 @@ namespace GateHelper.StockAdvisor
         private void InitializeComponent()
         {
             Text = "KB증권 Open API 실시간 계좌 연동 설정";
-            Size = new Size(640, 565);
-            MinimumSize = new Size(640, 565);
+            ClientSize = new Size(680, 545);
+            MinimumSize = new Size(680, 545);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -63,7 +63,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "★ 발급 가이드",
                 Size = new Size(115, 32),
-                Location = new Point(485, 5),
+                Location = new Point(515, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(30, 45, 65),
                 ForeColor = Color.FromArgb(100, 200, 255),
@@ -79,7 +79,7 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Segoe UI", 9f),
                 ForeColor = Color.FromArgb(150, 165, 185),
                 Location = new Point(2, 38),
-                Size = new Size(475, 26)
+                Size = new Size(505, 26)
             };
 
             pnlHeader.Controls.Add(lblTitle);
@@ -104,7 +104,7 @@ namespace GateHelper.StockAdvisor
             _txtAppKey = new TextBox
             {
                 Location = new Point(130, curY - 3),
-                Size = new Size(465, 26),
+                Size = new Size(495, 26),
                 BackColor = Color.FromArgb(28, 34, 48),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
@@ -118,7 +118,7 @@ namespace GateHelper.StockAdvisor
             _txtAppSecret = new TextBox
             {
                 Location = new Point(130, curY - 3),
-                Size = new Size(395, 26),
+                Size = new Size(420, 26),
                 BackColor = Color.FromArgb(28, 34, 48),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle,
@@ -127,7 +127,7 @@ namespace GateHelper.StockAdvisor
             _btnToggleSecret = new Button
             {
                 Text = "보기",
-                Location = new Point(530, curY - 4),
+                Location = new Point(560, curY - 4),
                 Size = new Size(65, 26),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(35, 42, 58),
@@ -156,7 +156,7 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
             };
-            var lblAccTip = new Label { Text = "(- 제외 10자리 또는 8자리)", Location = new Point(338, curY), AutoSize = true, ForeColor = Color.FromArgb(130, 145, 165), Font = new Font("Segoe UI", 8.5f) };
+            var lblAccTip = new Label { Text = "(- 제외 10자리 또는 8자리, 종합위탁 01 계좌)", Location = new Point(338, curY), AutoSize = true, ForeColor = Color.FromArgb(130, 145, 165), Font = new Font("Segoe UI", 8.5f) };
             pnlForm.Controls.Add(lblAcc);
             pnlForm.Controls.Add(_txtAccountNumber);
             pnlForm.Controls.Add(lblAccTip);
@@ -185,7 +185,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "API 키 미등록 시 가상 시뮬레이션 연동 테스트 허용 (체크 시에만 가상 데이터 제공)",
                 Location = new Point(5, curY),
-                Size = new Size(580, 24),
+                Size = new Size(620, 24),
                 Checked = false,
                 ForeColor = Color.FromArgb(160, 210, 180)
             };
@@ -195,9 +195,9 @@ namespace GateHelper.StockAdvisor
             // 상태 및 피드백 레이블
             _lblStatus = new Label
             {
-                Text = "• 입력된 모든 인증정보는 Windows DPAPI로 안전하게 암호화 보관됩니다.",
+                Text = "• 입력된 모든 인증정보는 Windows DPAPI로 안전하게 암호화 보관됩니다.\n• ISA, 연금저축 계좌는 증권사 정책상 API가 미지원되므로 [클립보드 붙여넣기]를 권장합니다.",
                 Location = new Point(5, curY),
-                Size = new Size(590, 36),
+                Size = new Size(620, 38),
                 ForeColor = Color.FromArgb(130, 150, 175),
                 Font = new Font("Segoe UI", 8.5f)
             };
@@ -223,7 +223,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "저장 및 적용",
                 Size = new Size(115, 36),
-                Location = new Point(365, 10),
+                Location = new Point(400, 10),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(16, 52, 36),
                 ForeColor = Color.FromArgb(0, 240, 120),
@@ -237,7 +237,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "닫기",
                 Size = new Size(95, 36),
-                Location = new Point(490, 10),
+                Location = new Point(530, 10),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(35, 40, 52),
                 ForeColor = Color.FromArgb(200, 210, 225),
@@ -359,7 +359,7 @@ namespace GateHelper.StockAdvisor
             using (var guideForm = new Form())
             {
                 guideForm.Text = "📖 KB증권 Open API 키 발급 4단계 가이드";
-                guideForm.Size = new Size(540, 430);
+                guideForm.Size = new Size(580, 480);
                 guideForm.StartPosition = FormStartPosition.CenterParent;
                 guideForm.FormBorderStyle = FormBorderStyle.FixedDialog;
                 guideForm.MaximizeBox = false;
@@ -372,7 +372,9 @@ namespace GateHelper.StockAdvisor
                 var lblMsg = new Label
                 {
                     Text = "【 KB증권 Open API 발급 절차 】\n\n" +
-                           "1단계: KB증권 종합위탁 계좌 준비 (기존 h-able 계좌 그대로 사용)\n\n" +
+                           "1단계: KB증권 종합위탁 계좌 준비 (끝자리 01 계좌)\n" +
+                           "   • ※ ISA, 연금저축 계좌는 조세특례법 및 증권사 정책상 API 발급이 불가합니다.\n" +
+                           "     (ISA 계좌는 SandBox의 [클립보드 붙여넣기]로 0.1초 만에 가져올 수 있습니다.)\n\n" +
                            "2단계: KB증권 Open API 개발자 포털(openapi.kbsec.com) 접속\n" +
                            "   • 우측 상단 [회원가입 / 로그인]\n\n" +
                            "3단계: [앱 관리] 메뉴 → [앱 등록] 클릭\n" +
@@ -408,7 +410,7 @@ namespace GateHelper.StockAdvisor
                 {
                     Text = "확인",
                     Size = new Size(90, 36),
-                    Location = new Point(410, 5),
+                    Location = new Point(440, 5),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(35, 40, 52),
                     ForeColor = Color.White

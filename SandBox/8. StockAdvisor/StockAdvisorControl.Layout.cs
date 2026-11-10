@@ -54,14 +54,52 @@ namespace GateHelper.StockAdvisor
                 Margin = new Padding(8, 2, 8, 2)
             };
 
+            var pnlTitleRow = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 24,
+                Margin = new Padding(0)
+            };
+
             var lblHeaderTitle = new Label
             {
                 Text = "◆ [AI 주식 리스크 참모] 오늘의 모닝 브리핑 & 거시 동향",
                 Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(120, 210, 255),
-                Dock = DockStyle.Top,
-                Height = 20
+                Dock = DockStyle.Left,
+                AutoSize = true
             };
+
+            _cboAiModel = new ComboBox
+            {
+                Dock = DockStyle.Right,
+                Width = 230,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(28, 36, 50),
+                ForeColor = Color.FromArgb(0, 230, 255),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            _cboAiModel.Items.Add("🧠 Gemini 1.5 Pro (심층 추론)");
+            _cboAiModel.Items.Add("⚡ Gemini 1.5 Flash (초고속)");
+            _cboAiModel.Items.Add("🚀 Gemini 2.0 Flash (차세대)");
+
+            // 저장된 설정 로드
+            string curModel = GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel;
+            if (curModel.Contains("2.0")) _cboAiModel.SelectedIndex = 2;
+            else if (curModel.Contains("flash")) _cboAiModel.SelectedIndex = 1;
+            else _cboAiModel.SelectedIndex = 0; // Pro 기본 선택
+
+            _cboAiModel.SelectedIndexChanged += (s, e) =>
+            {
+                if (_cboAiModel.SelectedIndex == 0) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-1.5-pro";
+                else if (_cboAiModel.SelectedIndex == 1) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-1.5-flash";
+                else if (_cboAiModel.SelectedIndex == 2) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-2.0-flash";
+            };
+
+            pnlTitleRow.Controls.Add(_cboAiModel);
+            pnlTitleRow.Controls.Add(lblHeaderTitle);
 
             _lblBriefing1 = new Label { Text = "• 1행: 글로벌 매크로 및 미 수출통제(BIS) 동향 점검 중", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(220, 225, 235), Dock = DockStyle.Top, Height = 20 };
             _lblBriefing2 = new Label { Text = "• 2행: 국내 증시 및 주력 반도체/IT 섹터 리스크 모니터링", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(200, 205, 215), Dock = DockStyle.Top, Height = 20 };
@@ -70,7 +108,7 @@ namespace GateHelper.StockAdvisor
             pnlBriefingText.Controls.Add(_lblBriefing3);
             pnlBriefingText.Controls.Add(_lblBriefing2);
             pnlBriefingText.Controls.Add(_lblBriefing1);
-            pnlBriefingText.Controls.Add(lblHeaderTitle);
+            pnlBriefingText.Controls.Add(pnlTitleRow);
 
             // 우측 상단 액션 버튼 영역 (네온 사이버 스타일 2행 3열 반응형 그리드)
             var tblButtons = new TableLayoutPanel

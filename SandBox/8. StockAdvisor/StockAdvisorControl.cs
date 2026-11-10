@@ -23,6 +23,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblBriefing1;
         private Label _lblBriefing2;
         private Label _lblBriefing3;
+        private ComboBox _cboAiModel;
         private Button _btnDiagnose;
         private Button _btnRefreshPrice;
         private Button _btnAddStock;

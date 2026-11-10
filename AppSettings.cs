@@ -18,6 +18,9 @@ namespace GateHelper
         // AI 샌드박스 옵션: Gemini API Key
         public string GeminiApiKey { get; set; }
 
+        // AI 샌드박스 옵션: 선호 진단 모델 (gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash)
+        public string GeminiModel { get; set; }
+
         // AI 샌드박스 옵션: 프로그램 시작 시 AI 데일리 브리핑 백그라운드 자동 예열 여부
         public bool AutoPreloadAiTrend { get; set; }
 
@@ -40,6 +43,7 @@ namespace GateHelper
             SaveOption = false;
             EncryptCredentialsOnStart = false;
             GeminiApiKey = "";
+            GeminiModel = "gemini-1.5-pro";
             AutoPreloadAiTrend = false;
             KbAppKey = "";
             KbAppSecretEncrypted = "";

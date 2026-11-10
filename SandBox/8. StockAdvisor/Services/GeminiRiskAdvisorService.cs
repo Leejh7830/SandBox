@@ -30,13 +30,38 @@ namespace GateHelper.StockAdvisor.Services
 
         private static readonly string[] ModelCandidates = new[]
         {
+            "gemini-1.5-pro",
             "gemini-1.5-flash",
             "gemini-2.0-flash",
-            "gemini-1.5-flash-8b",
-            "gemini-1.5-pro"
+            "gemini-1.5-flash-8b"
         };
 
-        private static string _activeModel = "gemini-1.5-flash";
+        private static string _activeModel = "gemini-1.5-pro";
+
+        public static string UserPreferredModel
+        {
+            get
+            {
+                try
+                {
+                    string m = Util_Option.LoadUserOptions()?.GeminiModel;
+                    if (!string.IsNullOrWhiteSpace(m)) return m.Trim();
+                }
+                catch { }
+                return "gemini-1.5-pro";
+            }
+            set
+            {
+                try
+                {
+                    var opt = Util_Option.LoadUserOptions() ?? new AppSettings();
+                    opt.GeminiModel = value;
+                    Util_Option.SaveUserOptions(opt);
+                    _activeModel = value;
+                }
+                catch { }
+            }
+        }
 
         public static string GetApiKey()
         {
@@ -137,7 +162,9 @@ namespace GateHelper.StockAdvisor.Services
                     }
                 });
 
-                var modelsToTry = new List<string> { _activeModel };
+                var preferred = UserPreferredModel;
+                var modelsToTry = new List<string> { preferred };
+                if (!modelsToTry.Contains(_activeModel)) modelsToTry.Add(_activeModel);
                 foreach (var m in ModelCandidates)
                 {
                     if (!modelsToTry.Contains(m)) modelsToTry.Add(m);

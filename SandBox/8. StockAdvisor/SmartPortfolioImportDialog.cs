@@ -22,7 +22,6 @@ namespace GateHelper.StockAdvisor
     public class SmartPortfolioImportDialog : Form
     {
         private Button _btnKbSync;
-        private Button _btnKbSetting;
         private Button _btnOpenFile;
         private Button _btnPasteClipboard;
         private Button _btnClear;
@@ -104,16 +103,10 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(12, 10, 12, 10)
             };
 
-            _btnKbSync = CreateButton("⚡ KB증권 실시간 연동", Color.FromArgb(28, 48, 75), Color.FromArgb(0, 220, 255));
-            _btnKbSync.Width = 165;
+            _btnKbSync = CreateButton("⚡ KB 실시간 연동", Color.FromArgb(28, 48, 75), Color.FromArgb(0, 220, 255));
+            _btnKbSync.Width = 150;
             _btnKbSync.Dock = DockStyle.Left;
-            _btnKbSync.Click += async (s, e) => await SyncFromKbOpenApiAsync();
-
-            _btnKbSetting = CreateButton("KB 설정", Color.FromArgb(34, 40, 56), Color.FromArgb(140, 195, 255));
-            _btnKbSetting.Width = 72;
-            _btnKbSetting.Dock = DockStyle.Left;
-            _btnKbSetting.Margin = new Padding(6, 0, 0, 0);
-            _btnKbSetting.Click += (s, e) => ShowKbSettingDialog();
+            _btnKbSync.Click += async (s, e) => await ShowKbSettingDialogAndSyncAsync();
 
             _btnOpenFile = CreateButton("CSV 파일 열기", Color.FromArgb(20, 48, 70), Color.FromArgb(100, 210, 240));
             _btnOpenFile.Width = 120;
@@ -135,7 +128,7 @@ namespace GateHelper.StockAdvisor
 
             _lblStatus = new Label
             {
-                Text = "• [⚡ KB증권 실시간 연동] 또는 HTS 잔고 복사 후 [클립보드 붙여넣기]를 누르세요.",
+                Text = "• [⚡ KB 실시간 연동]을 눌러 설정 후 잔고를 불러오거나, HTS 복사 후 [클립보드 붙여넣기]를 누르세요.",
                 ForeColor = Color.FromArgb(170, 185, 210),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Dock = DockStyle.Fill,
@@ -146,7 +139,6 @@ namespace GateHelper.StockAdvisor
             pnlTop.Controls.Add(_btnClear);
             pnlTop.Controls.Add(_btnPasteClipboard);
             pnlTop.Controls.Add(_btnOpenFile);
-            pnlTop.Controls.Add(_btnKbSetting);
             pnlTop.Controls.Add(_btnKbSync);
 
             // 지능형 컬럼 매핑 바 (헤더 감지 및 사용자 매핑 지정)
@@ -939,39 +931,18 @@ namespace GateHelper.StockAdvisor
             }
         }
 
-        private void ShowKbSettingDialog()
+        private async Task ShowKbSettingDialogAndSyncAsync()
         {
             using (var dlg = new KbSecSettingDialog())
             {
-                if (dlg.ShowDialog(this) == DialogResult.OK)
-                {
-                    _lblStatus.Text = "✔ KB증권 연동 설정이 저장되었습니다. [⚡ KB증권 실시간 연동]을 눌러 계좌를 조회하세요.";
-                }
+                if (dlg.ShowDialog(this) != DialogResult.OK) return;
             }
-        }
 
-        private async Task SyncFromKbOpenApiAsync()
-        {
             var config = KbTradingClient.LoadConfig();
-
-            // 설정 미완료 및 시뮬레이션도 허용하지 않은 경우 설정창 먼저 유도
             if (!config.IsConfigured && !config.EnableSimulationWhenNoKey)
             {
-                var dr = MessageBox.Show(this,
-                    "KB증권 Open API 인증정보가 등록되지 않았습니다.\n\n" +
-                    "[설정창 열기]를 눌러 App Key/Secret을 등록하시거나,\n" +
-                    "'가상 시뮬레이션 모드'를 활성화하여 즉시 테스트해보시겠습니까?",
-                    "KB증권 연동 안내",
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Information);
-
-                if (dr == DialogResult.Yes)
-                {
-                    ShowKbSettingDialog();
-                    config = KbTradingClient.LoadConfig();
-                    if (!config.IsConfigured && !config.EnableSimulationWhenNoKey) return;
-                }
-                else return;
+                _lblStatus.Text = "ℹ KB증권 API 키가 등록되지 않았습니다.";
+                return;
             }
 
             _btnKbSync.Enabled = false;
@@ -979,13 +950,13 @@ namespace GateHelper.StockAdvisor
 
             try
             {
-                var client = new KbTradingClient(config.AppKey, config.AppSecret, config.IsMockTrading);
+                var client = new KbTradingClient(config.AppKey, config.AppSecret, config.IsMockTrading, config.EnableSimulationWhenNoKey);
                 var balance = await client.FetchBalanceAsync(config.AccountNumber);
 
                 if (!balance.IsSuccess)
                 {
                     MessageBox.Show(this, $"KB증권 잔고 조회 실패:\n\n{balance.ErrorMessage}", "동기화 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    _lblStatus.Text = "❌ KB증권 잔고 조회 실패: " + balance.ErrorMessage;
+                    _lblStatus.Text = "❌ 잔고 조회 실패: " + balance.ErrorMessage;
                     return;
                 }
 

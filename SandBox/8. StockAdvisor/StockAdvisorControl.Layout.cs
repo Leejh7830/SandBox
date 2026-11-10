@@ -72,14 +72,14 @@ namespace GateHelper.StockAdvisor
 
             _cboAiModel = new ComboBox
             {
+                Dock = DockStyle.Right,
                 Width = 230,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 BackColor = Color.FromArgb(28, 36, 50),
                 ForeColor = Color.FromArgb(0, 230, 255),
                 FlatStyle = FlatStyle.Flat,
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                Margin = new Padding(0, 0, 10, 0)
+                Cursor = Cursors.Hand
             };
             _cboAiModel.Items.Add("🧠 Gemini 1.5 Pro (심층 추론)");
             _cboAiModel.Items.Add("⚡ Gemini 1.5 Flash (초고속)");
@@ -98,36 +98,7 @@ namespace GateHelper.StockAdvisor
                 else if (_cboAiModel.SelectedIndex == 2) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-2.0-flash";
             };
 
-            _btnKbSetting = new Button
-            {
-                Text = "⚡ KB 연동",
-                Width = 85,
-                Height = 24,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(24, 38, 56),
-                ForeColor = Color.FromArgb(0, 216, 255),
-                Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
-                Cursor = Cursors.Hand,
-                Margin = new Padding(0)
-            };
-            _btnKbSetting.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 220);
-            _btnKbSetting.Click += (s, e) => ShowKbSettingDialog();
-
-            var pnlRightControls = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Right,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false,
-                BackColor = Color.Transparent,
-                Margin = new Padding(0),
-                Padding = new Padding(0)
-            };
-            pnlRightControls.Controls.Add(_cboAiModel);
-            pnlRightControls.Controls.Add(_btnKbSetting);
-
-            pnlTitleRow.Controls.Add(pnlRightControls);
+            pnlTitleRow.Controls.Add(_cboAiModel);
             pnlTitleRow.Controls.Add(lblHeaderTitle);
 
             _lblBriefing1 = new Label { Text = "• 1행: 글로벌 매크로 및 미 수출통제(BIS) 동향 점검 중", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(220, 225, 235), Dock = DockStyle.Top, Height = 20 };

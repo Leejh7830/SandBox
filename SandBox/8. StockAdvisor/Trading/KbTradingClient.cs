@@ -30,10 +30,11 @@ namespace GateHelper.StockAdvisor.Trading
         private string _appKey;
         private string _appSecret;
         private bool _isMockTrading;
+        private bool _enableSimulation;
         private KbAuthTokenResponse _cachedToken = null;
 
         public bool IsConfigured => !string.IsNullOrWhiteSpace(_appKey) && !string.IsNullOrWhiteSpace(_appSecret);
-        public bool IsSimulationMode => !IsConfigured;
+        public bool IsSimulationMode => !IsConfigured && _enableSimulation;
 
         public KbTradingClient()
         {
@@ -41,13 +42,15 @@ namespace GateHelper.StockAdvisor.Trading
             _appKey = cfg.AppKey;
             _appSecret = cfg.AppSecret;
             _isMockTrading = cfg.IsMockTrading;
+            _enableSimulation = cfg.EnableSimulationWhenNoKey;
         }
 
-        public KbTradingClient(string appKey, string appSecret, bool isMockTrading = false)
+        public KbTradingClient(string appKey, string appSecret, bool isMockTrading = false, bool enableSimulation = false)
         {
             _appKey = appKey?.Trim() ?? string.Empty;
             _appSecret = appSecret?.Trim() ?? string.Empty;
             _isMockTrading = isMockTrading;
+            _enableSimulation = enableSimulation;
         }
 
         private string BaseUrl => _isMockTrading 
@@ -91,14 +94,23 @@ namespace GateHelper.StockAdvisor.Trading
 
         public async Task<KbAuthTokenResponse> GetAccessTokenAsync()
         {
-            if (IsSimulationMode)
+            if (!IsConfigured)
             {
+                if (IsSimulationMode)
+                {
+                    return new KbAuthTokenResponse
+                    {
+                        IsSuccess = true,
+                        AccessToken = "SIMULATION_MOCK_TOKEN",
+                        IssuedAt = DateTime.Now,
+                        ExpiresIn = 86400
+                    };
+                }
+
                 return new KbAuthTokenResponse
                 {
-                    IsSuccess = true,
-                    AccessToken = "SIMULATION_MOCK_TOKEN",
-                    IssuedAt = DateTime.Now,
-                    ExpiresIn = 86400
+                    IsSuccess = false,
+                    ErrorMessage = "KB증권 Open API 키(App Key / Secret)가 설정되지 않았습니다."
                 };
             }
 
@@ -158,41 +170,47 @@ namespace GateHelper.StockAdvisor.Trading
         {
             var res = new KbAccountBalanceResponse { AccountNumber = accountNumber };
 
-            // 1. 시뮬레이션 모드 (키 미등록 또는 테스트 가상 연동)
-            if (IsSimulationMode)
+            if (!IsConfigured)
             {
-                await Task.Delay(400); // 실제 네트워크 통신 느낌의 경쾌한 딜레이 (400ms)
-                res.IsSuccess = true;
-                res.ErrorMessage = "💡 [가상 연동 테스트 성공] API 키 발급 전 가상 계좌 데이터로 정상 연동을 확인했습니다.";
-                
-                // H-able 잔고 양식과 동일한 현실적인 가상 잔고 데이터 생성
-                res.Holdings = new List<KbHoldingBalanceDto>
+                if (IsSimulationMode)
                 {
-                    new KbHoldingBalanceDto { StockCode = "000270", StockName = "기아", HoldingQuantity = 1, BuyAveragePrice = 133950m, CurrentPrice = 95600m },
-                    new KbHoldingBalanceDto { StockCode = "005930", StockName = "삼성전자", HoldingQuantity = 1, BuyAveragePrice = 230000m, CurrentPrice = 197400m },
-                    new KbHoldingBalanceDto { StockCode = "001740", StockName = "SK네트웍스", HoldingQuantity = 8, BuyAveragePrice = 9334m, CurrentPrice = 5470m },
-                    new KbHoldingBalanceDto { StockCode = "003090", StockName = "대웅", HoldingQuantity = 3, BuyAveragePrice = 22050m, CurrentPrice = 16100m },
-                    new KbHoldingBalanceDto { StockCode = "017800", StockName = "현대엘리베이터", HoldingQuantity = 5, BuyAveragePrice = 81038m, CurrentPrice = 67800m },
-                    new KbHoldingBalanceDto { StockCode = "035420", StockName = "NAVER", HoldingQuantity = 1, BuyAveragePrice = 195500m, CurrentPrice = 192700m },
-                    new KbHoldingBalanceDto { StockCode = "047810", StockName = "한국항공우주", HoldingQuantity = 1, BuyAveragePrice = 124900m, CurrentPrice = 101200m },
-                    new KbHoldingBalanceDto { StockCode = "105560", StockName = "KB금융", HoldingQuantity = 1, BuyAveragePrice = 165000m, CurrentPrice = 152600m },
-                    new KbHoldingBalanceDto { StockCode = "271560", StockName = "오리온", HoldingQuantity = 1, BuyAveragePrice = 122500m, CurrentPrice = 113800m }
-                };
+                    await Task.Delay(400);
+                    res.IsSuccess = true;
+                    res.ErrorMessage = "💡 [가상 시뮬레이션 모드] API 키 미등록 상태에서 가상 샘플 잔고 데이터를 확인했습니다.";
+                    
+                    // 가상 잔고 데이터
+                    res.Holdings = new List<KbHoldingBalanceDto>
+                    {
+                        new KbHoldingBalanceDto { StockCode = "000270", StockName = "기아", HoldingQuantity = 1, BuyAveragePrice = 133950m, CurrentPrice = 95600m },
+                        new KbHoldingBalanceDto { StockCode = "005930", StockName = "삼성전자", HoldingQuantity = 1, BuyAveragePrice = 230000m, CurrentPrice = 197400m },
+                        new KbHoldingBalanceDto { StockCode = "001740", StockName = "SK네트웍스", HoldingQuantity = 8, BuyAveragePrice = 9334m, CurrentPrice = 5470m },
+                        new KbHoldingBalanceDto { StockCode = "003090", StockName = "대웅", HoldingQuantity = 3, BuyAveragePrice = 22050m, CurrentPrice = 16100m },
+                        new KbHoldingBalanceDto { StockCode = "017800", StockName = "현대엘리베이터", HoldingQuantity = 5, BuyAveragePrice = 81038m, CurrentPrice = 67800m },
+                        new KbHoldingBalanceDto { StockCode = "035420", StockName = "NAVER", HoldingQuantity = 1, BuyAveragePrice = 195500m, CurrentPrice = 192700m },
+                        new KbHoldingBalanceDto { StockCode = "047810", StockName = "한국항공우주", HoldingQuantity = 1, BuyAveragePrice = 124900m, CurrentPrice = 101200m },
+                        new KbHoldingBalanceDto { StockCode = "105560", StockName = "KB금융", HoldingQuantity = 1, BuyAveragePrice = 165000m, CurrentPrice = 152600m },
+                        new KbHoldingBalanceDto { StockCode = "271560", StockName = "오리온", HoldingQuantity = 1, BuyAveragePrice = 122500m, CurrentPrice = 113800m }
+                    };
 
-                decimal totalBuy = 0m;
-                decimal totalEval = 0m;
-                foreach (var h in res.Holdings)
-                {
-                    h.TotalBuyAmount = h.HoldingQuantity * h.BuyAveragePrice;
-                    h.TotalEvalAmount = h.HoldingQuantity * h.CurrentPrice;
-                    h.ProfitAmount = h.TotalEvalAmount - h.TotalBuyAmount;
-                    h.ProfitRate = (h.TotalBuyAmount > 0) ? (h.ProfitAmount / h.TotalBuyAmount * 100m) : 0m;
-                    totalBuy += h.TotalBuyAmount;
-                    totalEval += h.TotalEvalAmount;
+                    decimal totalBuy = 0m;
+                    decimal totalEval = 0m;
+                    foreach (var h in res.Holdings)
+                    {
+                        h.TotalBuyAmount = h.HoldingQuantity * h.BuyAveragePrice;
+                        h.TotalEvalAmount = h.HoldingQuantity * h.CurrentPrice;
+                        h.ProfitAmount = h.TotalEvalAmount - h.TotalBuyAmount;
+                        h.ProfitRate = (h.TotalBuyAmount > 0) ? (h.ProfitAmount / h.TotalBuyAmount * 100m) : 0m;
+                        totalBuy += h.TotalBuyAmount;
+                        totalEval += h.TotalEvalAmount;
+                    }
+                    res.TotalEvalAmount = totalEval;
+                    res.TotalProfitAmount = totalEval - totalBuy;
+                    res.TotalDeposit = 1250000m;
+                    return res;
                 }
-                res.TotalEvalAmount = totalEval;
-                res.TotalProfitAmount = totalEval - totalBuy;
-                res.TotalDeposit = 1250000m;
+
+                res.IsSuccess = false;
+                res.ErrorMessage = "KB증권 Open API 인증정보가 등록되지 않았습니다. [KB 설정]에서 App Key와 Secret을 먼저 입력해 주세요.";
                 return res;
             }
 

@@ -57,7 +57,6 @@ namespace GateHelper.StockAdvisor
         private Panel _pnlFooter;
         private Label _lblAccountSummary;
         private Label _lblLastUpdated;
-        private Button _btnKbSetting;
         private Timer _kbSyncTimer;
 
         // 비동기 작업 상태 플래그 (멀티태스킹 분리)

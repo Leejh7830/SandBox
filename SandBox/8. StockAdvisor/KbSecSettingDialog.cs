@@ -37,8 +37,8 @@ namespace GateHelper.StockAdvisor
         private void InitializeComponent()
         {
             Text = "KB증권 Open API 실시간 계좌 연동 설정";
-            Size = new Size(580, 545);
-            MinimumSize = new Size(580, 545);
+            Size = new Size(640, 565);
+            MinimumSize = new Size(640, 565);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -50,7 +50,7 @@ namespace GateHelper.StockAdvisor
             var pnlMain = new Panel { Dock = DockStyle.Fill, Padding = new Padding(20) };
 
             // 1. 상단 타이틀 배너
-            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 60 };
+            var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 70 };
             var lblTitle = new Label
             {
                 Text = "⚡ KB증권 Open API 실시간 계좌 연동",
@@ -59,19 +59,11 @@ namespace GateHelper.StockAdvisor
                 AutoSize = true,
                 Location = new Point(0, 5)
             };
-            var lblDesc = new Label
-            {
-                Text = "h-able과 실시간 동기화하여 내 실제 보유 잔고 및 평단가를 1초 만에 불러옵니다.",
-                Font = new Font("Segoe UI", 8.8f),
-                ForeColor = Color.FromArgb(150, 165, 185),
-                AutoSize = true,
-                Location = new Point(2, 32)
-            };
             var btnGuide = new Button
             {
                 Text = "★ 발급 가이드",
-                Size = new Size(115, 30),
-                Location = new Point(415, 8),
+                Size = new Size(115, 32),
+                Location = new Point(485, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(30, 45, 65),
                 ForeColor = Color.FromArgb(100, 200, 255),
@@ -81,9 +73,18 @@ namespace GateHelper.StockAdvisor
             btnGuide.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 230);
             btnGuide.Click += (s, e) => ShowGuideDialog();
 
+            var lblDesc = new Label
+            {
+                Text = "h-able과 실시간 동기화하여 내 실제 보유 잔고 및 평단가를 1초 만에 불러옵니다.",
+                Font = new Font("Segoe UI", 9f),
+                ForeColor = Color.FromArgb(150, 165, 185),
+                Location = new Point(2, 38),
+                Size = new Size(475, 26)
+            };
+
             pnlHeader.Controls.Add(lblTitle);
-            pnlHeader.Controls.Add(lblDesc);
             pnlHeader.Controls.Add(btnGuide);
+            pnlHeader.Controls.Add(lblDesc);
 
             // 2. 입력 폼 영역
             var pnlForm = new Panel { Dock = DockStyle.Fill };
@@ -103,7 +104,7 @@ namespace GateHelper.StockAdvisor
             _txtAppKey = new TextBox
             {
                 Location = new Point(130, curY - 3),
-                Size = new Size(395, 26),
+                Size = new Size(465, 26),
                 BackColor = Color.FromArgb(28, 34, 48),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
@@ -117,7 +118,7 @@ namespace GateHelper.StockAdvisor
             _txtAppSecret = new TextBox
             {
                 Location = new Point(130, curY - 3),
-                Size = new Size(325, 26),
+                Size = new Size(395, 26),
                 BackColor = Color.FromArgb(28, 34, 48),
                 ForeColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle,
@@ -126,7 +127,7 @@ namespace GateHelper.StockAdvisor
             _btnToggleSecret = new Button
             {
                 Text = "보기",
-                Location = new Point(460, curY - 4),
+                Location = new Point(530, curY - 4),
                 Size = new Size(65, 26),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(35, 42, 58),
@@ -182,10 +183,10 @@ namespace GateHelper.StockAdvisor
             // 시뮬레이션 모드 옵션
             _chkSimulation = new CheckBox
             {
-                Text = "API 키 미등록/발급 전 가상 시뮬레이션 연동 테스트 허용",
-                Location = new Point(130, curY),
-                Size = new Size(395, 24),
-                Checked = true,
+                Text = "API 키 미등록 시 가상 시뮬레이션 연동 테스트 허용 (체크 시에만 가상 데이터 제공)",
+                Location = new Point(5, curY),
+                Size = new Size(580, 24),
+                Checked = false,
                 ForeColor = Color.FromArgb(160, 210, 180)
             };
             pnlForm.Controls.Add(_chkSimulation);
@@ -196,7 +197,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "• 입력된 모든 인증정보는 Windows DPAPI로 안전하게 암호화 보관됩니다.",
                 Location = new Point(5, curY),
-                Size = new Size(520, 36),
+                Size = new Size(590, 36),
                 ForeColor = Color.FromArgb(130, 150, 175),
                 Font = new Font("Segoe UI", 8.5f)
             };
@@ -222,7 +223,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "저장 및 적용",
                 Size = new Size(115, 36),
-                Location = new Point(290, 10),
+                Location = new Point(365, 10),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(16, 52, 36),
                 ForeColor = Color.FromArgb(0, 240, 120),
@@ -236,7 +237,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "닫기",
                 Size = new Size(95, 36),
-                Location = new Point(415, 10),
+                Location = new Point(490, 10),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(35, 40, 52),
                 ForeColor = Color.FromArgb(200, 210, 225),
@@ -282,8 +283,26 @@ namespace GateHelper.StockAdvisor
                 string secret = _txtAppSecret.Text.Trim();
                 string acc = _txtAccountNumber.Text.Trim();
                 bool isMock = _rbMock.Checked;
+                bool enableSim = _chkSimulation.Checked;
 
-                var client = new KbTradingClient(key, secret, isMock);
+                if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(secret))
+                {
+                    if (!enableSim)
+                    {
+                        _lblStatus.Text = "❌ App Key와 App Secret을 먼저 입력해 주세요.";
+                        _lblStatus.ForeColor = Color.FromArgb(255, 100, 100);
+                        MessageBox.Show(
+                            "App Key와 App Secret이 입력되지 않았습니다.\n\n" +
+                            "※ 아직 API 키가 없으시다면 상단 [★ 발급 가이드]를 참고하여 키를 발급받으시거나,\n" +
+                            "하단의 '가상 시뮬레이션 연동 허용'을 체크하시면 가상 잔고 데이터로 테스트해 보실 수 있습니다.",
+                            "인증키 미입력 안내",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Warning);
+                        return;
+                    }
+                }
+
+                var client = new KbTradingClient(key, secret, isMock, enableSim);
                 var balance = await client.FetchBalanceAsync(acc);
 
                 if (balance.IsSuccess)

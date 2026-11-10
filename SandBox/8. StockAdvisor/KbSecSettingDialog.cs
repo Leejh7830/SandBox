@@ -359,7 +359,8 @@ namespace GateHelper.StockAdvisor
             using (var guideForm = new Form())
             {
                 guideForm.Text = "📖 KB증권 Open API 키 발급 4단계 가이드";
-                guideForm.Size = new Size(580, 480);
+                guideForm.ClientSize = new Size(620, 480);
+                guideForm.MinimumSize = new Size(620, 480);
                 guideForm.StartPosition = FormStartPosition.CenterParent;
                 guideForm.FormBorderStyle = FormBorderStyle.FixedDialog;
                 guideForm.MaximizeBox = false;
@@ -392,7 +393,7 @@ namespace GateHelper.StockAdvisor
                 var btnPortal = new Button
                 {
                     Text = "🌐 KB증권 Open API 포털 열기 (브라우저)",
-                    Size = new Size(260, 36),
+                    Size = new Size(310, 36),
                     Location = new Point(0, 5),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(20, 45, 65),
@@ -409,12 +410,13 @@ namespace GateHelper.StockAdvisor
                 var btnClose = new Button
                 {
                     Text = "확인",
-                    Size = new Size(90, 36),
-                    Location = new Point(440, 5),
+                    Size = new Size(95, 36),
+                    Location = new Point(480, 5),
                     FlatStyle = FlatStyle.Flat,
                     BackColor = Color.FromArgb(35, 40, 52),
                     ForeColor = Color.White
                 };
+                btnClose.FlatAppearance.BorderColor = Color.FromArgb(70, 80, 100);
                 btnClose.Click += (s, e) => guideForm.Close();
 
                 pnlBtn.Controls.Add(btnPortal);

@@ -399,11 +399,11 @@ namespace GateHelper.StockAdvisor
         {
             _lblQuantHeader = new Label
             {
-                Text = "통과율: - / 8 PASS (-)  |  -",
-                Font = new Font("Malgun Gothic", 9.8f, FontStyle.Bold),
+                Text = "통과율: - / 8 통과 (-%)",
+                Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 64),
                 Dock = DockStyle.Top,
-                Height = 36
+                Height = 32
             };
 
             _lvQuantFilters = new ListView
@@ -416,12 +416,37 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.White,
                 Font = new Font("Malgun Gothic", 8.8f),
                 BorderStyle = BorderStyle.None,
-                HeaderStyle = ColumnHeaderStyle.Nonclickable
+                OwnerDraw = true
             };
-            _lvQuantFilters.Columns.Add("검증 항목", 96, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("합격 기준", 94, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("검증항목", 94, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("조건값", 100, HorizontalAlignment.Left);
             _lvQuantFilters.Columns.Add("현재값", 78, HorizontalAlignment.Right);
-            _lvQuantFilters.Columns.Add("판정", 68, HorizontalAlignment.Center);
+            _lvQuantFilters.Columns.Add("검증결과", 66, HorizontalAlignment.Center);
+
+            // 헤더 커스텀 페인팅 (어떤 윈도우 테마 환경에서도 100% 선명 노출)
+            _lvQuantFilters.DrawColumnHeader += (s, e) =>
+            {
+                using (var backBrush = new SolidBrush(Color.FromArgb(28, 36, 52)))
+                using (var linePen = new Pen(Color.FromArgb(50, 65, 95)))
+                using (var textBrush = new SolidBrush(Color.FromArgb(0, 230, 255)))
+                using (var font = new Font("Malgun Gothic", 9f, FontStyle.Bold))
+                {
+                    e.Graphics.FillRectangle(backBrush, e.Bounds);
+                    e.Graphics.DrawLine(linePen, e.Bounds.Left, e.Bounds.Bottom - 1, e.Bounds.Right, e.Bounds.Bottom - 1);
+                    e.Graphics.DrawLine(linePen, e.Bounds.Right - 1, e.Bounds.Top, e.Bounds.Right - 1, e.Bounds.Bottom);
+
+                    var sf = new StringFormat
+                    {
+                        LineAlignment = StringAlignment.Center,
+                        Alignment = e.Header.TextAlign == HorizontalAlignment.Right ? StringAlignment.Far :
+                                    (e.Header.TextAlign == HorizontalAlignment.Center ? StringAlignment.Center : StringAlignment.Near)
+                    };
+                    var textRect = new Rectangle(e.Bounds.Left + 4, e.Bounds.Top, e.Bounds.Width - 8, e.Bounds.Height);
+                    e.Graphics.DrawString(e.Header.Text, font, textBrush, textRect, sf);
+                }
+            };
+            _lvQuantFilters.DrawItem += (s, e) => e.DrawDefault = true;
+            _lvQuantFilters.DrawSubItem += (s, e) => e.DrawDefault = true;
 
             // 더블 버퍼링
             typeof(ListView).InvokeMember("DoubleBuffered",
@@ -658,7 +683,7 @@ namespace GateHelper.StockAdvisor
                 : $"• 최신 공시: {intel.RecentDisclosuresSummary}";
 
             // 카드 3 갱신 (정통 퀀트 8대 필터 리스트뷰)
-            _lblQuantHeader.Text = $"통과율: {quant.PassCount} / {quant.TotalCount} PASS ({quant.PassPercent:F1}%)  |  {quant.QuantGradeBadge}";
+            _lblQuantHeader.Text = $"통과율: {quant.PassCount} / {quant.TotalCount} 통과 ({quant.PassPercent:F0}%)";
             _lblQuantHeader.ForeColor = quant.PassCount >= 7 ? Color.FromArgb(255, 215, 0) : (quant.PassCount >= 4 ? Color.FromArgb(100, 240, 160) : Color.FromArgb(255, 120, 120));
 
             _lvQuantFilters.Items.Clear();
@@ -667,10 +692,10 @@ namespace GateHelper.StockAdvisor
                 string passMark = itm.IsPassed ? "PASS ✅" : "FAIL ❌";
                 var lvi = new ListViewItem(new[]
                 {
-                    $"{itm.Id}. {itm.Name}",
-                    itm.Criteria,
-                    itm.ActualValue,
-                    passMark
+                    itm.Name,                   // 1열: 검증항목 (앞에 E. C. 등 알파벳 완전 제거)
+                    itm.Criteria,               // 2열: 조건값
+                    itm.ActualValue,            // 3열: 현재값
+                    passMark                    // 4열: 검증결과
                 });
                 lvi.UseItemStyleForSubItems = false;
                 lvi.SubItems[0].ForeColor = Color.FromArgb(220, 235, 255);

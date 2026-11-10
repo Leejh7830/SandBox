@@ -426,7 +426,7 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "C",
-                    Name = "ROE (자기자본이익률)",
+                    Name = "ROE (자기자본)",
                     Criteria = "10.0% 이상",
                     ActualValue = roe > 0 ? $"{roe:F2}%" : (finDict.ContainsKey("ROE") ? $"{roe:F2}%" : "-"),
                     IsPassed = roePassed,
@@ -477,7 +477,7 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "G",
-                    Name = "PER (주가수익비율)",
+                    Name = "PER (주가수익)",
                     Criteria = "12.0배 이하",
                     ActualValue = per > 0 ? $"{per:F2}배" : "-",
                     IsPassed = perPassed,
@@ -500,7 +500,7 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "H",
-                    Name = "PBR (주가순자산비율)",
+                    Name = "PBR (주가순자산)",
                     Criteria = "1.5배 이하",
                     ActualValue = pbr > 0 ? $"{pbr:F2}배" : "-",
                     IsPassed = pbrPassed,
@@ -531,7 +531,7 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "B",
-                    Name = "14일 RSI 타이밍",
+                    Name = "14일 RSI",
                     Criteria = "35.0 이하 (과매도 저점존)",
                     ActualValue = currentRsi > 0 ? $"{currentRsi:F1}" : "-",
                     IsPassed = rsiPassed,
@@ -547,11 +547,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.PassCount = passCount;
                 result.TotalCount = result.Items.Count;
 
-                // 퀀트 뱃지 등급 부여
-                if (passCount == 8) result.QuantGradeBadge = "👑 퀀트 다이아몬드 (8/8 올패스)";
-                else if (passCount >= 6) result.QuantGradeBadge = "🥇 퀀트 골드 우량주";
-                else if (passCount >= 4) result.QuantGradeBadge = "🥈 퀀트 실버 가치주";
-                else result.QuantGradeBadge = "⚪ 펀더멘털 일반";
+                // 퀀트 뱃지 등급 부여 (군더더기 수식어 배제)
+                if (passCount == 8) result.QuantGradeBadge = "8/8 전항목 통과";
+                else if (passCount >= 6) result.QuantGradeBadge = $"{passCount}/8 우량 통과";
+                else if (passCount >= 4) result.QuantGradeBadge = $"{passCount}/8 부분 통과";
+                else result.QuantGradeBadge = $"{passCount}/8 기준 미달";
             }
             catch (Exception ex)
             {

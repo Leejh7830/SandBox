@@ -160,11 +160,22 @@ namespace GateHelper.StockAdvisor.Models
         public decimal DebtRatio { get; set; } = 0m;
         public int ConsecutiveLossYears { get; set; } = 0;
 
+        // --- 📡 네이버 스크래핑 무결성 검증 필터 ---
+        public bool IsPriceScrapeSuccess { get; set; } = true;
+        public string ScrapeErrorMessage { get; set; } = string.Empty;
+        public DateTime? LastScrapedTime { get; set; } = null;
+
         // --- 🎯 AI 퀀트 권고 매수가 및 진입 타점 ---
         public decimal RecommendedBuyPrice { get; set; } = 0m;  // 1차 눌림목 권고 매수가
         public decimal TargetStopPrice { get; set; } = 0m;       // 2차 방어선 / 손절 기준가
         public string EntryTimingBadge { get; set; } = "⚪ 관망대기"; // 진입 판정 뱃지
         public string EntryTimingGuide { get; set; } = string.Empty; // 구체적 매수 가이드 문구
+
+        // --- 🚀 AI 퀀트 권고 매도(익절) 타점 & 청산 시나리오 ---
+        public decimal RecommendedTargetPrice { get; set; } = 0m; // 1차 권고 목표가 (분할 익절선)
+        public decimal SecondaryTargetPrice { get; set; } = 0m;   // 2차 최종 목표가 (슈팅/과열 청산선)
+        public string ExitTimingBadge { get; set; } = "⚪ 추세보유"; // 매도 판정 뱃지
+        public string ExitTimingGuide { get; set; } = string.Empty; // 구체적 익절 가이드 문구
 
         // --- 📊 정통 퀀트 우량주 8대 필터 요약 ---
         public string QuantBadge { get; set; } = "⚪ 퀀트대기";

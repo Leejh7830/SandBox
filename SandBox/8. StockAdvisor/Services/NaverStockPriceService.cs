@@ -20,6 +20,7 @@ namespace GateHelper.StockAdvisor.Services
         public string ErrorMessage { get; set; } = string.Empty;
         public bool IsForeign { get; set; } = false;
         public string ReutersCode { get; set; } = string.Empty;
+        public DateTime ScrapedAt { get; set; } = DateTime.Now;
     }
 
     public class StockSearchResultItem
@@ -162,43 +163,73 @@ namespace GateHelper.StockAdvisor.Services
 
             try
             {
-                string json = await _httpClient.GetStringAsync(url).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(json))
+                using (var response = await _httpClient.GetAsync(url).ConfigureAwait(false))
                 {
-                    result.ErrorMessage = "응답 데이터가 없습니다.";
-                    return result;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        result.IsSuccess = false;
+                        if ((int)response.StatusCode == 429)
+                            result.ErrorMessage = "네이버 요청 한도 초과 (429 Too Many Requests - 30초 후 재시도 필요)";
+                        else if (response.StatusCode == HttpStatusCode.NotFound)
+                            result.ErrorMessage = $"종목코드({stockCode})를 네이버 증권에서 찾을 수 없습니다 (404)";
+                        else
+                            result.ErrorMessage = $"네이버 서버 통신 오류 (HTTP {(int)response.StatusCode})";
+                        return result;
+                    }
+
+                    string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        result.IsSuccess = false;
+                        result.ErrorMessage = "네이버 서버로부터 빈 응답 데이터 수신 (Empty Body)";
+                        return result;
+                    }
+
+                    var jobj = JObject.Parse(json);
+                    result.StockName = jobj["stockName"]?.ToString() ?? stockCode;
+
+                    string closeStr = jobj["closePrice"]?.ToString() ?? "0";
+                    closeStr = Regex.Replace(closeStr, @"[^\d.-]", "");
+                    if (decimal.TryParse(closeStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal closePrice))
+                    {
+                        result.CurrentPrice = closePrice;
+                    }
+
+                    string ratioStr = jobj["fluctuationsRatio"]?.ToString() ?? "0";
+                    ratioStr = Regex.Replace(ratioStr, @"[^\d.-]", "");
+                    if (decimal.TryParse(ratioStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal changeRate))
+                    {
+                        result.ChangeRate = changeRate;
+                    }
+
+                    string compStr = jobj["compareToPreviousClosePrice"]?.ToString() ?? "0";
+                    compStr = Regex.Replace(compStr, @"[^\d.-]", "");
+                    if (decimal.TryParse(compStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal compPrice))
+                    {
+                        result.ChangePrice = compPrice;
+                    }
+
+                    if (result.CurrentPrice <= 0m)
+                    {
+                        result.IsSuccess = false;
+                        result.ErrorMessage = "현재가 수치 이상 (0원 응답 - 거래정지 종목이거나 네이버 데이터 파싱 실패)";
+                    }
+                    else
+                    {
+                        result.IsSuccess = true;
+                        result.ScrapedAt = DateTime.Now;
+                    }
                 }
-
-                var jobj = JObject.Parse(json);
-                result.StockName = jobj["stockName"]?.ToString() ?? stockCode;
-
-                string closeStr = jobj["closePrice"]?.ToString() ?? "0";
-                closeStr = Regex.Replace(closeStr, @"[^\d.-]", "");
-                if (decimal.TryParse(closeStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal closePrice))
-                {
-                    result.CurrentPrice = closePrice;
-                }
-
-                string ratioStr = jobj["fluctuationsRatio"]?.ToString() ?? "0";
-                ratioStr = Regex.Replace(ratioStr, @"[^\d.-]", "");
-                if (decimal.TryParse(ratioStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal changeRate))
-                {
-                    result.ChangeRate = changeRate;
-                }
-
-                string compStr = jobj["compareToPreviousClosePrice"]?.ToString() ?? "0";
-                compStr = Regex.Replace(compStr, @"[^\d.-]", "");
-                if (decimal.TryParse(compStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal compPrice))
-                {
-                    result.ChangePrice = compPrice;
-                }
-
-                result.IsSuccess = (result.CurrentPrice > 0);
+            }
+            catch (TaskCanceledException)
+            {
+                result.IsSuccess = false;
+                result.ErrorMessage = "네이버 서버 응답 시간 초과 (Timeout - 인터넷 연결 확인 필요)";
             }
             catch (Exception ex)
             {
                 result.IsSuccess = false;
-                result.ErrorMessage = ex.Message;
+                result.ErrorMessage = $"네이버 통신 오류: {ex.Message}";
             }
 
             return result;
@@ -211,37 +242,62 @@ namespace GateHelper.StockAdvisor.Services
 
             try
             {
-                string json = await _httpClient.GetStringAsync(url).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(json))
+                using (var response = await _httpClient.GetAsync(url).ConfigureAwait(false))
                 {
-                    result.ErrorMessage = "해외 주식 시세 응답이 없습니다.";
-                    return result;
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        result.IsSuccess = false;
+                        result.ErrorMessage = $"해외 주식 서버 통신 오류 (HTTP {(int)response.StatusCode})";
+                        return result;
+                    }
+
+                    string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    if (string.IsNullOrWhiteSpace(json))
+                    {
+                        result.IsSuccess = false;
+                        result.ErrorMessage = "해외 주식 시세 응답이 비어 있습니다.";
+                        return result;
+                    }
+
+                    var jobj = JObject.Parse(json);
+                    string name = jobj["stockName"]?.ToString();
+                    if (!string.IsNullOrWhiteSpace(name)) result.StockName = name;
+
+                    string closeStr = jobj["closePrice"]?.ToString() ?? "0";
+                    closeStr = Regex.Replace(closeStr, @"[^\d.-]", "");
+                    if (decimal.TryParse(closeStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal closePrice))
+                    {
+                        result.CurrentPrice = closePrice;
+                    }
+
+                    string ratioStr = jobj["fluctuationsRatio"]?.ToString() ?? "0";
+                    ratioStr = Regex.Replace(ratioStr, @"[^\d.-]", "");
+                    if (decimal.TryParse(ratioStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal changeRate))
+                    {
+                        result.ChangeRate = changeRate;
+                    }
+
+                    if (result.CurrentPrice <= 0m)
+                    {
+                        result.IsSuccess = false;
+                        result.ErrorMessage = "해외 주식 현재가 수치 이상 (0원 응답)";
+                    }
+                    else
+                    {
+                        result.IsSuccess = true;
+                        result.ScrapedAt = DateTime.Now;
+                    }
                 }
-
-                var jobj = JObject.Parse(json);
-                string name = jobj["stockName"]?.ToString();
-                if (!string.IsNullOrWhiteSpace(name)) result.StockName = name;
-
-                string closeStr = jobj["closePrice"]?.ToString() ?? "0";
-                closeStr = Regex.Replace(closeStr, @"[^\d.-]", "");
-                if (decimal.TryParse(closeStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal closePrice))
-                {
-                    result.CurrentPrice = closePrice;
-                }
-
-                string ratioStr = jobj["fluctuationsRatio"]?.ToString() ?? "0";
-                ratioStr = Regex.Replace(ratioStr, @"[^\d.-]", "");
-                if (decimal.TryParse(ratioStr, NumberStyles.Any, CultureInfo.InvariantCulture, out decimal changeRate))
-                {
-                    result.ChangeRate = changeRate;
-                }
-
-                result.IsSuccess = (result.CurrentPrice > 0);
+            }
+            catch (TaskCanceledException)
+            {
+                result.IsSuccess = false;
+                result.ErrorMessage = "해외 주식 서버 응답 시간 초과 (Timeout)";
             }
             catch (Exception ex)
             {
                 result.IsSuccess = false;
-                result.ErrorMessage = ex.Message;
+                result.ErrorMessage = $"해외 시세 통신 오류: {ex.Message}";
             }
 
             return result;

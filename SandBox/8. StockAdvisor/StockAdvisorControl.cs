@@ -227,7 +227,23 @@ namespace GateHelper.StockAdvisor
 
                 UpdateMacroTicker(intelTask.Result);
 
-                _lblLastUpdated.Text = $"시세 갱신: {DateTime.Now:HH:mm:ss}";
+                int failCount = 0;
+                foreach (var itm in _portfolio.Items)
+                {
+                    if (!itm.IsPriceScrapeSuccess) failCount++;
+                }
+
+                if (failCount > 0)
+                {
+                    _lblLastUpdated.Text = $"시세: {DateTime.Now:HH:mm:ss} (⚠️ {failCount}건 수집 실패!)";
+                    _lblLastUpdated.ForeColor = Color.FromArgb(255, 120, 100);
+                }
+                else
+                {
+                    _lblLastUpdated.Text = $"시세: {DateTime.Now:HH:mm:ss} (전 종목 정상)";
+                    _lblLastUpdated.ForeColor = Color.FromArgb(100, 255, 180);
+                }
+
                 SavePortfolio();
                 UpdateUi();
             }
@@ -255,6 +271,9 @@ namespace GateHelper.StockAdvisor
                         var priceDto = await NaverStockPriceService.FetchPriceAsync(item.StockCode);
                         if (priceDto.IsSuccess)
                         {
+                            item.IsPriceScrapeSuccess = true;
+                            item.ScrapeErrorMessage = string.Empty;
+                            item.LastScrapedTime = priceDto.ScrapedAt;
                             item.CurrentPrice = priceDto.CurrentPrice;
                             item.ChangeRate = priceDto.ChangeRate;
                             item.ChangePrice = priceDto.ChangePrice;
@@ -262,6 +281,11 @@ namespace GateHelper.StockAdvisor
                             {
                                 item.StockName = priceDto.StockName;
                             }
+                        }
+                        else
+                        {
+                            item.IsPriceScrapeSuccess = false;
+                            item.ScrapeErrorMessage = priceDto.ErrorMessage;
                         }
 
                         // 팩트 기술 지표, 수급 및 지뢰 탐지 병렬 비동기 수집
@@ -285,6 +309,10 @@ namespace GateHelper.StockAdvisor
                         item.TargetStopPrice = ind.TargetStopPrice;
                         item.EntryTimingBadge = ind.EntryTimingBadge;
                         item.EntryTimingGuide = ind.EntryTimingGuide;
+                        item.RecommendedTargetPrice = ind.RecommendedTargetPrice;
+                        item.SecondaryTargetPrice = ind.SecondaryTargetPrice;
+                        item.ExitTimingBadge = ind.ExitTimingBadge;
+                        item.ExitTimingGuide = ind.ExitTimingGuide;
 
                         // 수급 및 지뢰 탐지 지표 반영
                         item.MajorSupplyBadge = intel.SupplyBadge;

@@ -301,11 +301,11 @@ namespace GateHelper.StockAdvisor
 
             _lblTechnicalFacts = new Label
             {
-                Text = "• 14일 RSI: - | 5일 거래량: -\n• 20일 지지선: -원 (하방 -%)\n• 🎯 AI 권고 1차 매수가: -원 (손절선: -원)",
-                Font = new Font("Malgun Gothic", 9f),
+                Text = "• 14일 RSI: - | 5일 거래량: -\n• 20일 지지선: -원 (하방 -%)\n• 🎯 1차 매수가: -원 (방어선: -원)\n• 🚀 1차 목표가: -원 (2차 슈팅: -원)",
+                Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(170, 205, 245),
                 Dock = DockStyle.Top,
-                Height = 68
+                Height = 84
             };
 
             _lblTimingGuide = new Label
@@ -481,8 +481,10 @@ namespace GateHelper.StockAdvisor
                 var priceInfo = await NaverStockPriceService.FetchPriceAsync(cleanQuery);
                 if (!priceInfo.IsSuccess)
                 {
-                    _lblStatus.Text = $"❌ 종목 조회 실패: {priceInfo.ErrorMessage ?? "종목명 또는 6자리 코드를 확인해주세요."}";
-                    _lblStatus.ForeColor = Color.FromArgb(255, 100, 100);
+                    _lblStatus.Text = $"❌ 네이버 증권 시세 수집 실패: {priceInfo.ErrorMessage ?? "종목명 또는 6자리 코드를 확인해주세요."}";
+                    _lblStatus.ForeColor = Color.FromArgb(255, 90, 90);
+                    _btnAddToPortfolio.Enabled = false;
+                    _btnOpenNaverWeb.Enabled = false;
                     return;
                 }
 
@@ -550,6 +552,13 @@ namespace GateHelper.StockAdvisor
                     TargetStopPrice = tech.TargetStopPrice,
                     EntryTimingBadge = tech.EntryTimingBadge,
                     EntryTimingGuide = tech.EntryTimingGuide,
+                    RecommendedTargetPrice = tech.RecommendedTargetPrice,
+                    SecondaryTargetPrice = tech.SecondaryTargetPrice,
+                    ExitTimingBadge = tech.ExitTimingBadge,
+                    ExitTimingGuide = tech.ExitTimingGuide,
+                    IsPriceScrapeSuccess = priceInfo.IsSuccess,
+                    ScrapeErrorMessage = priceInfo.ErrorMessage,
+                    LastScrapedTime = priceInfo.ScrapedAt,
                     TimingBadge = tech.TimingBadge,
                     TimingWarning = tech.TimingWarning,
                     MajorSupplyBadge = intel.SupplyBadge,
@@ -600,13 +609,18 @@ namespace GateHelper.StockAdvisor
             
             string buyPriceStr = tech.RecommendedBuyPrice > 0 ? $"{tech.RecommendedBuyPrice:N0}원" : "시장가 분할";
             string stopPriceStr = tech.TargetStopPrice > 0 ? $"{tech.TargetStopPrice:N0}원" : "20일선 이탈";
+            decimal upside1 = (price.CurrentPrice > 0 && tech.RecommendedTargetPrice > price.CurrentPrice)
+                ? ((tech.RecommendedTargetPrice - price.CurrentPrice) / price.CurrentPrice * 100m) : 0m;
+
             _lblTechnicalFacts.Text = $"• 14일 RSI: {tech.Rsi:F1} | 5일 거래량: {tech.VolumeRatio:F0}%\n" +
                                        $"• 20일 지지선: {(tech.SupportPrice > 0 ? $"{tech.SupportPrice:N0}원" : "-")} (하방 -{tech.DownsideRiskPercent:F1}%)\n" +
-                                       $"• 🎯 AI 권고 1차 매수가: {buyPriceStr} (손절선: {stopPriceStr})";
+                                       $"• 🎯 1차 매수가: {buyPriceStr} (방어선: {stopPriceStr})\n" +
+                                       $"• 🚀 1차 목표가: {tech.RecommendedTargetPrice:N0}원 (+{upside1:F1}%) [2차: {tech.SecondaryTargetPrice:N0}원]";
 
             string tb = tech.EntryTimingBadge ?? tech.TimingBadge ?? "⚪ 관망유지";
             string tg = !string.IsNullOrEmpty(tech.EntryTimingGuide) ? tech.EntryTimingGuide : tech.TimingWarning;
-            _lblTimingGuide.Text = $"🚨 [타이밍 안전벨트 지침: {tb}]\n{tg}";
+            string exitGuide = !string.IsNullOrEmpty(tech.ExitTimingGuide) ? tech.ExitTimingGuide : tech.ExitTimingBadge;
+            _lblTimingGuide.Text = $"🚨 【 🎯 진입 지침: {tb} 】\n{tg}\n\n【 🚀 청산 지침: {tech.ExitTimingBadge} 】\n{exitGuide}";
             if (tb.Contains("과열"))
             {
                 _lblTimingGuide.BackColor = Color.FromArgb(58, 20, 28);

@@ -731,7 +731,11 @@ namespace GateHelper.StockAdvisor
 
         private void EditSelectedStock()
         {
-            if (_lvStocks.SelectedItems.Count == 0) return;
+            if (_lvStocks.SelectedItems.Count == 0)
+            {
+                ToastNotification.Show("수정할 종목을 목록에서 먼저 선택해주세요.", "선택 필요", ToastIcon.Warning);
+                return;
+            }
             var item = _lvStocks.SelectedItems[0].Tag as StockHoldingItem;
             if (item == null) return;
 
@@ -748,7 +752,11 @@ namespace GateHelper.StockAdvisor
 
         private void DeleteSelectedStock()
         {
-            if (_lvStocks.SelectedItems.Count == 0) return;
+            if (_lvStocks.SelectedItems.Count == 0)
+            {
+                ToastNotification.Show("삭제할 종목을 목록에서 먼저 선택해주세요.", "선택 필요", ToastIcon.Warning);
+                return;
+            }
             var item = _lvStocks.SelectedItems[0].Tag as StockHoldingItem;
             if (item == null) return;
 

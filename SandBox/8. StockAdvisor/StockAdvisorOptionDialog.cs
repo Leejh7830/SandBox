@@ -146,10 +146,10 @@ namespace GateHelper.StockAdvisor
             };
             _cboAiInterval.Items.AddRange(new object[] { "5분 (권장 - 1회 일괄)", "10분", "15분", "30분", "60분" });
 
-            // (3) 실시간 목표가/손절가 터치 알림
+            // (3) 실시간 목표가/손절가/매수가 터치 알림
             _chkEnablePriceAlert = new CheckBox
             {
-                Text = "보유 종목 목표가 도달 / 손절가 이탈 시 실시간 토스트 알림",
+                Text = "보유 종목 목표가/손절가 및 관심 종목 AI 매수가 도달 시 실시간 알림",
                 Location = new Point(16, 158),
                 Size = new Size(540, 26),
                 Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),

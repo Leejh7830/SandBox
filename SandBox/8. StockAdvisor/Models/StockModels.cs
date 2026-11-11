@@ -80,6 +80,16 @@ namespace GateHelper.StockAdvisor.Models
         GroupC  // 분할 매수 검토 / 실적 모멘텀 유효 (녹색/청색)
     }
 
+    /// <summary>
+    /// 메인 종목 리스트뷰 표시 필터 모드 (전체 / 보유 종목 / 관심 종목)
+    /// </summary>
+    public enum StockFilterMode
+    {
+        All,          // 전체 종목
+        HoldingOnly,  // 보유 종목 (수량 > 0)
+        WatchlistOnly // 🎯 관심 종목 (수량 == 0, 매수 타점 대기)
+    }
+
     public enum OverallRiskLevel
     {
         Safe,    // 🟢 안전 (거시 지표 안정 및 리스크 낮음)
@@ -184,12 +194,24 @@ namespace GateHelper.StockAdvisor.Models
         public string EarningsPeriodTitle { get; set; } = string.Empty;
         public DateTime? EarningsAnnouncementDate { get; set; } = null;
 
-        // --- 목표가/손절가 실시간 터치 알림 상태 추적 (중복 도배 방지용 세션 상태) ---
+        /// <summary>
+        /// 보유 수량이 0 이하인 경우 관심 종목(매수 대기)으로 자동 판정
+        /// </summary>
+        [JsonIgnore]
+        public bool IsWatchlist => Quantity <= 0;
+
+        // --- 목표가/손절가/매수가 실시간 터치 알림 상태 추적 (중복 도배 방지용 세션 상태) ---
         [JsonIgnore]
         public bool WasTargetAlerted { get; set; } = false;
 
         [JsonIgnore]
         public bool WasStopAlerted { get; set; } = false;
+
+        [JsonIgnore]
+        public bool WasBuyAlerted { get; set; } = false;
+
+        [JsonIgnore]
+        public bool WasSecondaryBuyAlerted { get; set; } = false;
 
         /// <summary>
         /// 미니 캔들 차트용 최근 20일 일봉 데이터 캐시 (런타임 메모리 유지, 0-IO)

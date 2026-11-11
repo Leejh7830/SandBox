@@ -38,6 +38,12 @@ namespace GateHelper.StockAdvisor
         private DateTime _lastAutoAiDiagnoseTime = DateTime.MinValue;
 
         private SplitContainer _splitMain;
+        private Panel _pnlListFilter;
+        private Button _btnFilterAll;
+        private Button _btnFilterHolding;
+        private Button _btnFilterWatchlist;
+        private Label _lblFilterSummary;
+        private StockFilterMode _filterMode = StockFilterMode.All;
         private ListView _lvStocks;
         private Panel _pnlDetail;
 

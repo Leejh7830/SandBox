@@ -8,7 +8,8 @@ namespace GateHelper.StockAdvisor
     public enum ToastAlertType
     {
         TargetHit, // 목표가 도달 (익절 권고)
-        StopHit    // 손절 방어선 터치/이탈 (리스크 관리 권고)
+        StopHit,   // 손절 방어선 터치/이탈 (리스크 관리 권고)
+        BuyHit     // 🎯 적정 매수가 도달 (관심종목 1차 진입 / 보유종목 추가매수)
     }
 
     /// <summary>
@@ -46,10 +47,14 @@ namespace GateHelper.StockAdvisor
 
             Color accentColor = alertType == ToastAlertType.TargetHit
                 ? Color.FromArgb(0, 230, 118) // 에메랄드 그린
-                : Color.FromArgb(255, 75, 85);  // 네온 레드
+                : (alertType == ToastAlertType.BuyHit
+                    ? Color.FromArgb(0, 216, 255) // 네온 사이언
+                    : Color.FromArgb(255, 75, 85));  // 네온 레드
 
-            string icon = alertType == ToastAlertType.TargetHit ? "🚀" : "⚠️";
-            string typeTitle = alertType == ToastAlertType.TargetHit ? "목표가 달성 (분할 익절 검토)" : "손절 방어선 터치 (리스크 관리)";
+            string icon = alertType == ToastAlertType.TargetHit ? "🚀" : (alertType == ToastAlertType.BuyHit ? "★" : "⚠️");
+            string typeTitle = alertType == ToastAlertType.TargetHit
+                ? "목표가 달성 (분할 익절 검토)"
+                : (alertType == ToastAlertType.BuyHit ? "AI 적정 매수가 도달 (진입 검토)" : "손절 방어선 터치 (리스크 관리)");
 
             // 1. 헤더 (아이콘 + 종목명 + 타이틀)
             var lblTitle = new Label
@@ -66,7 +71,9 @@ namespace GateHelper.StockAdvisor
             // 2. 가격 및 권고 안내 문구
             string priceDetail = alertType == ToastAlertType.TargetHit
                 ? $"현재가 {currentPrice:N0}원 | 목표가 {triggerPrice:N0}원 도달 ({changeRate:+0.00;-0.00}%)"
-                : $"현재가 {currentPrice:N0}원 | 손절선 {triggerPrice:N0}원 이탈 ({changeRate:+0.00;-0.00}%)";
+                : (alertType == ToastAlertType.BuyHit
+                    ? $"현재가 {currentPrice:N0}원 | AI 매수가 {triggerPrice:N0}원 진입존 ({changeRate:+0.00;-0.00}%)"
+                    : $"현재가 {currentPrice:N0}원 | 손절선 {triggerPrice:N0}원 이탈 ({changeRate:+0.00;-0.00}%)");
 
             var lblBody = new Label
             {
@@ -158,7 +165,9 @@ namespace GateHelper.StockAdvisor
 
             Color accentColor = _alertType == ToastAlertType.TargetHit
                 ? Color.FromArgb(0, 230, 118)
-                : Color.FromArgb(255, 75, 85);
+                : (_alertType == ToastAlertType.BuyHit
+                    ? Color.FromArgb(0, 216, 255)
+                    : Color.FromArgb(255, 75, 85));
 
             // 네온 테두리
             using (var pen = new Pen(accentColor, 1.5f))

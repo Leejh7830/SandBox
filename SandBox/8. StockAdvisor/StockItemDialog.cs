@@ -13,6 +13,8 @@ namespace GateHelper.StockAdvisor
         private TextBox txtSearchQuery;
         private TextBox txtCode;
         private TextBox txtName;
+        private RadioButton rdoHolding;
+        private RadioButton rdoWatchlist;
         private NumericUpDown numQuantity;
         private NumericUpDown numBuyPrice;
         private TextBox txtMemo;
@@ -50,6 +52,15 @@ namespace GateHelper.StockAdvisor
                 txtMemo.Text = existingItem.Memo;
                 lblPreviewPrice.Text = $"현재가: {existingItem.CurrentPrice:N0}원 ({existingItem.ChangeRate:+0.00;-0.00}%)";
                 _isPriceVerified = true;
+
+                if (existingItem.IsWatchlist)
+                {
+                    rdoWatchlist.Checked = true;
+                }
+                else
+                {
+                    rdoHolding.Checked = true;
+                }
             }
             else
             {
@@ -64,7 +75,7 @@ namespace GateHelper.StockAdvisor
                 Dock = DockStyle.Fill,
                 Padding = new Padding(22, 18, 22, 18),
                 ColumnCount = 2,
-                RowCount = 8,
+                RowCount = 9,
                 BackColor = Color.FromArgb(20, 24, 34)
             };
             pnlMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -73,11 +84,12 @@ namespace GateHelper.StockAdvisor
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 0: 검색
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 1: 코드
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 2: 종목명
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 3: 수량
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 4: 매수가
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 28)); // 5: 안내 라벨
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // 6: 메모
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 7: 버튼 행
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 3: 종목 구분(보유 vs 관심)
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 4: 수량
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 5: 매수가
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 28)); // 6: 안내 라벨
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // 7: 메모
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 8: 버튼 행
 
             Font lblFont = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
             Font inputFont = new Font("Segoe UI", 9.5f);
@@ -178,7 +190,63 @@ namespace GateHelper.StockAdvisor
                 ReadOnly = true
             };
 
-            // 4. 보유 수량
+            // 4. 종목 구분 (보유 vs 관심)
+            var lblType = new Label { Text = "종목 구분:", Font = lblFont, ForeColor = Color.FromArgb(0, 230, 255), Anchor = AnchorStyles.Left };
+            var pnlType = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0)
+            };
+            rdoHolding = new RadioButton
+            {
+                Text = "보유 종목",
+                Font = inputFont,
+                ForeColor = Color.FromArgb(235, 245, 255),
+                AutoSize = true,
+                Checked = true,
+                Margin = new Padding(0, 4, 16, 0),
+                Cursor = Cursors.Hand
+            };
+            rdoWatchlist = new RadioButton
+            {
+                Text = "★ 관심 종목 (0주 / 매수 타점 대기)",
+                Font = inputFont,
+                ForeColor = Color.FromArgb(0, 220, 255),
+                AutoSize = true,
+                Checked = false,
+                Margin = new Padding(0, 4, 0, 0),
+                Cursor = Cursors.Hand
+            };
+
+            rdoHolding.CheckedChanged += (s, e) =>
+            {
+                if (rdoHolding.Checked)
+                {
+                    numQuantity.Enabled = true;
+                    numBuyPrice.Enabled = true;
+                    if (numQuantity.Value <= 0) numQuantity.Value = 1;
+                    lblPreviewPrice.Text = "※ 보유 종목으로 등록됩니다. 평단가와 목표가/손절가가 실시간 추적됩니다.";
+                }
+            };
+
+            rdoWatchlist.CheckedChanged += (s, e) =>
+            {
+                if (rdoWatchlist.Checked)
+                {
+                    numQuantity.Value = 0;
+                    numQuantity.Enabled = false;
+                    numBuyPrice.Value = 0;
+                    numBuyPrice.Enabled = false;
+                    lblPreviewPrice.Text = "※ 관심 종목으로 등록됩니다. AI 1차 권고 매수가 도달 시 실시간 알림이 제공됩니다.";
+                }
+            };
+
+            pnlType.Controls.Add(rdoHolding);
+            pnlType.Controls.Add(rdoWatchlist);
+
+            // 5. 보유 수량
             var lblQty = new Label { Text = "보유 수량:", Font = lblFont, ForeColor = Color.FromArgb(180, 200, 220), Anchor = AnchorStyles.Left };
             numQuantity = new NumericUpDown
             {
@@ -190,7 +258,7 @@ namespace GateHelper.StockAdvisor
                 ThousandsSeparator = true
             };
 
-            // 5. 매수 평단가
+            // 6. 매수 평단가
             var lblBuy = new Label { Text = "매수 평단가:", Font = lblFont, ForeColor = Color.FromArgb(180, 200, 220), Anchor = AnchorStyles.Left };
             numBuyPrice = new NumericUpDown
             {
@@ -202,7 +270,7 @@ namespace GateHelper.StockAdvisor
                 ThousandsSeparator = true
             };
 
-            // 6. 실시간 시세 상태 안내
+            // 7. 실시간 시세 상태 안내
             lblPreviewPrice = new Label
             {
                 Text = "※ 종목명(카카오, 테슬라 등) 또는 코드 입력 후 Enter를 누르세요.",
@@ -213,7 +281,7 @@ namespace GateHelper.StockAdvisor
                 AutoEllipsis = true
             };
 
-            // 7. 투자 메모
+            // 8. 투자 메모
             var lblMemo = new Label { Text = "투자 메모:", Font = lblFont, ForeColor = Color.FromArgb(180, 200, 220), Anchor = AnchorStyles.Left };
             txtMemo = new TextBox
             {
@@ -224,7 +292,7 @@ namespace GateHelper.StockAdvisor
                 Multiline = true
             };
 
-            // 8. 하단 버튼
+            // 9. 하단 버튼
             var pnlBtns = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -281,20 +349,23 @@ namespace GateHelper.StockAdvisor
             pnlMain.Controls.Add(lblName, 0, 2);
             pnlMain.Controls.Add(txtName, 1, 2);
 
-            pnlMain.Controls.Add(lblQty, 0, 3);
-            pnlMain.Controls.Add(numQuantity, 1, 3);
+            pnlMain.Controls.Add(lblType, 0, 3);
+            pnlMain.Controls.Add(pnlType, 1, 3);
 
-            pnlMain.Controls.Add(lblBuy, 0, 4);
-            pnlMain.Controls.Add(numBuyPrice, 1, 4);
+            pnlMain.Controls.Add(lblQty, 0, 4);
+            pnlMain.Controls.Add(numQuantity, 1, 4);
 
-            pnlMain.Controls.Add(new Label(), 0, 5);
-            pnlMain.Controls.Add(lblPreviewPrice, 1, 5);
+            pnlMain.Controls.Add(lblBuy, 0, 5);
+            pnlMain.Controls.Add(numBuyPrice, 1, 5);
 
-            pnlMain.Controls.Add(lblMemo, 0, 6);
-            pnlMain.Controls.Add(txtMemo, 1, 6);
+            pnlMain.Controls.Add(new Label(), 0, 6);
+            pnlMain.Controls.Add(lblPreviewPrice, 1, 6);
 
-            pnlMain.Controls.Add(new Label(), 0, 7);
-            pnlMain.Controls.Add(pnlBtns, 1, 7);
+            pnlMain.Controls.Add(lblMemo, 0, 7);
+            pnlMain.Controls.Add(txtMemo, 1, 7);
+
+            pnlMain.Controls.Add(new Label(), 0, 8);
+            pnlMain.Controls.Add(pnlBtns, 1, 8);
 
             this.Controls.Add(pnlMain);
             this.CancelButton = btnCancel;
@@ -440,8 +511,8 @@ namespace GateHelper.StockAdvisor
             // 유효성 검증 완료 후 최종 저장
             Item.StockCode = txtCode.Text.Trim();
             Item.StockName = txtName.Text.Trim();
-            Item.Quantity = (int)numQuantity.Value;
-            Item.BuyPrice = numBuyPrice.Value;
+            Item.Quantity = rdoWatchlist.Checked ? 0 : (int)numQuantity.Value;
+            Item.BuyPrice = rdoWatchlist.Checked ? 0m : numBuyPrice.Value;
             Item.Memo = txtMemo.Text.Trim();
 
             this.DialogResult = DialogResult.OK;

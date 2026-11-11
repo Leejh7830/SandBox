@@ -485,80 +485,160 @@ namespace GateHelper.StockAdvisor
 
             foreach (var item in _portfolio.Items)
             {
-                // 보유 종목에 한해서만 알림 (Quantity > 0 및 시세 수집 성공 필수)
-                if (item.Quantity <= 0 || item.CurrentPrice <= 0 || !item.IsPriceScrapeSuccess) continue;
+                if (item.CurrentPrice <= 0 || !item.IsPriceScrapeSuccess) continue;
 
-                // 1. 목표가 계산 (1차 권고 목표가 우선 -> 20일 저항선)
-                decimal targetPrice = item.RecommendedTargetPrice > 0 ? item.RecommendedTargetPrice : item.ResistancePrice;
-                if (targetPrice > 0)
+                var verdict = StockVerdictHelper.Evaluate(item);
+
+                // ==========================================
+                // 1. 보유 종목 (Quantity > 0): 목표가/손절가/2차추매가 감지
+                // ==========================================
+                if (!item.IsWatchlist)
                 {
-                    if (item.CurrentPrice >= targetPrice)
+                    // (1) 목표가 계산 (1차 권고 목표가 우선 -> 20일 저항선)
+                    decimal targetPrice = item.RecommendedTargetPrice > 0 ? item.RecommendedTargetPrice : item.ResistancePrice;
+                    if (targetPrice > 0)
                     {
-                        if (!item.WasTargetAlerted)
+                        if (item.CurrentPrice >= targetPrice)
                         {
-                            item.WasTargetAlerted = true;
-                            StockHoldingItem targetItem = item;
-                            decimal hitPrice = targetPrice;
-                            if (this.IsHandleCreated && !this.IsDisposed)
+                            if (!item.WasTargetAlerted)
                             {
-                                this.BeginInvoke(new Action(() =>
+                                item.WasTargetAlerted = true;
+                                StockHoldingItem targetItem = item;
+                                decimal hitPrice = targetPrice;
+                                if (this.IsHandleCreated && !this.IsDisposed)
                                 {
-                                    StockToastNotification.ShowAlert(
-                                        targetItem.StockName,
-                                        targetItem.StockCode,
-                                        targetItem.CurrentPrice,
-                                        hitPrice,
-                                        targetItem.ChangeRate,
-                                        ToastAlertType.TargetHit,
-                                        onClickAction: () => SelectAndFocusStock(targetItem.StockCode)
-                                    );
-                                }));
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        StockToastNotification.ShowAlert(
+                                            targetItem.StockName,
+                                            targetItem.StockCode,
+                                            targetItem.CurrentPrice,
+                                            hitPrice,
+                                            targetItem.ChangeRate,
+                                            ToastAlertType.TargetHit,
+                                            onClickAction: () => SelectAndFocusStock(targetItem.StockCode)
+                                        );
+                                    }));
+                                }
                             }
                         }
+                        else if (item.CurrentPrice < targetPrice * 0.985m)
+                        {
+                            item.WasTargetAlerted = false;
+                        }
                     }
-                    else if (item.CurrentPrice < targetPrice * 0.985m)
+
+                    // (2) 손절가 계산 (2차 방어선 권고 손절가 우선 -> 20일 지지선 -3% -> 평단 -7%)
+                    decimal stopPrice = item.TargetStopPrice > 0
+                        ? item.TargetStopPrice
+                        : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : (item.BuyPrice > 0 ? item.BuyPrice * 0.93m : 0m));
+                    stopPrice = Math.Round(stopPrice, 0);
+
+                    if (stopPrice > 0)
                     {
-                        // 목표가 대비 1.5% 이상 하회 시 재무장 (다시 돌파 시 재알림 가능)
-                        item.WasTargetAlerted = false;
+                        if (item.CurrentPrice <= stopPrice)
+                        {
+                            if (!item.WasStopAlerted)
+                            {
+                                item.WasStopAlerted = true;
+                                StockHoldingItem stopItem = item;
+                                decimal hitPrice = stopPrice;
+                                if (this.IsHandleCreated && !this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        StockToastNotification.ShowAlert(
+                                            stopItem.StockName,
+                                            stopItem.StockCode,
+                                            stopItem.CurrentPrice,
+                                            hitPrice,
+                                            stopItem.ChangeRate,
+                                            ToastAlertType.StopHit,
+                                            onClickAction: () => SelectAndFocusStock(stopItem.StockCode)
+                                        );
+                                    }));
+                                }
+                            }
+                        }
+                        else if (item.CurrentPrice > stopPrice * 1.015m)
+                        {
+                            item.WasStopAlerted = false;
+                        }
+                    }
+
+                    // (3) 보유 종목 2차 추가 매수가(눌림목 지지선) 도달 알림 (AI 매수 승인 시에만)
+                    if (verdict.CanBuy && item.SecondaryBuyPrice > 0)
+                    {
+                        if (item.CurrentPrice <= item.SecondaryBuyPrice)
+                        {
+                            if (!item.WasSecondaryBuyAlerted)
+                            {
+                                item.WasSecondaryBuyAlerted = true;
+                                StockHoldingItem buyItem = item;
+                                decimal hitBuyPrice = item.SecondaryBuyPrice;
+                                if (this.IsHandleCreated && !this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        StockToastNotification.ShowAlert(
+                                            buyItem.StockName,
+                                            buyItem.StockCode,
+                                            buyItem.CurrentPrice,
+                                            hitBuyPrice,
+                                            buyItem.ChangeRate,
+                                            ToastAlertType.BuyHit,
+                                            onClickAction: () => SelectAndFocusStock(buyItem.StockCode)
+                                        );
+                                    }));
+                                }
+                            }
+                        }
+                        else if (item.CurrentPrice > item.SecondaryBuyPrice * 1.015m)
+                        {
+                            item.WasSecondaryBuyAlerted = false;
+                        }
                     }
                 }
-
-                // 2. 손절가 계산 (2차 방어선 권고 손절가 우선 -> 20일 지지선 -3% -> 평단 -7%)
-                decimal stopPrice = item.TargetStopPrice > 0
-                    ? item.TargetStopPrice
-                    : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : (item.BuyPrice > 0 ? item.BuyPrice * 0.93m : 0m));
-                stopPrice = Math.Round(stopPrice, 0);
-
-                if (stopPrice > 0)
+                // ==========================================
+                // 2. 관심 종목 (IsWatchlist: 수량 0주): AI 1차 권고 매수가 도달 감지
+                // ==========================================
+                else
                 {
-                    if (item.CurrentPrice <= stopPrice)
+                    // AI 인터락: C/F 등급이나 지뢰 종목은 가격이 떨어져도 매수 알림 원천 차단
+                    if (verdict.CanBuy)
                     {
-                        if (!item.WasStopAlerted)
+                        decimal buyTarget = item.RecommendedBuyPrice > 0 ? item.RecommendedBuyPrice : item.SupportPrice;
+                        if (buyTarget > 0)
                         {
-                            item.WasStopAlerted = true;
-                            StockHoldingItem stopItem = item;
-                            decimal hitPrice = stopPrice;
-                            if (this.IsHandleCreated && !this.IsDisposed)
+                            if (item.CurrentPrice <= buyTarget)
                             {
-                                this.BeginInvoke(new Action(() =>
+                                if (!item.WasBuyAlerted)
                                 {
-                                    StockToastNotification.ShowAlert(
-                                        stopItem.StockName,
-                                        stopItem.StockCode,
-                                        stopItem.CurrentPrice,
-                                        hitPrice,
-                                        stopItem.ChangeRate,
-                                        ToastAlertType.StopHit,
-                                        onClickAction: () => SelectAndFocusStock(stopItem.StockCode)
-                                    );
-                                }));
+                                    item.WasBuyAlerted = true;
+                                    StockHoldingItem watchItem = item;
+                                    decimal hitBuy = buyTarget;
+                                    if (this.IsHandleCreated && !this.IsDisposed)
+                                    {
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            StockToastNotification.ShowAlert(
+                                                watchItem.StockName,
+                                                watchItem.StockCode,
+                                                watchItem.CurrentPrice,
+                                                hitBuy,
+                                                watchItem.ChangeRate,
+                                                ToastAlertType.BuyHit,
+                                                onClickAction: () => SelectAndFocusStock(watchItem.StockCode)
+                                            );
+                                        }));
+                                    }
+                                }
+                            }
+                            else if (item.CurrentPrice > buyTarget * 1.015m)
+                            {
+                                item.WasBuyAlerted = false;
                             }
                         }
-                    }
-                    else if (item.CurrentPrice > stopPrice * 1.015m)
-                    {
-                        // 손절가 대비 1.5% 이상 회복 시 재무장 (다시 이탈 시 재알림 가능)
-                        item.WasStopAlerted = false;
                     }
                 }
             }

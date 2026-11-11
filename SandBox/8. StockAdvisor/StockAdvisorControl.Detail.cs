@@ -37,18 +37,34 @@ namespace GateHelper.StockAdvisor
                     break;
             }
 
-            // 2. 비중 계산
+            // 2. 비중 계산 및 관심/보유 종목 집계
+            int totalCount = _portfolio.Items.Count;
+            int holdingCount = 0;
+            int watchlistCount = 0;
             decimal totalEval = 0m;
             decimal totalBuy = 0m;
+
             foreach (var item in _portfolio.Items)
             {
-                totalEval += item.TotalEvalAmount;
-                totalBuy += item.TotalBuyAmount;
+                if (item.IsWatchlist) watchlistCount++;
+                else
+                {
+                    holdingCount++;
+                    totalEval += item.TotalEvalAmount;
+                    totalBuy += item.TotalBuyAmount;
+                }
             }
             foreach (var item in _portfolio.Items)
             {
-                item.WeightPercent = (totalEval > 0) ? (item.TotalEvalAmount / totalEval * 100m) : 0m;
+                item.WeightPercent = (!item.IsWatchlist && totalEval > 0) ? (item.TotalEvalAmount / totalEval * 100m) : 0m;
             }
+
+            // 필터 버튼 텍스트 및 요약 갱신
+            if (_btnFilterAll != null) _btnFilterAll.Text = $"전체 ({totalCount})";
+            if (_btnFilterHolding != null) _btnFilterHolding.Text = $"보유 ({holdingCount})";
+            if (_btnFilterWatchlist != null) _btnFilterWatchlist.Text = $"★ 관심 ({watchlistCount})";
+            if (_lblFilterSummary != null) _lblFilterSummary.Text = $"보유 {holdingCount}종목 | 관심 {watchlistCount}종목";
+            UpdateFilterButtonStyles();
 
             // 3. 리스트뷰 갱신
             _lvStocks.BeginUpdate();
@@ -57,6 +73,10 @@ namespace GateHelper.StockAdvisor
 
             foreach (var item in _portfolio.Items)
             {
+                // 필터 모드 적용
+                if (_filterMode == StockFilterMode.HoldingOnly && item.IsWatchlist) continue;
+                if (_filterMode == StockFilterMode.WatchlistOnly && !item.IsWatchlist) continue;
+
                 string rsiText = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                 string volText = item.VolumeRatio > 0 ? $"{item.VolumeRatio:F0}%" : "-";
                 string finalScoreText = item.FinalScore > 0 ? $"{item.FinalScore}점" : "-";
@@ -71,16 +91,21 @@ namespace GateHelper.StockAdvisor
                 string priceDisplay = item.IsPriceScrapeSuccess ? $"{item.CurrentPrice:N0}" : $"{item.CurrentPrice:N0} [오류]";
                 string changeDisplay = item.IsPriceScrapeSuccess ? $"{item.ChangeRate:+0.00;-0.00;0.00}%" : "[수집실패]";
 
+                string buyPriceDisplay = item.IsWatchlist ? "- " : $"{item.BuyPrice:N0}";
+                string qtyDisplay = item.IsWatchlist ? "[관심]" : $"{item.Quantity:N0}";
+                string profitAmtDisplay = item.IsWatchlist ? "- " : $"{item.ProfitAmount:+0,0;-0,0;0}";
+                string profitRateDisplay = item.IsWatchlist ? "- " : $"{item.ProfitRate:+0.00;-0.00;0.00}%";
+
                 var lvi = new ListViewItem(new[]
                 {
                     item.StockCode,                                      // 0: 코드
                     item.StockName,                                      // 1: 종목명
                     priceDisplay,                                        // 2: 현재가
                     changeDisplay,                                       // 3: 전일대비
-                    $"{item.BuyPrice:N0}",                              // 4: 평단
-                    $"{item.Quantity:N0}",                              // 5: 보유수량
-                    $"{item.ProfitAmount:+0,0;-0,0;0}",                 // 6: 손익금(원)
-                    $"{item.ProfitRate:+0.00;-0.00;0.00}%",             // 7: 수익률
+                    buyPriceDisplay,                                     // 4: 평단
+                    qtyDisplay,                                          // 5: 보유수량
+                    profitAmtDisplay,                                    // 6: 손익금(원)
+                    profitRateDisplay,                                   // 7: 수익률
                     gradeText,                                           // 8: AI 등급
                     supplyText,                                          // 9: 수급(외인·기관)
                     landmineText,                                        // 10: 지뢰검증
@@ -124,8 +149,9 @@ namespace GateHelper.StockAdvisor
                 // 4: 평단 (부드러운 실버)
                 lvi.SubItems[4].ForeColor = Color.FromArgb(215, 220, 230);
 
-                // 5: 보유수량 (청록 실버)
-                lvi.SubItems[5].ForeColor = Color.FromArgb(190, 215, 235);
+                // 5: 보유수량 (청록 실버 또는 관심종목 네온 사이언)
+                lvi.SubItems[5].ForeColor = item.IsWatchlist ? Color.FromArgb(0, 220, 255) : Color.FromArgb(190, 215, 235);
+                if (item.IsWatchlist) lvi.SubItems[5].Font = SubItemBoldFont;
 
                 // 6: 손익금(원) (수익 빨강 / 손실 파랑)
                 if (item.ProfitAmount > 0) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 95, 95);
@@ -218,6 +244,29 @@ namespace GateHelper.StockAdvisor
             {
                 UpdateDetailPanel(null);
             }
+        }
+
+        public void SetFilterMode(StockFilterMode mode)
+        {
+            _filterMode = mode;
+            UpdateFilterButtonStyles();
+            UpdateUi();
+        }
+
+        private void UpdateFilterButtonStyles()
+        {
+            UpdateButtonTabStyle(_btnFilterAll, StockFilterMode.All);
+            UpdateButtonTabStyle(_btnFilterHolding, StockFilterMode.HoldingOnly);
+            UpdateButtonTabStyle(_btnFilterWatchlist, StockFilterMode.WatchlistOnly);
+        }
+
+        private void UpdateButtonTabStyle(Button btn, StockFilterMode mode)
+        {
+            if (btn == null) return;
+            bool active = _filterMode == mode;
+            btn.BackColor = active ? Color.FromArgb(18, 52, 74) : Color.FromArgb(24, 28, 38);
+            btn.ForeColor = active ? Color.FromArgb(0, 216, 255) : Color.FromArgb(140, 160, 185);
+            btn.FlatAppearance.BorderColor = active ? Color.FromArgb(0, 216, 255) : Color.FromArgb(42, 54, 72);
         }
 
         private string GetGroupDisplay(PositionGroup group)

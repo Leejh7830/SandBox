@@ -1,6 +1,7 @@
 using System;
 using System.Drawing;
 using System.Windows.Forms;
+using GateHelper.StockAdvisor.Models;
 
 namespace GateHelper.StockAdvisor
 {
@@ -291,7 +292,48 @@ namespace GateHelper.StockAdvisor
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
                 null, _lvStocks, new object[] { true });
 
+            // 좌측 상단: 관심/보유 필터 바 (34px)
+            _pnlListFilter = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 34,
+                BackColor = Color.FromArgb(16, 20, 28),
+                Padding = new Padding(6, 4, 8, 4)
+            };
+
+            var flpFilter = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                WrapContents = false,
+                FlowDirection = FlowDirection.LeftToRight,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+
+            _btnFilterAll = CreateFilterTabButton("전체 (0)", StockFilterMode.All);
+            _btnFilterHolding = CreateFilterTabButton("보유 (0)", StockFilterMode.HoldingOnly);
+            _btnFilterWatchlist = CreateFilterTabButton("★ 관심 (0)", StockFilterMode.WatchlistOnly);
+
+            flpFilter.Controls.Add(_btnFilterAll);
+            flpFilter.Controls.Add(_btnFilterHolding);
+            flpFilter.Controls.Add(_btnFilterWatchlist);
+
+            _lblFilterSummary = new Label
+            {
+                Text = "보유 0종목 | 관심 0종목",
+                Font = new Font("Malgun Gothic", 8.8f),
+                ForeColor = Color.FromArgb(130, 160, 195),
+                Dock = DockStyle.Right,
+                TextAlign = ContentAlignment.MiddleRight,
+                AutoSize = true
+            };
+
+            _pnlListFilter.Controls.Add(_lblFilterSummary);
+            _pnlListFilter.Controls.Add(flpFilter);
+
             _splitMain.Panel1.Controls.Add(_lvStocks);
+            _splitMain.Panel1.Controls.Add(_pnlListFilter);
 
             // 우측: 선택 종목 AI 상세 진단 카드 (440px 와이드 레이아웃)
             _pnlDetail = new Panel
@@ -478,6 +520,29 @@ namespace GateHelper.StockAdvisor
             btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(hr, hg, hb);
             btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(Math.Max(0, bg.R - 10), Math.Max(0, bg.G - 10), Math.Max(0, bg.B - 10));
 
+            return btn;
+        }
+
+        private Button CreateFilterTabButton(string text, StockFilterMode mode)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Tag = mode,
+                Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
+                Size = new Size(95, 26),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = (mode == _filterMode) ? Color.FromArgb(18, 52, 74) : Color.FromArgb(24, 28, 38),
+                ForeColor = (mode == _filterMode) ? Color.FromArgb(0, 216, 255) : Color.FromArgb(140, 160, 185),
+                Margin = new Padding(2, 0, 3, 0),
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = (mode == _filterMode) ? Color.FromArgb(0, 216, 255) : Color.FromArgb(42, 54, 72);
+            btn.Click += (s, e) =>
+            {
+                SetFilterMode(mode);
+            };
             return btn;
         }
 

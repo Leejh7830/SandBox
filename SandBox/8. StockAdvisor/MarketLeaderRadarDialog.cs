@@ -1,0 +1,476 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using GateHelper.StockAdvisor.Models;
+using GateHelper.StockAdvisor.Services;
+
+namespace GateHelper.StockAdvisor
+{
+    public class MarketLeaderRadarDialog : Form
+    {
+        private readonly Action<string, string, decimal> _onAddWatchlist;
+        private readonly HashSet<string> _existingCodes;
+
+        private List<MarketLeaderItem> _allLeaders = new List<MarketLeaderItem>();
+        private RadarStrategyType _currentTab = RadarStrategyType.GoldenPullback;
+
+        // UI 요소
+        private Label _lblStatus;
+        private ProgressBar _pbScan;
+        private Button _btnTabGolden;
+        private Button _btnTabOversold;
+        private Button _btnTabVolume;
+        private Button _btnTabAll;
+        private ListView _lvRadar;
+        private Label _lblGuideBanner;
+        private Button _btnAddWatchlist;
+        private Button _btnRefresh;
+        private Button _btnClose;
+
+        private static readonly Font BoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
+
+        public MarketLeaderRadarDialog(HashSet<string> existingCodes, Action<string, string, decimal> onAddWatchlist)
+        {
+            _existingCodes = existingCodes ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _onAddWatchlist = onAddWatchlist;
+
+            this.Text = "주도주 AI 매수 레이더 (코스피 100 + 코스닥 50)";
+            this.Size = new Size(1100, 700);
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.BackColor = Color.FromArgb(18, 22, 32);
+            this.ForeColor = Color.White;
+            this.Font = new Font("Malgun Gothic", 9f);
+            this.MinimumSize = new Size(950, 600);
+
+            InitializeCustomUi();
+            this.Shown += async (s, e) => await ScanRadarAsync(false);
+        }
+
+        private void InitializeCustomUi()
+        {
+            // 1. 상단 타이틀 헤더 바 (68px)
+            var pnlHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 68,
+                BackColor = Color.FromArgb(24, 28, 40),
+                Padding = new Padding(16, 10, 16, 8)
+            };
+
+            var lblTitle = new Label
+            {
+                Text = "★ 주도주 AI 매수 레이더 (Market Leader Radar)",
+                Font = new Font("Malgun Gothic", 12f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(255, 110, 210),
+                Dock = DockStyle.Top,
+                Height = 26
+            };
+
+            var lblSubtitle = new Label
+            {
+                Text = "시장 거래대금 최상위 150대 주도주 중에서 AI 퀀트 3대 매수 급소(골든 눌림목·과매도 바닥·거래대금 폭발)를 실시간 포착합니다.",
+                Font = new Font("Malgun Gothic", 8.8f),
+                ForeColor = Color.FromArgb(170, 190, 220),
+                Dock = DockStyle.Top,
+                Height = 22
+            };
+
+            _lblStatus = new Label
+            {
+                Text = "주도주 풀 스캔 준비 중...",
+                Font = new Font("Malgun Gothic", 8.5f),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Dock = DockStyle.Bottom,
+                Height = 18
+            };
+
+            _pbScan = new ProgressBar
+            {
+                Dock = DockStyle.Bottom,
+                Height = 3,
+                Style = ProgressBarStyle.Continuous,
+                Visible = false
+            };
+
+            pnlHeader.Controls.Add(_lblStatus);
+            pnlHeader.Controls.Add(_pbScan);
+            pnlHeader.Controls.Add(lblSubtitle);
+            pnlHeader.Controls.Add(lblTitle);
+
+            // 2. 전략 선택 탭 바 (36px)
+            var pnlTabBar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 38,
+                BackColor = Color.FromArgb(16, 20, 28),
+                Padding = new Padding(12, 5, 12, 5)
+            };
+
+            var flpTabs = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+
+            _btnTabGolden = CreateTabButton("★ 골든 눌림목 (0)", RadarStrategyType.GoldenPullback);
+            _btnTabOversold = CreateTabButton("★ 과매도 바닥 (0)", RadarStrategyType.OversoldBounce);
+            _btnTabVolume = CreateTabButton("★ 거래 폭발 (0)", RadarStrategyType.VolumeBreakout);
+            _btnTabAll = CreateTabButton("전체 주도주 TOP 100", RadarStrategyType.AllLeaders);
+
+            flpTabs.Controls.Add(_btnTabGolden);
+            flpTabs.Controls.Add(_btnTabOversold);
+            flpTabs.Controls.Add(_btnTabVolume);
+            flpTabs.Controls.Add(_btnTabAll);
+            pnlTabBar.Controls.Add(flpTabs);
+
+            // 3. 메인 레이더 리스트뷰
+            _lvRadar = new ListView
+            {
+                Dock = DockStyle.Fill,
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = true,
+                BackColor = Color.FromArgb(18, 20, 26),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9.2f),
+                BorderStyle = BorderStyle.None,
+                ShowItemToolTips = true
+            };
+
+            _lvRadar.Columns.Add("순위", 45, HorizontalAlignment.Center);
+            _lvRadar.Columns.Add("시장", 58, HorizontalAlignment.Center);
+            _lvRadar.Columns.Add("코드", 65, HorizontalAlignment.Center);
+            _lvRadar.Columns.Add("종목명", 130);
+            _lvRadar.Columns.Add("현재가", 85, HorizontalAlignment.Right);
+            _lvRadar.Columns.Add("등락률", 75, HorizontalAlignment.Right);
+            _lvRadar.Columns.Add("거래대금", 100, HorizontalAlignment.Right);
+            _lvRadar.Columns.Add("14일 RSI", 65, HorizontalAlignment.Right);
+            _lvRadar.Columns.Add("20일선 이격", 80, HorizontalAlignment.Right);
+            _lvRadar.Columns.Add("AI 전략 타점", 115, HorizontalAlignment.Center);
+            _lvRadar.Columns.Add("AI 권고 매수가", 100, HorizontalAlignment.Right);
+            _lvRadar.Columns.Add("관심 등록", 90, HorizontalAlignment.Center);
+
+            // 리스트 더블 버퍼링
+            typeof(ListView).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
+                null, _lvRadar, new object[] { true });
+
+            _lvRadar.SelectedIndexChanged += LvRadar_SelectedIndexChanged;
+            _lvRadar.DoubleClick += (s, e) => AddSelectedToWatchlist();
+
+            // 4. 하단 액션 및 가이드 바 (78px)
+            var pnlFooter = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 78,
+                BackColor = Color.FromArgb(24, 28, 40),
+                Padding = new Padding(16, 8, 16, 8)
+            };
+
+            _lblGuideBanner = new Label
+            {
+                Text = "[안내] 상단에서 원하는 전략을 선택하고, 마음에 드는 종목을 [+ 관심종목 담기]로 내 포트폴리오에 즉시 등록하세요.",
+                Font = new Font("Malgun Gothic", 9f),
+                ForeColor = Color.FromArgb(215, 235, 255),
+                Dock = DockStyle.Top,
+                Height = 24,
+                AutoEllipsis = true
+            };
+
+            var pnlActionButtons = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 36,
+                BackColor = Color.Transparent
+            };
+
+            _btnAddWatchlist = new Button
+            {
+                Text = "+ 선택 종목 관심종목 담기",
+                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                Size = new Size(190, 34),
+                Dock = DockStyle.Left,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(20, 80, 110),
+                ForeColor = Color.FromArgb(0, 230, 255),
+                Cursor = Cursors.Hand
+            };
+            _btnAddWatchlist.FlatAppearance.BorderColor = Color.FromArgb(0, 200, 240);
+            _btnAddWatchlist.Click += (s, e) => AddSelectedToWatchlist();
+
+            _btnClose = new Button
+            {
+                Text = "닫기",
+                Font = new Font("Malgun Gothic", 9f),
+                Size = new Size(80, 34),
+                Dock = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(32, 38, 52),
+                ForeColor = Color.FromArgb(200, 215, 230),
+                Cursor = Cursors.Hand
+            };
+            _btnClose.FlatAppearance.BorderColor = Color.FromArgb(60, 75, 100);
+            _btnClose.Click += (s, e) => this.Close();
+
+            _btnRefresh = new Button
+            {
+                Text = "새로고침",
+                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
+                Size = new Size(100, 34),
+                Dock = DockStyle.Right,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(28, 42, 64),
+                ForeColor = Color.FromArgb(100, 210, 255),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 0, 8, 0)
+            };
+            _btnRefresh.FlatAppearance.BorderColor = Color.FromArgb(50, 130, 200);
+            _btnRefresh.Click += async (s, e) => await ScanRadarAsync(true);
+
+            pnlActionButtons.Controls.Add(_btnAddWatchlist);
+            pnlActionButtons.Controls.Add(_btnRefresh);
+            pnlActionButtons.Controls.Add(_btnClose);
+
+            pnlFooter.Controls.Add(_lblGuideBanner);
+            pnlFooter.Controls.Add(pnlActionButtons);
+
+            // 도킹 추가
+            this.Controls.Add(_lvRadar);
+            this.Controls.Add(pnlTabBar);
+            this.Controls.Add(pnlHeader);
+            this.Controls.Add(pnlFooter);
+        }
+
+        private Button CreateTabButton(string text, RadarStrategyType tab)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Tag = tab,
+                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
+                Size = new Size(160, 28),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = (_currentTab == tab) ? Color.FromArgb(48, 20, 52) : Color.FromArgb(22, 26, 36),
+                ForeColor = (_currentTab == tab) ? Color.FromArgb(255, 110, 210) : Color.FromArgb(140, 160, 185),
+                Margin = new Padding(2, 0, 4, 0),
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = (_currentTab == tab) ? Color.FromArgb(255, 90, 200) : Color.FromArgb(40, 52, 70);
+            btn.Click += (s, e) =>
+            {
+                _currentTab = tab;
+                UpdateTabButtonStyles();
+                RenderCurrentTabItems();
+            };
+            return btn;
+        }
+
+        private void UpdateTabButtonStyles()
+        {
+            UpdateButtonTab(_btnTabGolden, RadarStrategyType.GoldenPullback);
+            UpdateButtonTab(_btnTabOversold, RadarStrategyType.OversoldBounce);
+            UpdateButtonTab(_btnTabVolume, RadarStrategyType.VolumeBreakout);
+            UpdateButtonTab(_btnTabAll, RadarStrategyType.AllLeaders);
+        }
+
+        private void UpdateButtonTab(Button btn, RadarStrategyType tab)
+        {
+            if (btn == null) return;
+            bool active = _currentTab == tab;
+            btn.BackColor = active ? Color.FromArgb(48, 20, 52) : Color.FromArgb(22, 26, 36);
+            btn.ForeColor = active ? Color.FromArgb(255, 110, 210) : Color.FromArgb(140, 160, 185);
+            btn.FlatAppearance.BorderColor = active ? Color.FromArgb(255, 90, 200) : Color.FromArgb(40, 52, 70);
+        }
+
+        private async Task ScanRadarAsync(bool forceRefresh)
+        {
+            _btnRefresh.Enabled = false;
+            _pbScan.Visible = true;
+            _pbScan.Value = 10;
+            _lblStatus.Text = "코스피 100 + 코스닥 50 주도주 시세 및 기술적 퀀트 스캔 중...";
+
+            var prog = new Progress<int>(pct =>
+            {
+                if (this.IsHandleCreated && !this.IsDisposed)
+                {
+                    this.BeginInvoke(new Action(() => _pbScan.Value = Math.Min(100, Math.Max(10, pct))));
+                }
+            });
+
+            try
+            {
+                var leaders = await MarketLeaderRadarService.ScanMarketLeadersAsync(forceRefresh, prog);
+                _allLeaders = leaders ?? new List<MarketLeaderItem>();
+
+                // 이미 포트폴리오에 존재하는지 체크
+                foreach (var item in _allLeaders)
+                {
+                    item.IsAlreadyInPortfolio = _existingCodes.Contains(item.StockCode);
+                }
+
+                int goldenCount = _allLeaders.Count(x => x.IsGoldenPullback);
+                int oversoldCount = _allLeaders.Count(x => x.IsOversoldBounce);
+                int volumeCount = _allLeaders.Count(x => x.IsVolumeBreakout);
+
+                _btnTabGolden.Text = $"★ 골든 눌림목 ({goldenCount})";
+                _btnTabOversold.Text = $"★ 과매도 바닥 ({oversoldCount})";
+                _btnTabVolume.Text = $"★ 거래 폭발 ({volumeCount})";
+                _btnTabAll.Text = $"전체 주도주 ({_allLeaders.Count})";
+
+                _lblStatus.Text = $"스캔 완료: 총 {_allLeaders.Count}종목 | 골든 눌림목 {goldenCount}종목 | 과매도 바닥 {oversoldCount}종목 | 거래대금 폭발 {volumeCount}종목";
+                RenderCurrentTabItems();
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"스캔 실패: {ex.Message}";
+            }
+            finally
+            {
+                _btnRefresh.Enabled = true;
+                _pbScan.Visible = false;
+            }
+        }
+
+        private void RenderCurrentTabItems()
+        {
+            _lvRadar.BeginUpdate();
+            _lvRadar.Items.Clear();
+
+            IEnumerable<MarketLeaderItem> targets = _allLeaders;
+            switch (_currentTab)
+            {
+                case RadarStrategyType.GoldenPullback:
+                    targets = _allLeaders.Where(x => x.IsGoldenPullback);
+                    break;
+                case RadarStrategyType.OversoldBounce:
+                    targets = _allLeaders.Where(x => x.IsOversoldBounce);
+                    break;
+                case RadarStrategyType.VolumeBreakout:
+                    targets = _allLeaders.Where(x => x.IsVolumeBreakout);
+                    break;
+                case RadarStrategyType.AllLeaders:
+                default:
+                    targets = _allLeaders.Take(100);
+                    break;
+            }
+
+            int rank = 1;
+            foreach (var itm in targets)
+            {
+                string rsiStr = itm.Rsi > 0 ? $"{itm.Rsi:F1}" : "-";
+                string dispStr = itm.Ma20 > 0 ? $"{itm.Ma20DisparityRate:+0.0;-0.0}%" : "-";
+                string buyStr = itm.RecommendedBuyPrice > 0 ? $"{itm.RecommendedBuyPrice:N0}" : "-";
+                string regStr = itm.IsAlreadyInPortfolio ? "★ 등록됨" : "+ 담기";
+
+                var lvi = new ListViewItem(new[]
+                {
+                    $"{rank++}",
+                    itm.MarketType,
+                    itm.StockCode,
+                    itm.StockName,
+                    $"{itm.CurrentPrice:N0}",
+                    $"{itm.ChangeRate:+0.00;-0.00;0.00}%",
+                    itm.TradingValueText,
+                    rsiStr,
+                    dispStr,
+                    itm.PrimaryStrategyBadge,
+                    buyStr,
+                    regStr
+                });
+
+                lvi.Tag = itm;
+
+                // 스타일링
+                lvi.SubItems[0].ForeColor = Color.FromArgb(140, 160, 190);
+                lvi.SubItems[1].ForeColor = itm.MarketType == "KOSPI" ? Color.FromArgb(80, 200, 255) : Color.FromArgb(255, 170, 70);
+                lvi.SubItems[2].ForeColor = Color.FromArgb(150, 170, 200);
+                lvi.SubItems[3].ForeColor = Color.FromArgb(235, 245, 255);
+                lvi.SubItems[3].Font = BoldFont;
+
+                // 등락률
+                if (itm.ChangeRate > 0) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 95, 95);
+                else if (itm.ChangeRate < 0) lvi.SubItems[5].ForeColor = Color.FromArgb(85, 160, 255);
+                else lvi.SubItems[5].ForeColor = Color.FromArgb(180, 190, 205);
+
+                // 거래대금 (1,000억 이상 골드)
+                if (itm.TradingValueRaw >= 100000000000L) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 215, 60);
+                else lvi.SubItems[6].ForeColor = Color.FromArgb(210, 225, 240);
+
+                // RSI
+                if (itm.Rsi <= 36.5m && itm.Rsi > 0) lvi.SubItems[7].ForeColor = Color.FromArgb(80, 200, 255);
+                else if (itm.Rsi >= 68m) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 90, 90);
+                else lvi.SubItems[7].ForeColor = Color.FromArgb(130, 225, 160);
+
+                // 전략 타점 뱃지
+                if (itm.IsGoldenPullback) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
+                else if (itm.IsOversoldBounce) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 220, 255);
+                else if (itm.IsVolumeBreakout) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 190, 40);
+                else lvi.SubItems[9].ForeColor = Color.FromArgb(160, 175, 200);
+                lvi.SubItems[9].Font = BoldFont;
+
+                // 권고 매수가
+                lvi.SubItems[10].ForeColor = Color.FromArgb(0, 216, 255);
+
+                // 관심 등록 상태
+                lvi.SubItems[11].ForeColor = itm.IsAlreadyInPortfolio ? Color.FromArgb(0, 216, 255) : Color.FromArgb(255, 140, 210);
+                lvi.SubItems[11].Font = BoldFont;
+
+                lvi.UseItemStyleForSubItems = false;
+                _lvRadar.Items.Add(lvi);
+            }
+
+            _lvRadar.EndUpdate();
+
+            if (_lvRadar.Items.Count > 0)
+            {
+                _lvRadar.Items[0].Selected = true;
+            }
+            else
+            {
+                _lblGuideBanner.Text = "[안내] 현재 선택된 전략 조건에 부합하는 종목이 없습니다. 상단 다른 전략 탭을 눌러보세요.";
+            }
+        }
+
+        private void LvRadar_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (_lvRadar.SelectedItems.Count > 0 && _lvRadar.SelectedItems[0].Tag is MarketLeaderItem itm)
+            {
+                _lblGuideBanner.Text = $"[{itm.StockName}] {itm.PrimaryStrategyGuide} (권고 매수가: {itm.RecommendedBuyPrice:N0}원)";
+                _btnAddWatchlist.Text = itm.IsAlreadyInPortfolio ? "★ 이미 등록된 종목" : $"+ [{itm.StockName}] 관심종목 담기";
+                _btnAddWatchlist.Enabled = !itm.IsAlreadyInPortfolio;
+            }
+        }
+
+        private void AddSelectedToWatchlist()
+        {
+            if (_lvRadar.SelectedItems.Count == 0) return;
+            var itm = _lvRadar.SelectedItems[0].Tag as MarketLeaderItem;
+            if (itm == null || itm.IsAlreadyInPortfolio) return;
+
+            try
+            {
+                _onAddWatchlist?.Invoke(itm.StockCode, itm.StockName, itm.CurrentPrice);
+                itm.IsAlreadyInPortfolio = true;
+                _existingCodes.Add(itm.StockCode);
+
+                _lvRadar.SelectedItems[0].SubItems[11].Text = "★ 등록됨";
+                _lvRadar.SelectedItems[0].SubItems[11].ForeColor = Color.FromArgb(0, 216, 255);
+                _btnAddWatchlist.Text = "★ 이미 등록된 종목";
+                _btnAddWatchlist.Enabled = false;
+
+                ToastNotification.Show($"[{itm.StockName}] 종목이 [★ 관심 종목]에 등록되었습니다.\nAI 매수가({itm.RecommendedBuyPrice:N0}원) 도달 시 실시간 알림이 발송됩니다.", "관심 종목 등록 완료", ToastIcon.Success);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"등록 중 오류가 발생했습니다: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+    }
+}

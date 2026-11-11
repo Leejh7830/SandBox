@@ -26,7 +26,7 @@ namespace GateHelper.StockAdvisor
             var pnlLeft = new Panel
             {
                 Dock = DockStyle.Left,
-                AutoSize = true,
+                Width = 395,
                 BackColor = Color.Transparent
             };
 
@@ -44,12 +44,12 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "● 시장안전 (뉴스)",
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(70, 220, 140),
                 BackColor = Color.FromArgb(28, 36, 50),
                 BorderStyle = BorderStyle.FixedSingle,
-                Size = new Size(130, 36),
-                Location = new Point(175, 1),
+                Size = new Size(112, 34),
+                Location = new Point(150, 2),
                 Cursor = Cursors.Hand
             };
             _lblTrafficLight.MouseEnter += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(42, 54, 74);
@@ -64,12 +64,12 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "체온 36.5℃ [정상]",
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(70, 230, 150),
                 BackColor = Color.FromArgb(22, 40, 36),
                 BorderStyle = BorderStyle.FixedSingle,
-                Size = new Size(140, 36),
-                Location = new Point(312, 1),
+                Size = new Size(122, 34),
+                Location = new Point(268, 2),
                 Cursor = Cursors.Hand
             };
             _lblMarketThermometer.MouseEnter += (s, e) => _lblMarketThermometer.BackColor = Color.FromArgb(32, 54, 48);
@@ -83,7 +83,7 @@ namespace GateHelper.StockAdvisor
             pnlLeft.Controls.Add(_lblTrafficLight);
             pnlLeft.Controls.Add(_lblMarketThermometer);
 
-            // 우측: 6대 액션 버튼 (가로 1행 나열 FlowLayoutPanel)
+            // 우측: 핵심 액션 버튼 (가로 1행 나열 FlowLayoutPanel)
             var flpButtons = new FlowLayoutPanel
             {
                 Dock = DockStyle.Right,
@@ -97,53 +97,77 @@ namespace GateHelper.StockAdvisor
 
             _btnDiagnose = CreateNeonButton("AI 참모 진단\n(진단 대기)", Color.FromArgb(14, 38, 56), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
             _btnDiagnose.Font = new Font("Malgun Gothic", 7.8f, FontStyle.Bold);
-            _btnDiagnose.Size = new Size(138, 36);
-            _btnDiagnose.Margin = new Padding(3, 1, 3, 1);
+            _btnDiagnose.Size = new Size(102, 34);
+            _btnDiagnose.Margin = new Padding(2, 1, 2, 1);
             _btnDiagnose.Click += async (s, e) => await RunAiDiagnosisAsync();
+
+            _btnLeaderRadar = CreateNeonButton("주도주 레이더", Color.FromArgb(52, 20, 50), Color.FromArgb(255, 90, 215), Color.FromArgb(255, 220, 248));
+            _btnLeaderRadar.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
+            _btnLeaderRadar.Size = new Size(95, 34);
+            _btnLeaderRadar.Margin = new Padding(2, 1, 2, 1);
+            _btnLeaderRadar.Click += (s, e) => ShowMarketLeaderRadarDialog();
 
             _btnEvaluateStock = CreateNeonButton("종목 평가", Color.FromArgb(16, 44, 58), Color.FromArgb(0, 220, 245), Color.FromArgb(215, 250, 255));
             _btnEvaluateStock.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
-            _btnEvaluateStock.Size = new Size(100, 36);
-            _btnEvaluateStock.Margin = new Padding(3, 1, 3, 1);
+            _btnEvaluateStock.Size = new Size(76, 34);
+            _btnEvaluateStock.Margin = new Padding(2, 1, 2, 1);
             _btnEvaluateStock.Click += (s, e) => ShowStockEvaluatorDialog();
 
             _btnRefreshPrice = CreateNeonButton("시세 갱신", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
             _btnRefreshPrice.Font = new Font("Malgun Gothic", 8.8f);
-            _btnRefreshPrice.Size = new Size(90, 36);
-            _btnRefreshPrice.Margin = new Padding(3, 1, 3, 1);
+            _btnRefreshPrice.Size = new Size(74, 34);
+            _btnRefreshPrice.Margin = new Padding(2, 1, 2, 1);
             _btnRefreshPrice.Click += async (s, e) => await RefreshPricesAsync();
 
             _btnEarningsRadar = CreateNeonButton("실적 D-Day", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
-            _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
-            _btnEarningsRadar.Size = new Size(100, 36);
-            _btnEarningsRadar.Margin = new Padding(3, 1, 3, 1);
+            _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
+            _btnEarningsRadar.Size = new Size(82, 34);
+            _btnEarningsRadar.Margin = new Padding(2, 1, 2, 1);
             _btnEarningsRadar.Click += (s, e) => ShowEarningsRadarDialog();
 
             _btnMarketCloseReport = CreateNeonButton("장마감 결산", Color.FromArgb(48, 34, 18), Color.FromArgb(255, 175, 45), Color.FromArgb(255, 235, 180));
-            _btnMarketCloseReport.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
-            _btnMarketCloseReport.Size = new Size(100, 36);
-            _btnMarketCloseReport.Margin = new Padding(3, 1, 3, 1);
+            _btnMarketCloseReport.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
+            _btnMarketCloseReport.Size = new Size(82, 34);
+            _btnMarketCloseReport.Margin = new Padding(2, 1, 2, 1);
             _btnMarketCloseReport.Click += (s, e) => ShowMarketCloseReportDialog();
 
             _btnImportPortfolio = CreateNeonButton("계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
-            _btnImportPortfolio.Font = new Font("Malgun Gothic", 8.8f);
-            _btnImportPortfolio.Size = new Size(100, 36);
-            _btnImportPortfolio.Margin = new Padding(3, 1, 3, 1);
-            _btnImportPortfolio.Click += (s, e) => ShowImportPortfolioDialog();
-
             _btnEmergencyGuide = CreateNeonButton("중요 종목", Color.FromArgb(45, 36, 20), Color.FromArgb(255, 190, 40), Color.FromArgb(255, 245, 210));
-            _btnEmergencyGuide.Font = new Font("Malgun Gothic", 8.8f);
-            _btnEmergencyGuide.Size = new Size(90, 36);
-            _btnEmergencyGuide.Margin = new Padding(3, 1, 3, 1);
-            _btnEmergencyGuide.Click += (s, e) => ShowKeyStockSummaryDialog();
+
+            // 부가 도구 드롭다운 메뉴 (공간 절약 및 사용자 맞춤 메뉴화)
+            var cmsMoreTools = new ContextMenuStrip();
+            var mnuKeyStock = new ToolStripMenuItem("★ 중요 종목 요약 브리핑");
+            mnuKeyStock.Click += (s, e) => ShowKeyStockSummaryDialog();
+            var mnuImport = new ToolStripMenuItem("📁 증권사 계좌 잔고 가져오기 (엑셀/CSV)");
+            mnuImport.Click += (s, e) => ShowImportPortfolioDialog();
+            var mnuKbSec = new ToolStripMenuItem("KB증권 Open API 실시간 잔고 연동 설정");
+            mnuKbSec.Click += (s, e) => ShowKbSettingDialog();
+            var mnuHelpScore = new ToolStripMenuItem("AI 종목 종합 평가 점수 산출 기준 안내");
+            mnuHelpScore.Click += (s, e) => ShowScoreHelpDialog();
+
+            cmsMoreTools.Items.Add(mnuKeyStock);
+            cmsMoreTools.Items.Add(new ToolStripSeparator());
+            cmsMoreTools.Items.Add(mnuImport);
+            cmsMoreTools.Items.Add(mnuKbSec);
+            cmsMoreTools.Items.Add(new ToolStripSeparator());
+            cmsMoreTools.Items.Add(mnuHelpScore);
+
+            var btnMoreTools = CreateNeonButton("부가 도구 ▾", Color.FromArgb(34, 28, 48), Color.FromArgb(180, 130, 250), Color.FromArgb(235, 220, 255));
+            btnMoreTools.Font = new Font("Malgun Gothic", 8.5f);
+            btnMoreTools.Size = new Size(78, 34);
+            btnMoreTools.Margin = new Padding(2, 1, 2, 1);
+            btnMoreTools.Click += (s, e) =>
+            {
+                cmsMoreTools.Show(btnMoreTools, new Point(0, btnMoreTools.Height));
+            };
 
             flpButtons.Controls.Add(_btnDiagnose);
+            flpButtons.Controls.Add(_btnLeaderRadar);
             flpButtons.Controls.Add(_btnEvaluateStock);
             flpButtons.Controls.Add(_btnRefreshPrice);
             flpButtons.Controls.Add(_btnEarningsRadar);
             flpButtons.Controls.Add(_btnMarketCloseReport);
-            flpButtons.Controls.Add(_btnImportPortfolio);
-            flpButtons.Controls.Add(_btnEmergencyGuide);
+            flpButtons.Controls.Add(btnMoreTools);
 
             pnlHeader.Controls.Add(flpButtons);
             pnlHeader.Controls.Add(pnlLeft);

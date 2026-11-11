@@ -25,6 +25,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblMarketThermometer;
         private MarketTemperatureResult _marketTemperature;
         private Button _btnDiagnose;
+        private Button _btnLeaderRadar; // 📡 주도주 AI 매수 레이더
         private Button _btnEvaluateStock;
         private Button _btnRefreshPrice;
         private Button _btnOption;
@@ -543,6 +544,78 @@ namespace GateHelper.StockAdvisor
             {
                 dlg.ShowDialog(this);
             }
+        }
+
+        private void ShowMarketLeaderRadarDialog()
+        {
+            var existingCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode), StringComparer.OrdinalIgnoreCase);
+            using (var dlg = new MarketLeaderRadarDialog(existingCodes, AddStockToWatchlist))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        public void AddStockToWatchlist(string code, string name, decimal price)
+        {
+            if (string.IsNullOrWhiteSpace(code) || _portfolio == null) return;
+            string cleanCode = code.Trim();
+
+            // 중복 방지
+            var existing = _portfolio.Items.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(cleanCode.TrimStart('0'), StringComparison.OrdinalIgnoreCase));
+            if (existing != null)
+            {
+                SelectAndFocusStock(existing.StockCode);
+                return;
+            }
+
+            var newItem = new StockHoldingItem
+            {
+                StockCode = cleanCode,
+                StockName = name,
+                CurrentPrice = price,
+                BuyPrice = 0m,
+                Quantity = 0,
+                Memo = "주도주 AI 매수 레이더에서 관심 종목으로 발굴 및 등록",
+                IsPriceScrapeSuccess = price > 0
+            };
+
+            _portfolio.Items.Add(newItem);
+            SavePortfolio();
+            UpdateUi();
+            SelectAndFocusStock(cleanCode);
+
+            // 비동기로 즉시 60일 일봉/수급 분석 실행하여 타점 보강
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var ind = await TechnicalIndicatorService.AnalyzeIndicatorsAsync(newItem.StockCode, newItem.CurrentPrice);
+                    if (ind != null)
+                    {
+                        newItem.Rsi = ind.Rsi;
+                        newItem.VolumeRatio = ind.VolumeRatio;
+                        newItem.SupportPrice = ind.SupportPrice;
+                        newItem.ResistancePrice = ind.ResistancePrice;
+                        newItem.DownsideRiskPercent = ind.DownsideRiskPercent;
+                        newItem.ChartScore = ind.ChartScore;
+                        newItem.RiskScore = ind.RiskScore;
+                        newItem.TimingBadge = ind.TimingBadge;
+                        newItem.TimingWarning = ind.TimingWarning;
+                        newItem.RecentCandles = ind.Candles;
+                        newItem.RecommendedBuyPrice = ind.RecommendedBuyPrice;
+                        newItem.SecondaryBuyPrice = ind.SecondaryBuyPrice;
+                        newItem.TargetStopPrice = ind.TargetStopPrice;
+                        newItem.RecommendedTargetPrice = ind.RecommendedTargetPrice;
+                        newItem.SecondaryTargetPrice = ind.SecondaryTargetPrice;
+
+                        if (this.IsHandleCreated && !this.IsDisposed)
+                        {
+                            this.BeginInvoke(new Action(UpdateUi));
+                        }
+                    }
+                }
+                catch { }
+            });
         }
 
         #endregion

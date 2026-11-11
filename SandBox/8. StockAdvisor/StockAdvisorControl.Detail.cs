@@ -286,9 +286,9 @@ namespace GateHelper.StockAdvisor
             // AI 참모 최종 투자 결론 및 행동 판정 산출
             StockVerdictInfo verdict = StockVerdictHelper.Evaluate(item);
 
-            // 1. 종목명 및 현재가
-            string sign = item.ProfitRate > 0 ? "+" : "";
-            _lblDetailTitle.Text = $"{item.StockName} ({item.StockCode})  |  현재가: {item.CurrentPrice:N0}원 ({sign}{item.ProfitRate:F2}%)";
+            // 1. 종목명 및 현재가 (전일대비 등락률 표시로 통일)
+            string chgSign = item.ChangeRate > 0 ? "+" : "";
+            _lblDetailTitle.Text = $"{item.StockName} ({item.StockCode})  |  현재가: {item.CurrentPrice:N0}원 ({chgSign}{item.ChangeRate:F2}%)";
 
             // 2. AI 참모 최종 결론 바 (0.1초 직관 배지 + 1줄 행동 지침)
             if (_lblFinalVerdict != null)

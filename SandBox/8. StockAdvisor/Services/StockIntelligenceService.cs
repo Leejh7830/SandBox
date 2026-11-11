@@ -640,8 +640,7 @@ namespace GateHelper.StockAdvisor.Services
         public static UnifiedScoreResult CalculateUnifiedScores(
             TechnicalIndicatorService.IndicatorAnalysisResult tech,
             SupplyAndLandmineDto intel,
-            int geminiNewsScore = 0,
-            int policyImpact = 0)
+            int customNewsScore = 0)
         {
             var res = new UnifiedScoreResult();
 
@@ -672,13 +671,13 @@ namespace GateHelper.StockAdvisor.Services
             }
             res.SupplyFinanceScore = Math.Max(1, Math.Min(10, sfScore));
 
-            // 3. 뉴스·공시 점수 (25%): DART 공시 모니터링 + 정책 영향 + Gemini AI 팩트 진단 (1~10점)
-            int nScore = (geminiNewsScore > 0) ? geminiNewsScore : 5;
-            if (policyImpact != 0)
+            // 3. 뉴스·공시 점수 (25%): DART 공시 모니터링 + Gemini AI 팩트 진단 (1~10점)
+            int nScore = 5;
+            if (customNewsScore > 0)
             {
-                nScore += policyImpact; // 정책 호재(+) 또는 규제 악재(-) 반영
+                nScore = customNewsScore;
             }
-            if (geminiNewsScore <= 0 && intel != null && !string.IsNullOrEmpty(intel.RecentDisclosuresSummary))
+            else if (intel != null && !string.IsNullOrEmpty(intel.RecentDisclosuresSummary))
             {
                 string disc = intel.RecentDisclosuresSummary;
                 if (disc.Contains("배당") || disc.Contains("취득") || disc.Contains("공급계약") || disc.Contains("호실적")) nScore += 1;

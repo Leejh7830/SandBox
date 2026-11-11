@@ -353,12 +353,11 @@ namespace GateHelper.StockAdvisor
                         item.DebtRatio = intel.DebtRatio;
                         item.ConsecutiveLossYears = intel.ConsecutiveLossYears;
 
-                        // 4대 정통 퀀트 팩터(차트 30%, 수급·재무 25%, 뉴스·공시 25%, 손익비 20%) 단일 산출기 적용
+                        // 4대 정통 퀀트 팩터(차트 30%, 수급·재무 25%, 뉴스·공시 25%, 손익비 20%) 단일 산출기 적용 (종목평가와 100% 동일한 단일 기준)
                         var unifiedScore = StockIntelligenceService.CalculateUnifiedScores(
                             ind,
                             intel,
-                            item.NewsScore,
-                            item.LastDiagnosis?.PolicyImpact ?? 0);
+                            0);
 
                         item.ChartScore = unifiedScore.ChartScore;
                         item.SupplyFinanceScore = unifiedScore.SupplyFinanceScore;

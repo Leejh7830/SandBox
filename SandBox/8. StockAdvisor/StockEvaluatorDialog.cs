@@ -576,7 +576,7 @@ namespace GateHelper.StockAdvisor
                 var quant = await StockIntelligenceService.AnalyzeQuantAsync(stockCode, tech.Rsi);
 
                 // 4. 단일 기준(Single Source of Truth) 통합 4대 팩터 점수 산출
-                var scoreRes = StockIntelligenceService.CalculateUnifiedScores(tech, intel, 0, 0);
+                var scoreRes = StockIntelligenceService.CalculateUnifiedScores(tech, intel, 0);
 
                 // AI 등급 (보유 여부와 무관한 순수 시장 팩터 객관적 등급)
                 PositionGrade grade = scoreRes.Grade;

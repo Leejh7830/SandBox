@@ -417,12 +417,13 @@ namespace GateHelper.StockAdvisor.Services
                     DiagnosedAt = DateTime.Now
                 };
 
-                // 손익률 및 현재가 기준 자체 정량화
+                // 손익률 및 현재가 기준 자체 정량화 (보유자 맞춤 행동 조언)
                 decimal profitRate = item.ProfitRate;
+                diag.SourceReliability = 3;
+                diag.PolicyImpact = 0; // 오프라인 룰 엔진은 정책 뉴스를 날조하지 않고 중립(0) 유지
+
                 if (profitRate <= -15m)
                 {
-                    diag.SourceReliability = 4;
-                    diag.PolicyImpact = -4;
                     diag.Group = PositionGroup.GroupA;
                     diag.RecommendedAction = "[경보] 반등 시 비중 40~50% 축소 손절 권고";
                     diag.TargetCutPrice = Math.Round(item.CurrentPrice * 0.95m, 0);
@@ -430,8 +431,6 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else if (profitRate <= -7m)
                 {
-                    diag.SourceReliability = 3;
-                    diag.PolicyImpact = -2;
                     diag.Group = PositionGroup.GroupA;
                     diag.RecommendedAction = "[주의] 지지선 이탈 시 20% 분할 손절 준비";
                     diag.TargetCutPrice = Math.Round(item.CurrentPrice * 0.96m, 0);
@@ -439,8 +438,6 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else if (profitRate >= 15m)
                 {
-                    diag.SourceReliability = 4;
-                    diag.PolicyImpact = +3;
                     diag.Group = PositionGroup.GroupB;
                     diag.RecommendedAction = "[익절] 수익 실현(25%) 및 트레일링 스탑 적용";
                     diag.TargetCutPrice = Math.Round(item.CurrentPrice * 0.93m, 0);
@@ -448,8 +445,6 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else if (profitRate >= 0m)
                 {
-                    diag.SourceReliability = 3;
-                    diag.PolicyImpact = +1;
                     diag.Group = PositionGroup.GroupB;
                     diag.RecommendedAction = "[관망] 관망 및 목표가 도달 시 분할 익절";
                     diag.TargetCutPrice = Math.Round(item.BuyPrice * 0.97m, 0);
@@ -457,8 +452,6 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else
                 {
-                    diag.SourceReliability = 3;
-                    diag.PolicyImpact = -1;
                     diag.Group = PositionGroup.GroupB;
                     diag.RecommendedAction = "[방어] 평단가 방어 관망 (추가 매수 보류)";
                     diag.TargetCutPrice = Math.Round(item.BuyPrice * 0.94m, 0);

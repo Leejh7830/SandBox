@@ -101,36 +101,18 @@ namespace GateHelper.StockAdvisor
 
                 lvi.Tag = item;
 
-                // 실적 발표 임박 (7일 이내) 여부 확인
-                bool isEarningsAlert = item.EarningsDaysRemaining.HasValue && item.EarningsDaysRemaining.Value >= 0 && item.EarningsDaysRemaining.Value <= 7;
-                string earningsTag = isEarningsAlert
-                    ? (item.EarningsDaysRemaining.Value == 0 ? " 📅[실적오늘!]" : $" 📅[D-{item.EarningsDaysRemaining.Value}]")
-                    : "";
-
-                // 급한 종목 하이라이트 (당일 -5% 급락 또는 손절가 터치/이탈 또는 실적 임박)
+                // 급한 종목 하이라이트 (당일 -5% 급락 또는 손절가 터치/이탈 등)
                 if (verdict.IsEmergency)
                 {
                     lvi.BackColor = Color.FromArgb(44, 18, 24); // 부드러운 다크 와인 틴트
-                    lvi.SubItems[1].Text = $"{item.StockName} ⚠️{earningsTag}";
+                    lvi.SubItems[1].Text = $"{item.StockName} ⚠️";
                     lvi.SubItems[1].ForeColor = Color.FromArgb(255, 140, 150);
                     lvi.ToolTipText = $"⚠️ [위급 경보 종목] {verdict.EmergencyReason} (즉시 대응 검토 필요)";
                 }
-                else if (isEarningsAlert)
-                {
-                    lvi.SubItems[1].Text = $"{item.StockName}{earningsTag}";
-                    if (item.EarningsDaysRemaining.Value <= 3)
-                    {
-                        lvi.SubItems[1].ForeColor = Color.FromArgb(255, 175, 60); // 주황 네온 (D-1~D-3 임박)
-                    }
-                    else
-                    {
-                        lvi.SubItems[1].ForeColor = Color.FromArgb(255, 215, 64); // 골드 네온 (D-4~D-7 주의)
-                    }
-                    lvi.ToolTipText = $"📅 [실적발표 임박: D-{item.EarningsDaysRemaining.Value}] {item.EarningsPeriodTitle} (예정일: {item.EarningsAnnouncementDate:yyyy-MM-dd})";
-                }
                 else
                 {
-                    // 1: 종목명 (밝은 텍스트)
+                    // 1: 종목명 (밝은 텍스트로 깨끗하게 표시)
+                    lvi.SubItems[1].Text = item.StockName;
                     lvi.SubItems[1].ForeColor = Color.FromArgb(235, 240, 255);
                     lvi.ToolTipText = $"{item.StockName} ({item.StockCode})";
                 }

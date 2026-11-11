@@ -252,6 +252,7 @@
     <Compile Include="SandBox\8. StockAdvisor\StockSearchPopup.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\Services\StockMasterService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -322,6 +323,7 @@
     <EmbeddedResource Include="SandBox\SandBox.resx">
       <DependentUpon>SandBox.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\8. StockAdvisor\Resources\stock_master.json" />
     <None Include="App.config" />
     <Content Include="Resource_TEMP\sandbox_icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

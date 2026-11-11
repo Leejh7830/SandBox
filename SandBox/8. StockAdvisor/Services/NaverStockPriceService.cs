@@ -56,43 +56,59 @@ namespace GateHelper.StockAdvisor.Services
         }
 
         /// <summary>
-        /// 종목명(예: "카카오", "테슬라", "삼성전자") 또는 코드/티커(예: "035720", "NVDA")로 네이버 증권 공식 종목 검색
+        /// 종목명(예: "백화점", "에어로", "삼성", "NVDA") 또는 코드/티커(예: "035720")로
+        /// 국내 전종목 마스터 사전(포함 검색) 및 네이버 공식 검색 통합 지원
         /// </summary>
         public static async Task<List<StockSearchResultItem>> SearchStockAsync(string query)
         {
             var results = new List<StockSearchResultItem>();
             if (string.IsNullOrWhiteSpace(query)) return results;
 
-            string encodedQuery = WebUtility.UrlEncode(query.Trim());
+            string clean = query.Trim();
+            var seenCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // 1. 국내 전종목 마스터 사전 검색 (단어 앞/중간/뒤 어디든 100% 매칭, 0ms 즉시 응답)
+            var localMatches = StockMasterService.Search(clean, 30);
+            foreach (var m in localMatches)
+            {
+                if (seenCodes.Add(m.Code))
+                {
+                    results.Add(m);
+                }
+            }
+
+            // 2. 네이버 ac 검색 API 호출 (해외 주식 및 최신 신규 상장주 보완)
+            string encodedQuery = WebUtility.UrlEncode(clean);
             string url = $"https://ac.stock.naver.com/ac?q={encodedQuery}&target=stock";
 
             try
             {
                 string json = await _httpClient.GetStringAsync(url).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(json)) return results;
-
-                var jobj = JObject.Parse(json);
-                var items = jobj["items"] as JArray;
-                if (items != null)
+                if (!string.IsNullOrWhiteSpace(json))
                 {
-                    foreach (var item in items)
+                    var jobj = JObject.Parse(json);
+                    var items = jobj["items"] as JArray;
+                    if (items != null)
                     {
-                        string code = item["code"]?.ToString() ?? string.Empty;
-                        string name = item["name"]?.ToString() ?? string.Empty;
-                        string reuters = item["reutersCode"]?.ToString() ?? string.Empty;
-                        string nation = item["nationCode"]?.ToString() ?? "KOR";
-                        string typeName = item["typeName"]?.ToString() ?? string.Empty;
-
-                        if (!string.IsNullOrEmpty(code))
+                        foreach (var item in items)
                         {
-                            results.Add(new StockSearchResultItem
+                            string code = item["code"]?.ToString() ?? string.Empty;
+                            string name = item["name"]?.ToString() ?? string.Empty;
+                            string reuters = item["reutersCode"]?.ToString() ?? string.Empty;
+                            string nation = item["nationCode"]?.ToString() ?? "KOR";
+                            string typeName = item["typeName"]?.ToString() ?? string.Empty;
+
+                            if (!string.IsNullOrEmpty(code) && seenCodes.Add(code))
                             {
-                                Code = code,
-                                Name = name,
-                                ReutersCode = string.IsNullOrEmpty(reuters) ? code : reuters,
-                                NationCode = nation,
-                                TypeName = typeName
-                            });
+                                results.Add(new StockSearchResultItem
+                                {
+                                    Code = code,
+                                    Name = name,
+                                    ReutersCode = string.IsNullOrEmpty(reuters) ? code : reuters,
+                                    NationCode = nation,
+                                    TypeName = typeName
+                                });
+                            }
                         }
                     }
                 }

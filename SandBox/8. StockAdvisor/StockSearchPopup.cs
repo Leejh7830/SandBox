@@ -196,3 +196,4 @@ namespace GateHelper.StockAdvisor
         }
     }
 }
+

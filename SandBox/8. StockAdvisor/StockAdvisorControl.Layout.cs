@@ -339,11 +339,11 @@ namespace GateHelper.StockAdvisor
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            // 4. 최근 20일 일봉 캔들 & AI 타점 미니 차트 (인라인 뷰어)
+            // 4. 일봉 캔들 & AI 타점 미니 차트 (60일/20일 기간 토글 인라인 뷰어)
             _miniChart = new MiniCandleChartControl
             {
                 Dock = DockStyle.Top,
-                Height = 155
+                Height = 168
             };
 
             // 5. 진단 스펙 & 수급 지뢰 요약 바 (권고 액션 중복 제거 후 2줄 압축)

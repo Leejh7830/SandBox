@@ -35,6 +35,7 @@ namespace GateHelper.StockAdvisor.Services
             public decimal VolumeRatio { get; set; } = 100m;
             public decimal Ma5 { get; set; } = 0m;
             public decimal Ma20 { get; set; } = 0m;
+            public decimal Ma60 { get; set; } = 0m;
             public decimal SupportPrice { get; set; } = 0m;
             public decimal ResistancePrice { get; set; } = 0m;
             public decimal DownsideRiskPercent { get; set; } = 0m;
@@ -82,8 +83,10 @@ namespace GateHelper.StockAdvisor.Services
                 // 1. 지지선(최근 20일 최저가) & 저항선(최고가)
                 decimal minLow = decimal.MaxValue;
                 decimal maxHigh = decimal.MinValue;
-                foreach (var c in candles)
+                int scan20 = Math.Min(20, candles.Count);
+                for (int i = 0; i < scan20; i++)
                 {
+                    var c = candles[i];
                     if (c.Low > 0 && c.Low < minLow) minLow = c.Low;
                     if (c.High > maxHigh) maxHigh = c.High;
                 }
@@ -102,16 +105,21 @@ namespace GateHelper.StockAdvisor.Services
                     result.DownsideRiskPercent = 3.0m;
                 }
 
-                // 2. 이평선 (MA5, MA20)
+                // 2. 이평선 (MA5, MA20, MA60)
                 decimal sum5 = 0m;
                 int count5 = Math.Min(5, candles.Count);
                 for (int i = 0; i < count5; i++) sum5 += candles[i].Close;
-                result.Ma5 = Math.Round(sum5 / count5, 2);
+                result.Ma5 = count5 > 0 ? Math.Round(sum5 / count5, 2) : 0m;
 
                 decimal sum20 = 0m;
                 int count20 = Math.Min(20, candles.Count);
                 for (int i = 0; i < count20; i++) sum20 += candles[i].Close;
-                result.Ma20 = Math.Round(sum20 / count20, 2);
+                result.Ma20 = count20 > 0 ? Math.Round(sum20 / count20, 2) : 0m;
+
+                decimal sum60 = 0m;
+                int count60 = Math.Min(60, candles.Count);
+                for (int i = 0; i < count60; i++) sum60 += candles[i].Close;
+                result.Ma60 = count60 > 0 ? Math.Round(sum60 / count60, 2) : 0m;
 
                 // 3. 거래량 급증률 (당일 vs 직전 5영업일 평균)
                 if (candles.Count >= 2 && candles[0].Volume > 0)
@@ -310,14 +318,14 @@ namespace GateHelper.StockAdvisor.Services
                               System.Text.RegularExpressions.Regex.IsMatch(cleanCode, @"^[A-Z]{1,5}$");
 
             string url = isOverseas
-                ? (cleanCode.Contains(".") ? $"https://api.stock.naver.com/stock/{cleanCode}/price?pageSize=20&page=1" : $"https://api.stock.naver.com/stock/{cleanCode}.O/price?pageSize=20&page=1")
-                : $"https://m.stock.naver.com/api/stock/{cleanCode}/price?pageSize=20&page=1";
+                ? (cleanCode.Contains(".") ? $"https://api.stock.naver.com/stock/{cleanCode}/price?pageSize=60&page=1" : $"https://api.stock.naver.com/stock/{cleanCode}.O/price?pageSize=60&page=1")
+                : $"https://m.stock.naver.com/api/stock/{cleanCode}/price?pageSize=60&page=1";
 
             var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode && isOverseas && !cleanCode.Contains("."))
             {
                 // .O 실패 시 .N 시도
-                response = await _httpClient.GetAsync($"https://api.stock.naver.com/stock/{cleanCode}.N/price?pageSize=20&page=1").ConfigureAwait(false);
+                response = await _httpClient.GetAsync($"https://api.stock.naver.com/stock/{cleanCode}.N/price?pageSize=60&page=1").ConfigureAwait(false);
             }
 
             if (!response.IsSuccessStatusCode) return list;

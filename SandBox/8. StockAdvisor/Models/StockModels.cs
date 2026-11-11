@@ -166,6 +166,11 @@ namespace GateHelper.StockAdvisor.Models
         public decimal DebtRatio { get; set; } = 0m;
         public int ConsecutiveLossYears { get; set; } = 0;
 
+        // --- 실적 발표(어닝) D-Day 레이더 지표 ---
+        public int? EarningsDaysRemaining { get; set; } = null;
+        public string EarningsPeriodTitle { get; set; } = string.Empty;
+        public DateTime? EarningsAnnouncementDate { get; set; } = null;
+
         // --- 네이버 스크래핑 무결성 검증 필터 ---
         public bool IsPriceScrapeSuccess { get; set; } = true;
         public string ScrapeErrorMessage { get; set; } = string.Empty;

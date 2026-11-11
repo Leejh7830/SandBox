@@ -29,6 +29,7 @@ namespace GateHelper.StockAdvisor
         private Button _btnRefreshPrice;
         private Button _btnOption;
         private Button _btnAddStock;
+        private Button _btnEarningsRadar; // 실적 발표 D-Day 레이더
         private Button _btnImportPortfolio;
         private Button _btnEmergencyGuide;
 
@@ -83,6 +84,7 @@ namespace GateHelper.StockAdvisor
             SetupKbSyncTimer();
             SetupAutoSyncTimers();
             _ = RefreshMarketThermometerAsync();
+            _ = RefreshEarningsScheduleAsync();
             this.VisibleChanged += (s, e) =>
             {
                 if (!this.Visible)
@@ -95,6 +97,7 @@ namespace GateHelper.StockAdvisor
                     SetupKbSyncTimer();
                     SetupAutoSyncTimers();
                     _ = RefreshMarketThermometerAsync();
+                    _ = RefreshEarningsScheduleAsync();
                     TriggerInitialDiagnosisIfNeeded();
                 }
             };
@@ -372,6 +375,7 @@ namespace GateHelper.StockAdvisor
                 }));
             }
             await Task.WhenAll(tasks);
+            await RefreshEarningsScheduleAsync();
         }
 
         private async Task RunAiDiagnosisAsync(bool isSilent = false)
@@ -892,6 +896,77 @@ namespace GateHelper.StockAdvisor
             using (var dlg = new StockScoreHelpDialog())
             {
                 dlg.ShowDialog(this);
+            }
+        }
+
+        private void ShowEarningsRadarDialog()
+        {
+            using (var dlg = new EarningsRadarDialog(_portfolio.Items))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private async Task RefreshEarningsScheduleAsync()
+        {
+            try
+            {
+                var schedules = await EarningsRadarService.GetEarningsScheduleAsync(_portfolio.Items);
+                foreach (var item in _portfolio.Items)
+                {
+                    var match = schedules.FirstOrDefault(x => x.StockCode.TrimStart('0') == item.StockCode.TrimStart('0'));
+                    if (match != null)
+                    {
+                        item.EarningsDaysRemaining = match.DaysRemaining;
+                        item.EarningsPeriodTitle = match.PeriodTitle;
+                        item.EarningsAnnouncementDate = match.EarningsDate;
+                    }
+                }
+                UpdateEarningsRadarButtonBadge(schedules);
+            }
+            catch { }
+        }
+
+        private void UpdateEarningsRadarButtonBadge(List<EarningsScheduleItem> schedules = null)
+        {
+            if (_btnEarningsRadar == null) return;
+
+            int urgentCount = _portfolio.Items.Count(x => x.EarningsDaysRemaining.HasValue && x.EarningsDaysRemaining.Value >= 0 && x.EarningsDaysRemaining.Value <= 7);
+            int minDays = _portfolio.Items
+                .Where(x => x.EarningsDaysRemaining.HasValue && x.EarningsDaysRemaining.Value >= 0 && x.EarningsDaysRemaining.Value <= 7)
+                .Select(x => x.EarningsDaysRemaining.Value)
+                .DefaultIfEmpty(999)
+                .Min();
+
+            if (urgentCount > 0)
+            {
+                string badge = minDays == 0 ? "오늘!" : $"D-{minDays}";
+                _btnEarningsRadar.Text = $"실적 ({badge})";
+                if (minDays == 0)
+                {
+                    _btnEarningsRadar.BackColor = Color.FromArgb(58, 20, 28);
+                    _btnEarningsRadar.FlatAppearance.BorderColor = Color.FromArgb(255, 80, 80);
+                    _btnEarningsRadar.ForeColor = Color.FromArgb(255, 120, 120);
+                }
+                else if (minDays <= 3)
+                {
+                    _btnEarningsRadar.BackColor = Color.FromArgb(48, 28, 16);
+                    _btnEarningsRadar.FlatAppearance.BorderColor = Color.FromArgb(255, 160, 50);
+                    _btnEarningsRadar.ForeColor = Color.FromArgb(255, 200, 100);
+                }
+                else
+                {
+                    _btnEarningsRadar.BackColor = Color.FromArgb(42, 34, 18);
+                    _btnEarningsRadar.FlatAppearance.BorderColor = Color.FromArgb(255, 215, 64);
+                    _btnEarningsRadar.ForeColor = Color.FromArgb(255, 235, 150);
+                }
+            }
+            else
+            {
+                _btnEarningsRadar.Text = "실적 D-Day";
+                _btnEarningsRadar.BackColor = Color.FromArgb(42, 24, 46);
+                _btnEarningsRadar.FlatAppearance.BorderColor = Color.FromArgb(210, 110, 255);
+                _btnEarningsRadar.ForeColor = Color.FromArgb(245, 225, 255);
             }
         }
 

@@ -29,16 +29,6 @@ namespace GateHelper.StockAdvisor.Services
             _httpClient.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
         }
 
-        public class DailyCandle
-        {
-            public DateTime Date { get; set; }
-            public decimal Close { get; set; }
-            public decimal Open { get; set; }
-            public decimal High { get; set; }
-            public decimal Low { get; set; }
-            public long Volume { get; set; }
-        }
-
         public class IndicatorAnalysisResult
         {
             public decimal Rsi { get; set; } = 50m;
@@ -52,6 +42,9 @@ namespace GateHelper.StockAdvisor.Services
             public int RiskScore { get; set; } = 5;
             public string TimingBadge { get; set; } = "관망유지";
             public string TimingWarning { get; set; } = string.Empty;
+
+            // 20일 일봉 캔들 데이터 목록 (미니 차트 시각화용)
+            public List<DailyCandle> Candles { get; set; } = new List<DailyCandle>();
 
             // AI 퀀트 권고 매수가 및 진입 타점
             public decimal RecommendedBuyPrice { get; set; } = 0m;
@@ -76,6 +69,7 @@ namespace GateHelper.StockAdvisor.Services
             try
             {
                 var candles = await Fetch20DailyCandlesAsync(stockCode);
+                result.Candles = candles ?? new List<DailyCandle>();
                 if (candles == null || candles.Count < 5)
                 {
                     // 데이터가 부족하면 기본 안전값 유지
@@ -306,7 +300,7 @@ namespace GateHelper.StockAdvisor.Services
             return result;
         }
 
-        private static async Task<List<DailyCandle>> Fetch20DailyCandlesAsync(string stockCode)
+        public static async Task<List<DailyCandle>> Fetch20DailyCandlesAsync(string stockCode)
         {
             var list = new List<DailyCandle>();
             string cleanCode = (stockCode ?? string.Empty).Trim().ToUpperInvariant();

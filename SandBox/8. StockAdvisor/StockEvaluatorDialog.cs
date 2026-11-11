@@ -183,6 +183,7 @@ namespace GateHelper.StockAdvisor
                     Rsi = tech.Rsi,
                     VolumeRatio = tech.VolumeRatio,
                     SupportPrice = tech.SupportPrice,
+                    RecentCandles = tech.Candles,
                     ResistancePrice = tech.ResistancePrice,
                     DownsideRiskPercent = tech.DownsideRiskPercent,
                     RecommendedBuyPrice = tech.RecommendedBuyPrice,

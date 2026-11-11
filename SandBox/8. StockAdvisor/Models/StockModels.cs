@@ -7,6 +7,19 @@ using Newtonsoft.Json;
 namespace GateHelper.StockAdvisor.Models
 {
     /// <summary>
+    /// 차트 렌더링 및 기술적 분석용 일봉 캔들 DTO
+    /// </summary>
+    public class DailyCandle
+    {
+        public DateTime Date { get; set; }
+        public decimal Close { get; set; }
+        public decimal Open { get; set; }
+        public decimal High { get; set; }
+        public decimal Low { get; set; }
+        public long Volume { get; set; }
+    }
+
+    /// <summary>
     /// AI 4대 종합 등급 (A, B, C, F)
     /// - 🟢 A (8, 9, 10점): 초록색 (우수/안전)
     /// - 🟡 B (6, 7점): 노란색 (주의/관망)
@@ -177,6 +190,12 @@ namespace GateHelper.StockAdvisor.Models
 
         [JsonIgnore]
         public bool WasStopAlerted { get; set; } = false;
+
+        /// <summary>
+        /// 미니 캔들 차트용 최근 20일 일봉 데이터 캐시 (런타임 메모리 유지, 0-IO)
+        /// </summary>
+        [JsonIgnore]
+        public List<DailyCandle> RecentCandles { get; set; }
 
         // --- 네이버 스크래핑 무결성 검증 필터 ---
         public bool IsPriceScrapeSuccess { get; set; } = true;

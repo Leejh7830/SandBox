@@ -45,6 +45,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblDetailTitle;
         private Label _lblFinalVerdict;          // AI 참모 최종 결론 바 (0.1초 직관 배지)
         private Label _lblDetailPriceTargets;
+        private MiniCandleChartControl _miniChart; // 20일 일봉 & AI 타점 미니 차트
         private Label _lblDetailSummary;
         private RichTextBox _rtbDetailReason;
         private Button _btnEditItem;

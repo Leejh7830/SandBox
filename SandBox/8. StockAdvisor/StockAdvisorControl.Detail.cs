@@ -256,6 +256,7 @@ namespace GateHelper.StockAdvisor
                 }
                 _lblDetailPriceTargets.Text = "• 목표가: - 원   |   손절가: - 원\n• 매수가: 1차 - 원   |   2차(추매): - 원";
                 _lblDetailSummary.Text = "• AI 등급: -   |   종합 점수: -점\n• 수급: -   |   지뢰: -";
+                _miniChart?.SetData(null);
                 RenderEmptyReport();
                 return;
             }
@@ -301,6 +302,9 @@ namespace GateHelper.StockAdvisor
             _lblDetailSummary.Text =
                 $"• AI 등급: {GradeHelper.GetGradeDescription(item.Grade)}   |   종합 점수: {item.FinalScore}점 / 10점 (차트 {item.ChartScore} · 수급재무 {item.SupplyFinanceScore} · 뉴스 {item.NewsScore} · 손익비 {item.RiskScore})\n" +
                 $"• 수급: {supBadge}   |   지뢰: {mineBadge}";
+
+            // 5. 20일 일봉 & AI 타점 미니 차트 갱신
+            _miniChart?.SetData(item);
 
             // 하단 심층 리포트 렌더링
             if (diag != null)

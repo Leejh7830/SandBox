@@ -339,7 +339,14 @@ namespace GateHelper.StockAdvisor
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            // 4. 진단 스펙 & 수급 지뢰 요약 바 (권고 액션 중복 제거 후 2줄 압축)
+            // 4. 최근 20일 일봉 캔들 & AI 타점 미니 차트 (인라인 뷰어)
+            _miniChart = new MiniCandleChartControl
+            {
+                Dock = DockStyle.Top,
+                Height = 155
+            };
+
+            // 5. 진단 스펙 & 수급 지뢰 요약 바 (권고 액션 중복 제거 후 2줄 압축)
             _lblDetailSummary = new Label
             {
                 Text = "• AI 등급: -   |   종합 점수: -점\n• 수급: -   |   지뢰: -",
@@ -409,10 +416,11 @@ namespace GateHelper.StockAdvisor
             pnlDetailBtns.Controls.Add(_btnOption);
             pnlDetailBtns.Controls.Add(pnlRightBtns);
 
-            // 도킹 역순: 마지막에 맨 위 컨트롤이 오도록 추가 (Fill -> Top 4 -> Top 3 -> Top 2 -> Top 1 -> Bottom)
+            // 도킹 역순: 마지막에 맨 위 컨트롤이 오도록 추가 (Fill -> Top 5 -> Top 4 -> Top 3 -> Top 2 -> Top 1 -> Bottom)
             _pnlDetail.Controls.Add(_rtbDetailReason);
             _pnlDetail.Controls.Add(lblReasonTitle);
             _pnlDetail.Controls.Add(_lblDetailSummary);
+            _pnlDetail.Controls.Add(_miniChart);
             _pnlDetail.Controls.Add(_lblDetailPriceTargets);
             _pnlDetail.Controls.Add(_lblFinalVerdict);
             _pnlDetail.Controls.Add(_lblDetailTitle);

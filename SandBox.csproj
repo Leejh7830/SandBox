@@ -256,6 +256,9 @@
     <Compile Include="SandBox\8. StockAdvisor\MarketCloseReportDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\MiniCandleChartControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="SandBox\8. StockAdvisor\Services\EarningsRadarService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\EarningsRadarDialog.cs">
       <SubType>Form</SubType>

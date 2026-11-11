@@ -112,6 +112,7 @@ namespace GateHelper.StockAdvisor
                         item.RiskScore = ind.RiskScore;
                         item.TimingBadge = ind.TimingBadge;
                         item.TimingWarning = ind.TimingWarning;
+                        item.RecentCandles = ind.Candles;
                         item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
                         item.SecondaryBuyPrice = ind.SecondaryBuyPrice;
                         item.TargetStopPrice = ind.TargetStopPrice;

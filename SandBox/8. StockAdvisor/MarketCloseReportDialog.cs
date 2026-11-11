@@ -234,51 +234,51 @@ namespace GateHelper.StockAdvisor
             _rtbReport.Clear();
 
             // 섹션 1: 오늘의 내 계좌 성적표
-            AppendText("【 1. 오늘의 보유 자산 가치 변동 & 계좌 성적표 】\n", Color.FromArgb(0, 230, 255), FontStyle.Bold, 11f);
+            AppendText("[ 1. 오늘의 보유 자산 가치 변동 & 계좌 성적표 ]\n", Color.FromArgb(0, 230, 255), FontStyle.Bold, 11f);
             AppendText($"• 총 보유 평가액 : {totalEval:N0}원  (총 매입원금: {totalBuy:N0}원)\n", Color.White, FontStyle.Regular, 9.5f);
             AppendText($"• 총 누적 평가손익 : {cumulativeProfit:+0,0;-0,0;0}원 ({cumulativeRate:+0.00;-0.00}%)\n", cumulativeProfit >= 0 ? Color.FromArgb(255, 100, 100) : Color.FromArgb(100, 180, 255), FontStyle.Bold, 9.5f);
             AppendText($"• 오늘 하루 가치 변동 : {signToday}{todayChangeAmount:N0}원 ({signToday}{todayChangeRate:F2}%)\n", todayChangeAmount >= 0 ? Color.FromArgb(0, 230, 140) : Color.FromArgb(120, 180, 255), FontStyle.Bold, 10f);
             AppendText($"• 시장 지수 대비 비교 : 코스피 {kospiRate:+0.00;-0.00}% | 코스닥 {kosdaqRate:+0.00;-0.00}% 대비 ", Color.FromArgb(200, 215, 235), FontStyle.Regular, 9.5f);
-            AppendText($"{signAlpha}{alphaKospi:F2}% {(alphaKospi >= 0 ? "초과 선방(아웃퍼폼) 🚀" : "시장 대비 부진 ⚠️")}\n\n", alphaKospi >= 0 ? Color.FromArgb(0, 230, 140) : Color.FromArgb(255, 120, 120), FontStyle.Bold, 9.5f);
+            AppendText($"{signAlpha}{alphaKospi:F2}% {(alphaKospi >= 0 ? "초과 선방 (아웃퍼폼)" : "시장 대비 부진")}\n\n", alphaKospi >= 0 ? Color.FromArgb(0, 230, 140) : Color.FromArgb(255, 120, 120), FontStyle.Bold, 9.5f);
 
             if (mvp != null)
             {
                 decimal mvpDayVal = mvp.ChangePrice * mvp.Quantity;
-                AppendText($"• 🚀 오늘의 계좌 MVP : [{mvp.StockName}] ({mvp.ChangeRate:+0.00;-0.00}%, 당일 평가액 {mvpDayVal:+0,0;-0,0;0}원 기여)\n", Color.FromArgb(255, 215, 64), FontStyle.Bold, 9.5f);
+                AppendText($"• 오늘의 계좌 MVP : [{mvp.StockName}] ({mvp.ChangeRate:+0.00;-0.00}%, 당일 평가액 {mvpDayVal:+0,0;-0,0;0}원 기여)\n", Color.FromArgb(255, 215, 64), FontStyle.Bold, 9.5f);
             }
             if (worst != null && worst.ChangeRate < 0)
             {
                 decimal worstDayVal = worst.ChangePrice * worst.Quantity;
-                AppendText($"• ⚠️ 오늘의 부진 종목 : [{worst.StockName}] ({worst.ChangeRate:+0.00;-0.00}%, 당일 평가액 {worstDayVal:+0,0;-0,0;0}원)\n", Color.FromArgb(255, 130, 130), FontStyle.Regular, 9.5f);
+                AppendText($"• 오늘의 부진 종목 : [{worst.StockName}] ({worst.ChangeRate:+0.00;-0.00}%, 당일 평가액 {worstDayVal:+0,0;-0,0;0}원)\n", Color.FromArgb(255, 130, 130), FontStyle.Regular, 9.5f);
             }
             AppendText("\n", Color.White, FontStyle.Regular, 9f);
 
             // 섹션 2: 보유 종목 메이저 수급 결산
-            AppendText("【 2. 보유 종목 메이저 수급 (외인·기관) 당일 결산 】\n", Color.FromArgb(0, 230, 255), FontStyle.Bold, 11f);
+            AppendText("[ 2. 보유 종목 메이저 수급 (외인·기관) 당일 결산 ]\n", Color.FromArgb(0, 230, 255), FontStyle.Bold, 11f);
             if (ssangkuriBuy.Count > 0)
             {
                 string names = string.Join(", ", ssangkuriBuy.Select(x => $"{x.StockName}({x.ChangeRate:+0.0;-0.0}%)"));
-                AppendText($"• 🟢 외인+기관 쌍끌이 순매수 유입 : {names}\n", Color.FromArgb(0, 240, 210), FontStyle.Bold, 9.5f);
+                AppendText($"• 외인+기관 쌍끌이 순매수 : {names}\n", Color.FromArgb(0, 240, 210), FontStyle.Bold, 9.5f);
             }
             if (foreignBuy.Count > 0)
             {
                 string names = string.Join(", ", foreignBuy.Select(x => $"{x.StockName}({x.ChangeRate:+0.0;-0.0}%)"));
-                AppendText($"• 🔵 외국인 집중 순매수 : {names}\n", Color.FromArgb(120, 210, 255), FontStyle.Regular, 9.5f);
+                AppendText($"• 외국인 집중 순매수 : {names}\n", Color.FromArgb(120, 210, 255), FontStyle.Regular, 9.5f);
             }
             if (instBuy.Count > 0)
             {
                 string names = string.Join(", ", instBuy.Select(x => $"{x.StockName}({x.ChangeRate:+0.0;-0.0}%)"));
-                AppendText($"• 🟡 기관 집중 순매수 : {names}\n", Color.FromArgb(255, 215, 110), FontStyle.Regular, 9.5f);
+                AppendText($"• 기관 집중 순매수 : {names}\n", Color.FromArgb(255, 215, 110), FontStyle.Regular, 9.5f);
             }
             if (majorSell.Count > 0)
             {
                 string names = string.Join(", ", majorSell.Select(x => $"{x.StockName}({x.ChangeRate:+0.0;-0.0}%)"));
-                AppendText($"• 🔴 메이저 동반 매도 출회 : {names}\n", Color.FromArgb(255, 110, 110), FontStyle.Regular, 9.5f);
+                AppendText($"• 메이저 동반 매도 출회 : {names}\n", Color.FromArgb(255, 110, 110), FontStyle.Regular, 9.5f);
             }
             if (antOnly.Count > 0)
             {
                 string names = string.Join(", ", antOnly.Select(x => $"{x.StockName}({x.ChangeRate:+0.0;-0.0}%)"));
-                AppendText($"• ⚪ 개인(개미) 위주 매수 : {names} (기관/외인 수급 공백 주의)\n", Color.FromArgb(200, 180, 230), FontStyle.Regular, 9.5f);
+                AppendText($"• 개인(개미) 위주 매수 : {names} (기관/외인 수급 공백 주의)\n", Color.FromArgb(200, 180, 230), FontStyle.Regular, 9.5f);
             }
             if (ssangkuriBuy.Count == 0 && foreignBuy.Count == 0 && instBuy.Count == 0 && majorSell.Count == 0 && antOnly.Count == 0)
             {
@@ -287,28 +287,28 @@ namespace GateHelper.StockAdvisor
             AppendText("\n", Color.White, FontStyle.Regular, 9f);
 
             // 섹션 3: 내일 시초가 대응 3대 체크포인트
-            AppendText("【 3. 내일 시초가(Next-Day) AI 참모 3대 액션 체크포인트 】\n", Color.FromArgb(0, 230, 255), FontStyle.Bold, 11f);
+            AppendText("[ 3. 내일 시초가 대응 3대 체크포인트 ]\n", Color.FromArgb(0, 230, 255), FontStyle.Bold, 11f);
 
             // 1. 익절 대기
             if (targetNearItems.Count > 0)
             {
-                AppendText("• 🎯 [분할 익절 검토 종목 (목표가 근접)]\n", Color.FromArgb(0, 230, 140), FontStyle.Bold, 9.5f);
+                AppendText("• 목표가 근접 종목 (분할 익절 검토)\n", Color.FromArgb(0, 230, 140), FontStyle.Bold, 9.5f);
                 foreach (var t in targetNearItems)
                 {
                     decimal diff = ((t.Item1.CurrentPrice - t.Item2) / t.Item2) * 100m;
                     AppendText($"   - {t.Item1.StockName} : 현재가 {t.Item1.CurrentPrice:N0}원 / 목표가 {t.Item2:N0}원 ({diff:+0.0;-0.0}%)\n" +
-                               $"     → 내일 시초가 추가 슈팅 시 1/3~1/2 분할 익절 권고\n", Color.FromArgb(220, 245, 230), FontStyle.Regular, 9f);
+                               $"     → 내일 시초가 추가 상승 시 1/3~1/2 분할 익절 권고\n", Color.FromArgb(220, 245, 230), FontStyle.Regular, 9f);
                 }
             }
             else
             {
-                AppendText("• 🎯 [목표가 근접 종목] : 현재 목표가 임박 종목 없음 (추세 홀딩 유지)\n", Color.FromArgb(180, 195, 210), FontStyle.Regular, 9f);
+                AppendText("• 목표가 근접 종목 : 현재 목표가 임박 종목 없음 (추세 홀딩 유지)\n", Color.FromArgb(180, 195, 210), FontStyle.Regular, 9f);
             }
 
             // 2. 손절 방어선 위협
             if (stopNearItems.Count > 0)
             {
-                AppendText("• ⚠️ [손절 방어선 위협 종목 (리스크 관리)]\n", Color.FromArgb(255, 95, 95), FontStyle.Bold, 9.5f);
+                AppendText("• 손절 방어선 위협 종목 (리스크 관리)\n", Color.FromArgb(255, 95, 95), FontStyle.Bold, 9.5f);
                 foreach (var s in stopNearItems)
                 {
                     AppendText($"   - {s.Item1.StockName} : 현재가 {s.Item1.CurrentPrice:N0}원 / 손절선 {s.Item2:N0}원 (이탈 위험)\n" +
@@ -317,27 +317,27 @@ namespace GateHelper.StockAdvisor
             }
             else
             {
-                AppendText("• 🛡️ [손절 방어선] : 전 보유 종목이 주요 지지선 위에서 안정적으로 마감\n", Color.FromArgb(180, 235, 190), FontStyle.Regular, 9f);
+                AppendText("• 손절 방어선 : 전 보유 종목이 주요 지지선 위에서 안정적으로 마감\n", Color.FromArgb(180, 235, 190), FontStyle.Regular, 9f);
             }
 
             // 3. 어닝 레이더
             if (earningsNearItems.Count > 0)
             {
-                AppendText("• 📅 [실적 발표 임박 (어닝 변동성 주의)]\n", Color.FromArgb(220, 130, 255), FontStyle.Bold, 9.5f);
+                AppendText("• 실적 발표 임박 종목 (어닝 변동성 주의)\n", Color.FromArgb(220, 130, 255), FontStyle.Bold, 9.5f);
                 foreach (var e in earningsNearItems)
                 {
-                    string ddayStr = e.EarningsDaysRemaining == 0 ? "오늘 발표!" : $"D-{e.EarningsDaysRemaining}";
+                    string ddayStr = e.EarningsDaysRemaining == 0 ? "오늘 발표" : $"D-{e.EarningsDaysRemaining}";
                     AppendText($"   - {e.StockName} : {e.EarningsPeriodTitle} 실적 발표 [{ddayStr}] ({e.EarningsAnnouncementDate:yyyy-MM-dd})\n" +
-                               $"     → 어닝 쇼크/서프라이즈에 따른 갭 변동성에 유의하세요.\n", Color.FromArgb(240, 225, 255), FontStyle.Regular, 9f);
+                               $"     → 어닝 쇼크/서프라이즈에 따른 변동성에 유의하세요.\n", Color.FromArgb(240, 225, 255), FontStyle.Regular, 9f);
                 }
             }
             else
             {
-                AppendText("• 📅 [실적 레이더] : 향후 3일 이내 예정된 보유 종목 실적 발표 없음\n", Color.FromArgb(180, 195, 210), FontStyle.Regular, 9f);
+                AppendText("• 실적 레이더 : 향후 3일 이내 예정된 보유 종목 실적 발표 없음\n", Color.FromArgb(180, 195, 210), FontStyle.Regular, 9f);
             }
 
             // 4. AI 참모 1줄 종합 총평
-            AppendText("\n【 🤖 AI 참모 종합 한 줄 총평 】\n", Color.FromArgb(255, 215, 64), FontStyle.Bold, 10.5f);
+            AppendText("\n[ 💡 AI 참모 종합 한 줄 총평 ]\n", Color.FromArgb(255, 215, 64), FontStyle.Bold, 10.5f);
             string aiSummary;
             if (todayChangeRate >= 1.0m)
             {
@@ -387,3 +387,4 @@ namespace GateHelper.StockAdvisor
         }
     }
 }
+

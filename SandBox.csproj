@@ -252,6 +252,9 @@
     <Compile Include="SandBox\8. StockAdvisor\StockSearchPopup.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockToastNotification.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="SandBox\8. StockAdvisor\Services\StockMasterService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.cs">
       <SubType>UserControl</SubType>

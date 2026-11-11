@@ -14,6 +14,7 @@ namespace GateHelper.StockAdvisor
         private ComboBox _cboPriceInterval;
         private CheckBox _chkAutoAiDiagnose;
         private ComboBox _cboAiInterval;
+        private CheckBox _chkEnablePriceAlert;
         private Button _btnScoreHelp;
         private Button _btnKbSetting;
         private Button _btnGeminiSetting;
@@ -32,8 +33,8 @@ namespace GateHelper.StockAdvisor
         private void InitializeComponent()
         {
             Text = "주식 리스크 참모 환경 설정 (StockAdvisor Options)";
-            ClientSize = new Size(640, 580);
-            MinimumSize = new Size(640, 580);
+            ClientSize = new Size(640, 615);
+            MinimumSize = new Size(640, 615);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -71,9 +72,9 @@ namespace GateHelper.StockAdvisor
             // 2. 그룹 1: 자동 동기화 주기 설정
             var grpSync = new GroupBox
             {
-                Text = "⏱️ 실시간 자동 동기화 주기 설정",
+                Text = "⏱️ 실시간 자동 동기화 & 목표가/손절가 알림 설정",
                 Location = new Point(5, 64),
-                Size = new Size(590, 255),
+                Size = new Size(590, 290),
                 ForeColor = Color.FromArgb(120, 210, 255),
                 Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
                 Padding = new Padding(14)
@@ -145,7 +146,18 @@ namespace GateHelper.StockAdvisor
             };
             _cboAiInterval.Items.AddRange(new object[] { "5분 (권장 - 1회 일괄)", "10분", "15분", "30분", "60분" });
 
-            // (3) 토큰 안심 가이드 박스
+            // (3) 실시간 목표가/손절가 터치 알림
+            _chkEnablePriceAlert = new CheckBox
+            {
+                Text = "보유 종목 목표가 도달 / 손절가 이탈 시 실시간 토스트 알림",
+                Location = new Point(16, 158),
+                Size = new Size(540, 26),
+                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 230, 180),
+                Cursor = Cursors.Hand
+            };
+
+            // (4) 토큰 안심 가이드 박스
             var lblTokenTip = new Label
             {
                 Text = "💡 [토큰 안심 가이드]\n" +
@@ -153,8 +165,8 @@ namespace GateHelper.StockAdvisor
                        "• AI 진단은 전체 종목을 1회의 API 호출로 묶어서 분석하므로, 5분 주기로도 장중(6.5시간) 동안\n" +
                        "  총 78회만 호출됩니다. (무료 한도 1,500회의 약 5.2%에 불과하여 한도 부담이 없습니다.)\n" +
                        "• 창이 최소화되거나 다른 탭으로 전환 시 타이머가 자동 중지되어 자원을 낭비하지 않습니다.",
-                Location = new Point(16, 162),
-                Size = new Size(556, 78),
+                Location = new Point(16, 194),
+                Size = new Size(556, 82),
                 BackColor = Color.FromArgb(24, 30, 44),
                 ForeColor = Color.FromArgb(160, 205, 240),
                 Font = new Font("Segoe UI", 8.2f),
@@ -163,6 +175,7 @@ namespace GateHelper.StockAdvisor
             };
 
             grpSync.Controls.Add(lblTokenTip);
+            grpSync.Controls.Add(_chkEnablePriceAlert);
             grpSync.Controls.Add(_cboAiInterval);
             grpSync.Controls.Add(lblAiInterval);
             grpSync.Controls.Add(_chkAutoAiDiagnose);
@@ -174,7 +187,7 @@ namespace GateHelper.StockAdvisor
             var grpDocs = new GroupBox
             {
                 Text = "📖 점수 산출 기준 및 연동 설정 바로가기",
-                Location = new Point(5, 330),
+                Location = new Point(5, 365),
                 Size = new Size(590, 140),
                 ForeColor = Color.FromArgb(255, 205, 110),
                 Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
@@ -234,7 +247,7 @@ namespace GateHelper.StockAdvisor
             // 4. 하단 버튼 바
             var pnlBottom = new Panel
             {
-                Location = new Point(5, 485),
+                Location = new Point(5, 520),
                 Size = new Size(590, 45)
             };
 
@@ -272,6 +285,8 @@ namespace GateHelper.StockAdvisor
 
             _chkAutoAiDiagnose.Checked = _portfolio.AutoAiDiagnosisEnabled;
             SelectComboInterval(_cboAiInterval, _portfolio.AiDiagnosisIntervalMinutes, defaultIndex: 0); // 기본 5분
+
+            _chkEnablePriceAlert.Checked = _portfolio.EnablePriceTouchAlert;
         }
 
         private void SelectComboInterval(ComboBox cbo, int minutes, int defaultIndex)
@@ -308,6 +323,8 @@ namespace GateHelper.StockAdvisor
 
             _portfolio.AutoAiDiagnosisEnabled = _chkAutoAiDiagnose.Checked;
             _portfolio.AiDiagnosisIntervalMinutes = ParseComboInterval(_cboAiInterval, 5);
+
+            _portfolio.EnablePriceTouchAlert = _chkEnablePriceAlert.Checked;
 
             OptionsChanged = true;
             DialogResult = DialogResult.OK;

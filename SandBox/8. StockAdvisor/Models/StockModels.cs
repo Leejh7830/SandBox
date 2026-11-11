@@ -171,6 +171,13 @@ namespace GateHelper.StockAdvisor.Models
         public string EarningsPeriodTitle { get; set; } = string.Empty;
         public DateTime? EarningsAnnouncementDate { get; set; } = null;
 
+        // --- 목표가/손절가 실시간 터치 알림 상태 추적 (중복 도배 방지용 세션 상태) ---
+        [JsonIgnore]
+        public bool WasTargetAlerted { get; set; } = false;
+
+        [JsonIgnore]
+        public bool WasStopAlerted { get; set; } = false;
+
         // --- 네이버 스크래핑 무결성 검증 필터 ---
         public bool IsPriceScrapeSuccess { get; set; } = true;
         public string ScrapeErrorMessage { get; set; } = string.Empty;
@@ -331,6 +338,9 @@ namespace GateHelper.StockAdvisor.Models
 
         public bool AutoAiDiagnosisEnabled { get; set; } = false;
         public int AiDiagnosisIntervalMinutes { get; set; } = 5;
+
+        // 보유 종목 목표가/손절가 도달 시 실시간 토스트 알림 활성화 (기본 true)
+        public bool EnablePriceTouchAlert { get; set; } = true;
     }
 
     /// <summary>

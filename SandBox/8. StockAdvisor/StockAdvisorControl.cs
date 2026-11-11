@@ -30,6 +30,7 @@ namespace GateHelper.StockAdvisor
         private Button _btnOption;
         private Button _btnAddStock;
         private Button _btnEarningsRadar; // 실적 발표 D-Day 레이더
+        private Button _btnMarketCloseReport; // 장마감 결산 & 포트폴리오 리뷰
         private Button _btnImportPortfolio;
         private Button _btnEmergencyGuide;
 
@@ -519,6 +520,20 @@ namespace GateHelper.StockAdvisor
         private void ShowEarningsRadarDialog()
         {
             using (var dlg = new EarningsRadarDialog(_portfolio.Items))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private void ShowMarketCloseReportDialog()
+        {
+            if (_portfolio == null || _portfolio.Items.Count == 0)
+            {
+                MessageBox.Show("현재 포트폴리오에 등록된 종목이 없습니다.", "장마감 결산", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            using (var dlg = new MarketCloseReportDialog(_portfolio.Items, _macroSnapshot))
             {
                 dlg.ShowDialog(this);
             }

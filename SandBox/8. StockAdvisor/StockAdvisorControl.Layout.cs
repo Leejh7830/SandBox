@@ -124,6 +124,12 @@ namespace GateHelper.StockAdvisor
             _btnEarningsRadar.Margin = new Padding(3, 1, 3, 1);
             _btnEarningsRadar.Click += (s, e) => ShowEarningsRadarDialog();
 
+            _btnMarketCloseReport = CreateNeonButton("장마감 결산", Color.FromArgb(48, 34, 18), Color.FromArgb(255, 175, 45), Color.FromArgb(255, 235, 180));
+            _btnMarketCloseReport.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
+            _btnMarketCloseReport.Size = new Size(100, 36);
+            _btnMarketCloseReport.Margin = new Padding(3, 1, 3, 1);
+            _btnMarketCloseReport.Click += (s, e) => ShowMarketCloseReportDialog();
+
             _btnImportPortfolio = CreateNeonButton("계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
             _btnImportPortfolio.Font = new Font("Malgun Gothic", 8.8f);
             _btnImportPortfolio.Size = new Size(100, 36);
@@ -141,6 +147,7 @@ namespace GateHelper.StockAdvisor
             flpButtons.Controls.Add(_btnRefreshPrice);
             flpButtons.Controls.Add(_btnAddStock);
             flpButtons.Controls.Add(_btnEarningsRadar);
+            flpButtons.Controls.Add(_btnMarketCloseReport);
             flpButtons.Controls.Add(_btnImportPortfolio);
             flpButtons.Controls.Add(_btnEmergencyGuide);
 

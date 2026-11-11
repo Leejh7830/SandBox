@@ -299,3 +299,4 @@ namespace GateHelper.StockAdvisor
         #endregion
     }
 }
+

@@ -112,12 +112,6 @@ namespace GateHelper.StockAdvisor
             _btnRefreshPrice.Margin = new Padding(3, 1, 3, 1);
             _btnRefreshPrice.Click += async (s, e) => await RefreshPricesAsync();
 
-            _btnAddStock = CreateNeonButton("+ 종목 추가", Color.FromArgb(16, 42, 32), Color.FromArgb(0, 230, 118), Color.FromArgb(215, 255, 230));
-            _btnAddStock.Font = new Font("Malgun Gothic", 8.8f);
-            _btnAddStock.Size = new Size(95, 36);
-            _btnAddStock.Margin = new Padding(3, 1, 3, 1);
-            _btnAddStock.Click += (s, e) => ShowAddStockDialog();
-
             _btnEarningsRadar = CreateNeonButton("실적 D-Day", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
             _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
             _btnEarningsRadar.Size = new Size(100, 36);
@@ -145,7 +139,6 @@ namespace GateHelper.StockAdvisor
             flpButtons.Controls.Add(_btnDiagnose);
             flpButtons.Controls.Add(_btnEvaluateStock);
             flpButtons.Controls.Add(_btnRefreshPrice);
-            flpButtons.Controls.Add(_btnAddStock);
             flpButtons.Controls.Add(_btnEarningsRadar);
             flpButtons.Controls.Add(_btnMarketCloseReport);
             flpButtons.Controls.Add(_btnImportPortfolio);
@@ -241,7 +234,12 @@ namespace GateHelper.StockAdvisor
             _lvStocks.DoubleClick += (s, e) => EditSelectedStock();
             _lvStocks.KeyDown += (s, e) =>
             {
-                if (e.KeyCode == Keys.Delete)
+                if (e.KeyCode == Keys.Insert)
+                {
+                    ShowAddStockDialog();
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.Delete)
                 {
                     DeleteSelectedStock();
                     e.Handled = true;
@@ -250,6 +248,8 @@ namespace GateHelper.StockAdvisor
 
             // 우클릭 컨텍스트 메뉴 설정
             var ctx = new ContextMenuStrip();
+            var mnuAdd = new ToolStripMenuItem("새 종목 추가 (Insert)");
+            mnuAdd.Click += (s, e) => ShowAddStockDialog();
             var mnuEdit = new ToolStripMenuItem("종목 정보 수정 ([수정])");
             mnuEdit.Click += (s, e) => EditSelectedStock();
             var mnuDelete = new ToolStripMenuItem("종목 삭제 ([삭제])");
@@ -257,10 +257,33 @@ namespace GateHelper.StockAdvisor
             var mnuNaver = new ToolStripMenuItem("네이버 증권 웹페이지 열기");
             mnuNaver.Click += (s, e) => OpenNaverFinanceWeb();
 
+            ctx.Items.Add(mnuAdd);
+            ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuEdit);
             ctx.Items.Add(mnuDelete);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuNaver);
+
+            ctx.Opening += (s, e) =>
+            {
+                Point pt = _lvStocks.PointToClient(Cursor.Position);
+                var hit = _lvStocks.HitTest(pt);
+                if (hit.Item != null && !hit.Item.Selected)
+                {
+                    _lvStocks.SelectedItems.Clear();
+                    hit.Item.Selected = true;
+                }
+                else if (hit.Item == null)
+                {
+                    _lvStocks.SelectedItems.Clear();
+                }
+
+                bool hasSelection = _lvStocks.SelectedItems.Count > 0;
+                mnuEdit.Enabled = hasSelection;
+                mnuDelete.Enabled = hasSelection;
+                mnuNaver.Enabled = hasSelection;
+            };
+
             _lvStocks.ContextMenuStrip = ctx;
 
             // 리스트 더블 버퍼링 적용 (깜빡임 0)

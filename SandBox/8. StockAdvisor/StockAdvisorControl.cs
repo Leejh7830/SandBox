@@ -28,7 +28,6 @@ namespace GateHelper.StockAdvisor
         private Button _btnEvaluateStock;
         private Button _btnRefreshPrice;
         private Button _btnOption;
-        private Button _btnAddStock;
         private Button _btnEarningsRadar; // 실적 발표 D-Day 레이더
         private Button _btnMarketCloseReport; // 장마감 결산 & 포트폴리오 리뷰
         private Button _btnImportPortfolio;

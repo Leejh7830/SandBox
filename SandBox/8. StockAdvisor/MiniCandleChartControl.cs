@@ -279,7 +279,7 @@ namespace GateHelper.StockAdvisor
 
             // 4. 차트 영역 레이아웃 좌표 계산
             const int leftMargin = 10;
-            const int rightAxisMargin = 58;
+            const int rightAxisMargin = 68;
             const int topMargin = 22;
             const int bottomMargin = 6;
 
@@ -327,36 +327,58 @@ namespace GateHelper.StockAdvisor
                 return topMargin + norm * priceChartH;
             }
 
-            // 6. 그리드 및 우측 가격 눈금 라인
+            // 6. AI 퀀트 타점 Y좌표 사전 계산
+            float ty = (_targetPrice > 0 && _targetPrice <= maxPrice && _targetPrice >= minPrice) ? PriceToY(_targetPrice) : -999f;
+            float sy = (_stopPrice > 0 && _stopPrice <= maxPrice && _stopPrice >= minPrice) ? PriceToY(_stopPrice) : -999f;
+            float by = (_buyPrice > 0 && _buyPrice <= maxPrice && _buyPrice >= minPrice && Math.Abs(_buyPrice - _stopPrice) > pRange * 0.04m) ? PriceToY(_buyPrice) : -999f;
+
+            bool IsNearAiLine(float y)
+            {
+                return (ty > 0 && Math.Abs(y - ty) < 11f) ||
+                       (sy > 0 && Math.Abs(y - sy) < 11f) ||
+                       (by > 0 && Math.Abs(y - by) < 11f);
+            }
+
+            // 7. 그리드 및 우측 가격 눈금 라인
             for (int step = 0; step <= 3; step++)
             {
                 float gy = topMargin + (priceChartH * step / 3f);
                 g.DrawLine(_gridPen, leftMargin, gy, leftMargin + chartW, gy);
 
-                decimal gridPrice = maxPrice - (pRange * step / 3m);
-                g.DrawString($"{gridPrice:N0}", _fontSmall, _dimBrush, leftMargin + chartW + 3, gy - 6);
+                // AI 타점 라인과 11px 이내로 겹치면 그리드 수치는 생략하여 텍스트 겹침 100% 방지
+                if (!IsNearAiLine(gy))
+                {
+                    decimal gridPrice = maxPrice - (pRange * step / 3m);
+                    g.DrawString($"{gridPrice:N0}", _fontSmall, _dimBrush, leftMargin + chartW + 3, gy - 6);
+                }
             }
 
-            // 7. AI 퀀트 타점 수평선 오버레이 (목표가·손절가·권고매수가)
-            if (_targetPrice > 0 && _targetPrice <= maxPrice && _targetPrice >= minPrice)
+            // 8. AI 퀀트 타점 수평선 오버레이 (목표가·손절가·권고매수가)
+            if (ty > 0)
             {
-                float ty = PriceToY(_targetPrice);
                 g.DrawLine(_targetPen, leftMargin, ty, leftMargin + chartW, ty);
-                g.DrawString($"🎯{_targetPrice:N0}", _fontSmall, _targetBrush, leftMargin + chartW + 3, ty - 6);
+                string txt = $"목표 {_targetPrice:N0}";
+                var sz = g.MeasureString(txt, _fontSmall);
+                g.FillRectangle(_bgBrush, leftMargin + chartW + 2, ty - 6, sz.Width, sz.Height);
+                g.DrawString(txt, _fontSmall, _targetBrush, leftMargin + chartW + 2, ty - 6);
             }
 
-            if (_stopPrice > 0 && _stopPrice <= maxPrice && _stopPrice >= minPrice)
+            if (sy > 0)
             {
-                float sy = PriceToY(_stopPrice);
                 g.DrawLine(_stopPen, leftMargin, sy, leftMargin + chartW, sy);
-                g.DrawString($"⚠️{_stopPrice:N0}", _fontSmall, _stopBrush, leftMargin + chartW + 3, sy - 6);
+                string txt = $"손절 {_stopPrice:N0}";
+                var sz = g.MeasureString(txt, _fontSmall);
+                g.FillRectangle(_bgBrush, leftMargin + chartW + 2, sy - 6, sz.Width, sz.Height);
+                g.DrawString(txt, _fontSmall, _stopBrush, leftMargin + chartW + 2, sy - 6);
             }
 
-            if (_buyPrice > 0 && _buyPrice <= maxPrice && _buyPrice >= minPrice && Math.Abs(_buyPrice - _stopPrice) > pRange * 0.04m)
+            if (by > 0)
             {
-                float by = PriceToY(_buyPrice);
                 g.DrawLine(_buyPen, leftMargin, by, leftMargin + chartW, by);
-                g.DrawString($"💎{_buyPrice:N0}", _fontSmall, _buyBrush, leftMargin + chartW + 3, by - 6);
+                string txt = $"매수 {_buyPrice:N0}";
+                var sz = g.MeasureString(txt, _fontSmall);
+                g.FillRectangle(_bgBrush, leftMargin + chartW + 2, by - 6, sz.Width, sz.Height);
+                g.DrawString(txt, _fontSmall, _buyBrush, leftMargin + chartW + 2, by - 6);
             }
 
             // 8. 캔들스틱 및 거래량 렌더링
@@ -457,3 +479,4 @@ namespace GateHelper.StockAdvisor
         }
     }
 }
+

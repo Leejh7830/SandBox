@@ -300,8 +300,8 @@ namespace GateHelper.StockAdvisor
             var diag = item.LastDiagnosis;
 
             _lblDetailSummary.Text =
-                $"• AI 등급: {GradeHelper.GetGradeDescription(item.Grade)}   |   종합 점수: {item.FinalScore}점 / 10점 (차트 {item.ChartScore} · 수급재무 {item.SupplyFinanceScore} · 뉴스 {item.NewsScore} · 손익비 {item.RiskScore})\n" +
-                $"• 수급: {supBadge}   |   지뢰: {mineBadge}";
+                $"• AI 등급: {GradeHelper.GetGradeDescription(item.Grade)}  |  종합 점수: {item.FinalScore}점 / 10점\n" +
+                $"• 수급: {supBadge}  |  지뢰: {mineBadge}  |  세부: 차트{item.ChartScore}·수급{item.SupplyFinanceScore}·뉴스{item.NewsScore}·손익{item.RiskScore}";
 
             // 5. 20일 일봉 & AI 타점 미니 차트 갱신
             _miniChart?.SetData(item);

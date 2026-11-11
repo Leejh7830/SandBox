@@ -353,7 +353,7 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(190, 210, 235),
                 Dock = DockStyle.Top,
-                Height = 38,
+                Height = 44,
                 Padding = new Padding(2, 4, 2, 2)
             };
 

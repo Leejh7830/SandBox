@@ -224,10 +224,6 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("지뢰검증", 88, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("14일 RSI", 62, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("5일 거래량", 80, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("차트", 46, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("수급재무", 58, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("뉴스", 46, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("손익비", 50, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("종합점수", 75, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("타이밍 안전벨트", 115, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("최종 액션", 140, HorizontalAlignment.Center);
@@ -404,7 +400,7 @@ namespace GateHelper.StockAdvisor
 
         private void AutoFitLastColumn()
         {
-            if (_lvStocks == null || _lvStocks.Columns.Count < 20) return;
+            if (_lvStocks == null || _lvStocks.Columns.Count < 16) return;
             try
             {
                 int fixedWidth = 0;

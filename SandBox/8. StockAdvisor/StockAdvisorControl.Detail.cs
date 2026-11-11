@@ -59,10 +59,6 @@ namespace GateHelper.StockAdvisor
             {
                 string rsiText = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                 string volText = item.VolumeRatio > 0 ? $"{item.VolumeRatio:F0}%" : "-";
-                string chartText = item.ChartScore > 0 ? $"{item.ChartScore}점" : "-";
-                string sfText = item.SupplyFinanceScore > 0 ? $"{item.SupplyFinanceScore}점" : "-";
-                string newsText = item.NewsScore > 0 ? $"{item.NewsScore}점" : "-";
-                string riskText = item.RiskScore > 0 ? $"{item.RiskScore}점" : "-";
                 string finalScoreText = item.FinalScore > 0 ? $"{item.FinalScore}점" : "-";
 
                 // AI 참모 최종 결론 및 행동 판정 평가
@@ -90,13 +86,9 @@ namespace GateHelper.StockAdvisor
                     landmineText,                                        // 10: 지뢰검증
                     rsiText,                                             // 11: 14일 RSI
                     volText,                                             // 12: 5일 거래량
-                    chartText,                                           // 13: 차트
-                    sfText,                                              // 14: 수급재무
-                    newsText,                                            // 15: 뉴스
-                    riskText,                                            // 16: 손익비
-                    finalScoreText,                                      // 17: ★종합점수
-                    item.TimingBadge,                                    // 18: 타이밍 안전벨트
-                    verdict.BadgeText                                    // 19: 최종 액션 (신호등 뱃지)
+                    finalScoreText,                                      // 13: ★종합점수
+                    item.TimingBadge,                                    // 14: 타이밍 안전벨트
+                    verdict.BadgeText                                    // 15: 최종 액션 (신호등 뱃지)
                 });
 
                 lvi.Tag = item;
@@ -180,39 +172,23 @@ namespace GateHelper.StockAdvisor
                 if (item.VolumeRatio >= 140m) lvi.SubItems[12].ForeColor = Color.FromArgb(0, 230, 200);
                 else lvi.SubItems[12].ForeColor = Color.FromArgb(200, 215, 235);
 
-                // 13: 차트 점수
-                if (item.ChartScore >= 7) lvi.SubItems[13].ForeColor = Color.FromArgb(120, 215, 255);
-                else if (item.ChartScore <= 3) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 110, 110);
+                // 13: ★ 최종점수
+                if (item.FinalScore >= 8) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 215, 0); // 골드
+                else if (item.FinalScore <= 3) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 110, 110);
+                else lvi.SubItems[13].ForeColor = Color.FromArgb(235, 240, 255);
 
-                // 14: 수급·재무 점수
-                if (item.SupplyFinanceScore >= 7) lvi.SubItems[14].ForeColor = Color.FromArgb(100, 220, 240);
-                else if (item.SupplyFinanceScore <= 3) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 110, 110);
-
-                // 15: 뉴스 점수
-                if (item.NewsScore >= 7) lvi.SubItems[15].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.NewsScore <= 3) lvi.SubItems[15].ForeColor = Color.FromArgb(255, 110, 110);
-
-                // 16: 손익비 점수
-                if (item.RiskScore >= 8) lvi.SubItems[16].ForeColor = Color.FromArgb(120, 230, 150);
-                else if (item.RiskScore <= 3) lvi.SubItems[16].ForeColor = Color.FromArgb(255, 170, 70);
-
-                // 17: ★ 최종점수
-                if (item.FinalScore >= 8) lvi.SubItems[17].ForeColor = Color.FromArgb(255, 215, 0); // 골드
-                else if (item.FinalScore <= 3) lvi.SubItems[17].ForeColor = Color.FromArgb(255, 110, 110);
-                else lvi.SubItems[17].ForeColor = Color.FromArgb(235, 240, 255);
-
-                // 18: 타이밍 안전벨트
+                // 14: 타이밍 안전벨트
                 string tb = item.TimingBadge ?? string.Empty;
-                if (tb.Contains("과열")) lvi.SubItems[18].ForeColor = Color.FromArgb(255, 75, 95);
-                else if (tb.Contains("골든")) lvi.SubItems[18].ForeColor = Color.FromArgb(0, 230, 118);
-                else if (tb.Contains("눌림목")) lvi.SubItems[18].ForeColor = Color.FromArgb(255, 210, 60);
-                else if (tb.Contains("과매도")) lvi.SubItems[18].ForeColor = Color.FromArgb(70, 180, 255);
-                else if (tb.Contains("보유불필요")) lvi.SubItems[18].ForeColor = Color.FromArgb(255, 90, 90);
-                else lvi.SubItems[18].ForeColor = Color.FromArgb(190, 200, 215);
+                if (tb.Contains("과열")) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 75, 95);
+                else if (tb.Contains("골든")) lvi.SubItems[14].ForeColor = Color.FromArgb(0, 230, 118);
+                else if (tb.Contains("눌림목")) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 210, 60);
+                else if (tb.Contains("과매도")) lvi.SubItems[14].ForeColor = Color.FromArgb(70, 180, 255);
+                else if (tb.Contains("보유불필요")) lvi.SubItems[14].ForeColor = Color.FromArgb(255, 90, 90);
+                else lvi.SubItems[14].ForeColor = Color.FromArgb(190, 200, 215);
 
-                // 19: 최종 액션 (신호등 뱃지)
-                lvi.SubItems[19].ForeColor = verdict.ListBadgeColor;
-                lvi.SubItems[19].Font = SubItemBoldFont;
+                // 15: 최종 액션 (신호등 뱃지)
+                lvi.SubItems[15].ForeColor = verdict.ListBadgeColor;
+                lvi.SubItems[15].Font = SubItemBoldFont;
 
                 lvi.UseItemStyleForSubItems = false;
                 _lvStocks.Items.Add(lvi);
@@ -466,9 +442,9 @@ namespace GateHelper.StockAdvisor
             else
             {
                 _sortColumn = e.Column;
-                // 금액/수익률/지표/점수 컬럼(2~7번, 11~17번)은 높은 값(내림차순) 우선
-                // 8번(AI 등급: A->B->C->F) 및 텍스트 컬럼(0:코드, 1:종목명, 9:수급, 10:지뢰, 18:타이밍, 19:권고)은 오름차순 우선
-                _sortOrder = ((e.Column >= 2 && e.Column <= 7) || (e.Column >= 11 && e.Column <= 17)) ? SortOrder.Descending : SortOrder.Ascending;
+                // 금액/수익률/지표/점수 컬럼(2~7번, 11~13번)은 높은 값(내림차순) 우선
+                // 8번(AI 등급: A->B->C->F) 및 텍스트 컬럼(0:코드, 1:종목명, 9:수급, 10:지뢰, 14:타이밍, 15:권고)은 오름차순 우선
+                _sortOrder = ((e.Column >= 2 && e.Column <= 7) || (e.Column >= 11 && e.Column <= 13)) ? SortOrder.Descending : SortOrder.Ascending;
             }
 
             UpdateColumnHeaderSortArrows();
@@ -566,25 +542,13 @@ namespace GateHelper.StockAdvisor
                 case 12: // 5일 거래량 (수치 정렬)
                     result = itemX.VolumeRatio.CompareTo(itemY.VolumeRatio);
                     break;
-                case 13: // 차트 점수 (수치 정렬)
-                    result = itemX.ChartScore.CompareTo(itemY.ChartScore);
-                    break;
-                case 14: // 수급·재무 점수 (수치 정렬)
-                    result = itemX.SupplyFinanceScore.CompareTo(itemY.SupplyFinanceScore);
-                    break;
-                case 15: // 뉴스 점수 (수치 정렬)
-                    result = itemX.NewsScore.CompareTo(itemY.NewsScore);
-                    break;
-                case 16: // 손익비 점수 (수치 정렬)
-                    result = itemX.RiskScore.CompareTo(itemY.RiskScore);
-                    break;
-                case 17: // ★종합점수 (수치 정렬)
+                case 13: // ★종합점수 (수치 정렬)
                     result = itemX.FinalScore.CompareTo(itemY.FinalScore);
                     break;
-                case 18: // 타이밍 안전벨트
+                case 14: // 타이밍 안전벨트
                     result = string.Compare(itemX.TimingBadge, itemY.TimingBadge, StringComparison.CurrentCultureIgnoreCase);
                     break;
-                case 19: // 권고 지침
+                case 15: // 권고 지침 / 최종 액션
                     string actX = itemX.LastDiagnosis?.RecommendedAction ?? string.Empty;
                     string actY = itemY.LastDiagnosis?.RecommendedAction ?? string.Empty;
                     result = string.Compare(actX, actY, StringComparison.CurrentCultureIgnoreCase);

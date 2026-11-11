@@ -70,7 +70,7 @@ namespace GateHelper.StockAdvisor
         private static readonly string[] OriginalColumnNames = new[]
         {
             "코드", "종목명", "현재가", "전일대비", "평단", "보유", "손익금(원)", "수익률", "AI 등급",
-            "수급(외인·기관)", "지뢰검증", "14일 RSI", "5일 거래량", "차트", "수급재무", "뉴스", "손익비", "종합점수", "타이밍 안전벨트", "최종 액션"
+            "수급(외인·기관)", "지뢰검증", "14일 RSI", "5일 거래량", "종합점수", "타이밍 안전벨트", "최종 액션"
         };
         private GlobalMarketSnapshot _macroSnapshot;
 

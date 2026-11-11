@@ -238,3 +238,4 @@ namespace GateHelper.StockAdvisor.Services
         }
     }
 }
+

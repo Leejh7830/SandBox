@@ -22,40 +22,35 @@ namespace GateHelper.StockAdvisor
         // UI 컨트롤 요소
         private Panel _pnlHeader;
         private Label _lblTrafficLight;
-        private Label _lblBriefing1;
-        private Label _lblBriefing2;
-        private Label _lblBriefing3;
-        private ComboBox _cboAiModel;
+        private Label _lblMarketThermometer;
+        private MarketTemperatureResult _marketTemperature;
         private Button _btnDiagnose;
         private Button _btnEvaluateStock;
         private Button _btnRefreshPrice;
-        private Button _btnScoreHelp;
+        private Button _btnOption;
         private Button _btnAddStock;
         private Button _btnImportPortfolio;
         private Button _btnEmergencyGuide;
 
-        // 글로벌 매크로 티커 바
-        private Panel _pnlMacroTicker;
-        private Label _lblMacroTicker;
+        private Timer _autoSyncTimer;
+        private DateTime _lastAutoPriceSyncTime = DateTime.MinValue;
+        private DateTime _lastAutoAiDiagnoseTime = DateTime.MinValue;
 
         private SplitContainer _splitMain;
         private ListView _lvStocks;
         private Panel _pnlDetail;
 
-        // 상세 패널 요소
+        // 상세 패널 요소 (슬림 4단 구조)
         private Label _lblDetailTitle;
-        private Label _lblDetailTimingWarning;
-        private Label _lblDetailScores;
-        private Label _lblDetailTechnicalFacts;
-        private Label _lblDetailIntelligence;
-        private Label _lblDetailGroupBadge;
-        private Label _lblDetailAction;
-        private Label _lblDetailReliability;
-        private Label _lblDetailImpact;
-        private Label _lblDetailTargetCut;
+        private Label _lblFinalVerdict;          // AI 참모 최종 결론 바 (0.1초 직관 배지)
+        private Label _lblDetailPriceTargets;
+        private Label _lblDetailSummary;
         private RichTextBox _rtbDetailReason;
         private Button _btnEditItem;
         private Button _btnDeleteItem;
+
+        // 제로 리소스 폰트 캐시 (루프 내 new Font 방지, GC 0B)
+        internal static readonly Font SubItemBoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
 
         // 하단 상태바
         private Panel _pnlFooter;
@@ -66,6 +61,7 @@ namespace GateHelper.StockAdvisor
         // 비동기 작업 상태 플래그 (멀티태스킹 분리)
         private bool _isAiDiagnosing = false;
         private bool _isRefreshingPrice = false;
+        private bool _hasInitialDiagnosed = false; // 최초 메인 화면 진입 시 1회 자동 진단 실행 가드
 
         // 리스트뷰 컬럼 정렬 상태
         private int _sortColumn = -1;
@@ -73,7 +69,7 @@ namespace GateHelper.StockAdvisor
         private static readonly string[] OriginalColumnNames = new[]
         {
             "코드", "종목명", "현재가", "전일대비", "평단", "보유", "손익금(원)", "수익률", "AI 등급",
-            "수급(외인·기관)", "지뢰검증", "14일 RSI", "5일 거래량", "차트", "뉴스", "손익비", "★종합점수", "타이밍 안전벨트", "권고 지침"
+            "수급(외인·기관)", "지뢰검증", "14일 RSI", "5일 거래량", "차트", "수급재무", "뉴스", "손익비", "종합점수", "타이밍 안전벨트", "최종 액션"
         };
         private GlobalMarketSnapshot _macroSnapshot;
 
@@ -85,17 +81,30 @@ namespace GateHelper.StockAdvisor
             UpdateUi();
 
             SetupKbSyncTimer();
+            SetupAutoSyncTimers();
+            _ = RefreshMarketThermometerAsync();
             this.VisibleChanged += (s, e) =>
             {
                 if (!this.Visible)
                 {
                     _kbSyncTimer?.Stop();
+                    _autoSyncTimer?.Stop();
                 }
                 else
                 {
                     SetupKbSyncTimer();
+                    SetupAutoSyncTimers();
+                    _ = RefreshMarketThermometerAsync();
+                    TriggerInitialDiagnosisIfNeeded();
                 }
             };
+        }
+
+        private void TriggerInitialDiagnosisIfNeeded()
+        {
+            if (_hasInitialDiagnosed) return;
+            _hasInitialDiagnosed = true;
+            _ = RunAiDiagnosisAsync(isSilent: true);
         }
 
         protected override void OnSizeChanged(EventArgs e)
@@ -128,8 +137,15 @@ namespace GateHelper.StockAdvisor
         {
             if (isVisible)
             {
-                // 탭 진입 시 시세 자동 새로고침 (유휴 CPU 0% 유지)
-                _ = RefreshPricesAsync();
+                if (!_hasInitialDiagnosed)
+                {
+                    TriggerInitialDiagnosisIfNeeded();
+                }
+                else
+                {
+                    // 재진입 시에는 가벼운 시세 새로고침만 수행 (유휴 CPU 0% 유지)
+                    _ = RefreshPricesAsync();
+                }
             }
         }
 
@@ -143,6 +159,15 @@ namespace GateHelper.StockAdvisor
                 if (!string.IsNullOrWhiteSpace(json))
                 {
                     _portfolio = JsonConvert.DeserializeObject<PortfolioData>(json) ?? new PortfolioData();
+                    foreach (var itm in _portfolio.Items)
+                    {
+                        itm.MajorSupplyBadge = TextCleanHelper.StripEmoji(itm.MajorSupplyBadge);
+                        itm.LandmineBadge = TextCleanHelper.StripEmoji(itm.LandmineBadge);
+                        itm.TimingBadge = TextCleanHelper.StripEmoji(itm.TimingBadge);
+                        itm.EntryTimingBadge = TextCleanHelper.StripEmoji(itm.EntryTimingBadge);
+                        itm.ExitTimingBadge = TextCleanHelper.StripEmoji(itm.ExitTimingBadge);
+                        itm.QuantBadge = TextCleanHelper.StripEmoji(itm.QuantBadge);
+                    }
                 }
                 else
                 {
@@ -181,17 +206,17 @@ namespace GateHelper.StockAdvisor
 
             if (!string.IsNullOrEmpty(customStatus))
             {
-                _btnDiagnose.Text = $"★ AI 참모 진단\r\n{customStatus}";
+                _btnDiagnose.Text = $"AI 참모 진단\n{customStatus}";
                 return;
             }
 
             if (_portfolio?.LastBriefing != null && _portfolio.LastBriefing.GeneratedAt != default && _portfolio.LastBriefing.GeneratedAt.Year > 2000)
             {
-                _btnDiagnose.Text = $"★ AI 참모 진단\r\n✓ 진단 완료 ({_portfolio.LastBriefing.GeneratedAt:HH:mm:ss})";
+                _btnDiagnose.Text = $"AI 참모 진단\n✓ {_portfolio.LastBriefing.GeneratedAt:HH:mm:ss} 동기화";
             }
             else
             {
-                _btnDiagnose.Text = "★ AI 참모 진단\r\n(진단 대기)";
+                _btnDiagnose.Text = "AI 참모 진단\n(진단 대기)";
             }
         }
 
@@ -233,19 +258,23 @@ namespace GateHelper.StockAdvisor
                     if (!itm.IsPriceScrapeSuccess) failCount++;
                 }
 
-                if (failCount > 0)
+                if (_lblLastUpdated != null)
                 {
-                    _lblLastUpdated.Text = $"시세: {DateTime.Now:HH:mm:ss} (⚠️ {failCount}건 수집 실패!)";
-                    _lblLastUpdated.ForeColor = Color.FromArgb(255, 120, 100);
-                }
-                else
-                {
-                    _lblLastUpdated.Text = $"시세: {DateTime.Now:HH:mm:ss} (전 종목 정상)";
-                    _lblLastUpdated.ForeColor = Color.FromArgb(100, 255, 180);
+                    if (failCount > 0)
+                    {
+                        _lblLastUpdated.Text = $"동기화: {DateTime.Now:yyyy-MM-dd HH:mm:ss} ({failCount}건 수집 실패)";
+                        _lblLastUpdated.ForeColor = Color.FromArgb(255, 120, 100);
+                    }
+                    else
+                    {
+                        _lblLastUpdated.Text = $"동기화: {DateTime.Now:yyyy-MM-dd HH:mm:ss} (전 종목 정상)";
+                        _lblLastUpdated.ForeColor = Color.FromArgb(100, 255, 180);
+                    }
                 }
 
                 SavePortfolio();
                 UpdateUi();
+                _ = RefreshMarketThermometerAsync();
             }
             catch (Exception ex)
             {
@@ -306,6 +335,7 @@ namespace GateHelper.StockAdvisor
                         item.TimingBadge = ind.TimingBadge;
                         item.TimingWarning = ind.TimingWarning;
                         item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
+                        item.SecondaryBuyPrice = ind.SecondaryBuyPrice;
                         item.TargetStopPrice = ind.TargetStopPrice;
                         item.EntryTimingBadge = ind.EntryTimingBadge;
                         item.EntryTimingGuide = ind.EntryTimingGuide;
@@ -323,16 +353,18 @@ namespace GateHelper.StockAdvisor
                         item.DebtRatio = intel.DebtRatio;
                         item.ConsecutiveLossYears = intel.ConsecutiveLossYears;
 
-                        // 최종 점수: 차트 40% + 뉴스 30% + 손익비 30%
-                        int news = item.NewsScore > 0 ? item.NewsScore : 5;
-                        item.FinalScore = (int)Math.Round(item.ChartScore * 0.4 + news * 0.3 + item.RiskScore * 0.3);
+                        // 4대 정통 퀀트 팩터(차트 30%, 수급·재무 25%, 뉴스·공시 25%, 손익비 20%) 단일 산출기 적용
+                        var unifiedScore = StockIntelligenceService.CalculateUnifiedScores(
+                            ind,
+                            intel,
+                            item.NewsScore,
+                            item.LastDiagnosis?.PolicyImpact ?? 0);
 
-                        // 치명적 지뢰(CB/유증/3년적자) 감지 시 F등급 강제 강등 (최대 2점)
-                        if (item.HasCriticalLandmine)
-                        {
-                            item.FinalScore = Math.Min(item.FinalScore, 2);
-                        }
-                        item.FinalScore = Math.Max(1, Math.Min(10, item.FinalScore));
+                        item.ChartScore = unifiedScore.ChartScore;
+                        item.SupplyFinanceScore = unifiedScore.SupplyFinanceScore;
+                        item.NewsScore = unifiedScore.NewsScore;
+                        item.RiskScore = unifiedScore.RiskScore;
+                        item.FinalScore = unifiedScore.FinalScore;
                     }
                     catch (Exception ex)
                     {
@@ -343,12 +375,15 @@ namespace GateHelper.StockAdvisor
             await Task.WhenAll(tasks);
         }
 
-        private async Task RunAiDiagnosisAsync()
+        private async Task RunAiDiagnosisAsync(bool isSilent = false)
         {
             if (_isAiDiagnosing) return;
             if (_portfolio.Items.Count == 0)
             {
-                MessageBox.Show("진단할 종목이 없습니다. [+ 종목 추가] 버튼을 눌러 먼저 종목을 등록하세요.", "종목 없음", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                if (!isSilent)
+                {
+                    MessageBox.Show("진단할 종목이 없습니다. [+ 종목 추가] 버튼을 눌러 먼저 종목을 등록하세요.", "종목 없음", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
                 return;
             }
 
@@ -387,23 +422,36 @@ namespace GateHelper.StockAdvisor
                     SavePortfolio();
                     UpdateUi();
 
-                    // 버튼 텍스트에 완료 상태와 시간 즉시 반영 (우하단 시선 분산 방지)
+                    // 1. 하단 상태바에 작은 글씨로 정밀 동기화 일시 표시
+                    if (_lblLastUpdated != null)
+                    {
+                        _lblLastUpdated.Text = $"동기화: {DateTime.Now:yyyy-MM-dd HH:mm:ss} (전 종목 정상)";
+                        _lblLastUpdated.ForeColor = Color.FromArgb(100, 255, 180);
+                    }
+
+                    // 2. 상단 버튼 텍스트에 2줄로 동기화 상태 및 시간 즉시 반영
                     string timeStr = DateTime.Now.ToString("HH:mm:ss");
                     string finishNote = !string.IsNullOrEmpty(diagResult.ErrorMessage)
-                        ? $"✓ 룰엔진 완료 ({timeStr})"
-                        : $"✓ 진단 완료 ({timeStr})";
+                        ? $"✓ {timeStr} 동기화"
+                        : $"✓ {timeStr} 동기화";
                     UpdateDiagnoseButtonText(finishNote);
                 }
                 else
                 {
-                    UpdateDiagnoseButtonText("❌ 진단 실패 (재시도)");
-                    MessageBox.Show(diagResult.ErrorMessage, "진단 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    UpdateDiagnoseButtonText("[실패] 재시도");
+                    if (!isSilent)
+                    {
+                        MessageBox.Show(diagResult.ErrorMessage, "진단 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                UpdateDiagnoseButtonText("❌ 통신 오류");
-                MessageBox.Show($"진단 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UpdateDiagnoseButtonText("[오류] 통신 실패");
+                if (!isSilent)
+                {
+                    MessageBox.Show($"진단 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             finally
             {
@@ -535,6 +583,7 @@ namespace GateHelper.StockAdvisor
                 else dlg.ShowDialog(this);
 
                 SetupKbSyncTimer();
+            _ = RefreshMarketThermometerAsync();
             }
         }
 
@@ -600,6 +649,87 @@ namespace GateHelper.StockAdvisor
             catch { }
         }
 
+        #region [Auto-Sync Timers & Options]
+
+        private void SetupAutoSyncTimers()
+        {
+            try
+            {
+                bool needTimer = (_portfolio != null) && (_portfolio.AutoPriceSyncEnabled || _portfolio.AutoAiDiagnosisEnabled);
+                if (needTimer)
+                {
+                    if (_autoSyncTimer == null)
+                    {
+                        _autoSyncTimer = new Timer();
+                        _autoSyncTimer.Interval = 10000; // 10초마다 인터벌 경과 체크
+                        _autoSyncTimer.Tick += async (s, e) => await HandleAutoSyncTickAsync();
+                    }
+                    _autoSyncTimer.Start();
+                }
+                else
+                {
+                    _autoSyncTimer?.Stop();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.SetupAutoSyncTimers");
+            }
+        }
+
+        private async Task HandleAutoSyncTickAsync()
+        {
+            if (!this.Visible || _portfolio == null || _portfolio.Items.Count == 0) return;
+            if (_isAiDiagnosing || _isRefreshingPrice) return;
+
+            DateTime now = DateTime.Now;
+
+            // 1. AI 참모 진단 주기 체크 (AI 진단 내부에 시세 갱신이 포함되므로 우선 처리)
+            if (_portfolio.AutoAiDiagnosisEnabled && _portfolio.AiDiagnosisIntervalMinutes > 0)
+            {
+                if (_lastAutoAiDiagnoseTime == DateTime.MinValue)
+                {
+                    _lastAutoAiDiagnoseTime = now;
+                }
+                else if (now - _lastAutoAiDiagnoseTime >= TimeSpan.FromMinutes(_portfolio.AiDiagnosisIntervalMinutes))
+                {
+                    _lastAutoAiDiagnoseTime = now;
+                    _lastAutoPriceSyncTime = now;
+                    await RunAiDiagnosisAsync(isSilent: true);
+                    return;
+                }
+            }
+
+            // 2. 실시간 시세 동기화 주기 체크
+            if (_portfolio.AutoPriceSyncEnabled && _portfolio.PriceSyncIntervalMinutes > 0)
+            {
+                if (_lastAutoPriceSyncTime == DateTime.MinValue)
+                {
+                    _lastAutoPriceSyncTime = now;
+                }
+                else if (now - _lastAutoPriceSyncTime >= TimeSpan.FromMinutes(_portfolio.PriceSyncIntervalMinutes))
+                {
+                    _lastAutoPriceSyncTime = now;
+                    await RefreshPricesAsync();
+                }
+            }
+        }
+
+        private void ShowOptionDialog()
+        {
+            using (var dlg = new StockAdvisorOptionDialog(_portfolio))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.OptionsChanged)
+                {
+                    SavePortfolio();
+                    SetupAutoSyncTimers();
+                    UpdateUi();
+                }
+            }
+        }
+
+        #endregion
+
         private void EditSelectedStock()
         {
             if (_lvStocks.SelectedItems.Count == 0) return;
@@ -629,6 +759,7 @@ namespace GateHelper.StockAdvisor
                 _portfolio.Items.Remove(item);
                 SavePortfolio();
                 UpdateUi();
+                _ = RefreshMarketThermometerAsync();
             }
         }
 
@@ -644,6 +775,56 @@ namespace GateHelper.StockAdvisor
             {
                 dlg.ShowDialog(this);
             }
+        }
+
+        private async void ShowMarketThermometerDialog()
+        {
+            if (_marketTemperature == null || (DateTime.Now - _marketTemperature.UpdatedAt).TotalSeconds > 15)
+            {
+                var fresh = await MarketThermometerService.GetMarketTemperatureAsync(true).ConfigureAwait(true);
+                _marketTemperature = fresh;
+                if (_lblMarketThermometer != null && fresh.IsSuccess)
+                {
+                    _lblMarketThermometer.Text = fresh.BadgeText;
+                    _lblMarketThermometer.ForeColor = fresh.BadgeForeColor;
+                    _lblMarketThermometer.BackColor = fresh.BadgeBackColor;
+                }
+            }
+
+            using (var dlg = new MarketThermometerDialog(_marketTemperature))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private async Task RefreshMarketThermometerAsync()
+        {
+            try
+            {
+                var res = await MarketThermometerService.GetMarketTemperatureAsync().ConfigureAwait(false);
+                _marketTemperature = res;
+
+                if (this.IsHandleCreated && !this.IsDisposed)
+                {
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        if (_lblMarketThermometer == null) return;
+                        if (res.IsSuccess)
+                        {
+                            _lblMarketThermometer.Text = res.BadgeText;
+                            _lblMarketThermometer.ForeColor = res.BadgeForeColor;
+                            _lblMarketThermometer.BackColor = res.BadgeBackColor;
+                        }
+                        else
+                        {
+                            _lblMarketThermometer.Text = "체온 대기";
+                            _lblMarketThermometer.ForeColor = Color.FromArgb(180, 190, 210);
+                            _lblMarketThermometer.BackColor = Color.FromArgb(28, 36, 50);
+                        }
+                    }));
+                }
+            }
+            catch { }
         }
 
         private void ShowStockEvaluatorDialog()

@@ -12,205 +12,143 @@ namespace GateHelper.StockAdvisor
         {
             this.SuspendLayout();
 
-            // 1. 상단 브리핑 카드 패널 (1행 3열 반응형 그리드)
-            var tblHeader = new TableLayoutPanel
+            // 1. 상단 슬림 툴바 헤더 (Height = 54, 버튼 테두리 잘림 100% 방지)
+            var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 110,
-                BackColor = Color.FromArgb(24, 28, 38),
-                Padding = new Padding(10, 8, 10, 8),
-                ColumnCount = 3,
-                RowCount = 1
+                Height = 54,
+                BackColor = Color.FromArgb(20, 25, 36),
+                Padding = new Padding(12, 8, 12, 8)
             };
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 85f));   // 신호등
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));   // 3줄 브리핑 (가변)
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 450f));  // 우측 버튼 (150px*3열 여유 너비 확보)
-            tblHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
-            // 신호등 뱃지 (클릭 시 글로벌 인텔 & 실시간 반도체 뉴스 브리핑 팝업)
+            // 좌측: 타이틀 및 시장 상태 신호등 뱃지
+            var pnlLeft = new Panel
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                BackColor = Color.Transparent
+            };
+
+            var lblHeaderTitle = new Label
+            {
+                Text = "AI 주식 리스크 참모",
+                Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 230, 255),
+                AutoSize = true,
+                Location = new Point(0, 8)
+            };
+
+            // 신호등 뱃지 (가로 1행 단정 레이아웃)
             _lblTrafficLight = new Label
             {
-                Text = "●\n안전\n(뉴스📰)",
+                Text = "● 시장안전 (뉴스)",
                 TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(70, 220, 140),
-                BackColor = Color.FromArgb(32, 40, 54),
-                Dock = DockStyle.Fill,
-                Margin = new Padding(2),
+                BackColor = Color.FromArgb(28, 36, 50),
                 BorderStyle = BorderStyle.FixedSingle,
+                Size = new Size(130, 36),
+                Location = new Point(175, 1),
                 Cursor = Cursors.Hand
             };
-            _lblTrafficLight.MouseEnter += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(46, 58, 78);
-            _lblTrafficLight.MouseLeave += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(32, 40, 54);
+            _lblTrafficLight.MouseEnter += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(42, 54, 74);
+            _lblTrafficLight.MouseLeave += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(28, 36, 50);
             _lblTrafficLight.Click += (s, e) => ShowMarketIntelNewsDialog();
 
             var ttTraffic = new ToolTip();
             ttTraffic.SetToolTip(_lblTrafficLight, "클릭 시 엔비디아(NVDA)/삼성전자/SK하이닉스 실시간 뉴스 및 글로벌 지표 브리핑이 열립니다.");
 
-            // 3줄 브리핑 영역
-            var pnlBriefingText = new Panel
+            // 시장 체온계 뱃지 (코스피 20일선 이격도 기반 실시간 과열/공포 측정기)
+            _lblMarketThermometer = new Label
             {
-                Dock = DockStyle.Fill,
-                Margin = new Padding(8, 2, 8, 2)
-            };
-
-            var pnlTitleRow = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 24,
-                Margin = new Padding(0)
-            };
-
-            var lblHeaderTitle = new Label
-            {
-                Text = "◆ [AI 주식 리스크 참모] 오늘의 모닝 브리핑 & 거시 동향",
-                Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(120, 210, 255),
-                Dock = DockStyle.Left,
-                AutoSize = true
-            };
-
-            _cboAiModel = new ComboBox
-            {
-                Dock = DockStyle.Right,
-                Width = 230,
-                DropDownStyle = ComboBoxStyle.DropDownList,
-                BackColor = Color.FromArgb(28, 36, 50),
-                ForeColor = Color.FromArgb(0, 230, 255),
-                FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Text = "체온 36.5℃ [정상]",
+                TextAlign = ContentAlignment.MiddleCenter,
+                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(70, 230, 150),
+                BackColor = Color.FromArgb(22, 40, 36),
+                BorderStyle = BorderStyle.FixedSingle,
+                Size = new Size(140, 36),
+                Location = new Point(312, 1),
                 Cursor = Cursors.Hand
             };
-            _cboAiModel.Items.Add("🧠 Gemini 1.5 Pro (심층 추론)");
-            _cboAiModel.Items.Add("⚡ Gemini 1.5 Flash (초고속)");
-            _cboAiModel.Items.Add("🚀 Gemini 2.0 Flash (차세대)");
+            _lblMarketThermometer.MouseEnter += (s, e) => _lblMarketThermometer.BackColor = Color.FromArgb(32, 54, 48);
+            _lblMarketThermometer.MouseLeave += (s, e) => _lblMarketThermometer.BackColor = _marketTemperature?.BadgeBackColor ?? Color.FromArgb(22, 40, 36);
+            _lblMarketThermometer.Click += (s, e) => ShowMarketThermometerDialog();
 
-            // 저장된 설정 로드
-            string curModel = GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel;
-            if (curModel.Contains("2.0")) _cboAiModel.SelectedIndex = 2;
-            else if (curModel.Contains("flash")) _cboAiModel.SelectedIndex = 1;
-            else _cboAiModel.SelectedIndex = 0; // Pro 기본 선택
+            var ttThermo = new ToolTip();
+            ttThermo.SetToolTip(_lblMarketThermometer, "클릭 시 코스피 20일선 이격도 및 시장 체온계 상세 대응 가이드가 열립니다.");
 
-            _cboAiModel.SelectedIndexChanged += (s, e) =>
+            pnlLeft.Controls.Add(lblHeaderTitle);
+            pnlLeft.Controls.Add(_lblTrafficLight);
+            pnlLeft.Controls.Add(_lblMarketThermometer);
+
+            // 우측: 6대 액션 버튼 (가로 1행 나열 FlowLayoutPanel)
+            var flpButtons = new FlowLayoutPanel
             {
-                if (_cboAiModel.SelectedIndex == 0) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-1.5-pro";
-                else if (_cboAiModel.SelectedIndex == 1) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-1.5-flash";
-                else if (_cboAiModel.SelectedIndex == 2) GateHelper.StockAdvisor.Services.GeminiRiskAdvisorService.UserPreferredModel = "gemini-2.0-flash";
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                WrapContents = false,
+                FlowDirection = FlowDirection.LeftToRight,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0),
+                Padding = new Padding(0)
             };
 
-            pnlTitleRow.Controls.Add(_cboAiModel);
-            pnlTitleRow.Controls.Add(lblHeaderTitle);
-
-            _lblBriefing1 = new Label { Text = "• 1행: 글로벌 매크로 및 미 수출통제(BIS) 동향 점검 중", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(220, 225, 235), Dock = DockStyle.Top, Height = 20 };
-            _lblBriefing2 = new Label { Text = "• 2행: 국내 증시 및 주력 반도체/IT 섹터 리스크 모니터링", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(200, 205, 215), Dock = DockStyle.Top, Height = 20 };
-            _lblBriefing3 = new Label { Text = "• 3행: 뇌동매매 금지! 추천 포지션 지침을 확인하세요.", Font = new Font("Segoe UI", 8.5f), ForeColor = Color.FromArgb(160, 210, 160), Dock = DockStyle.Top, Height = 20 };
-
-            pnlBriefingText.Controls.Add(_lblBriefing3);
-            pnlBriefingText.Controls.Add(_lblBriefing2);
-            pnlBriefingText.Controls.Add(_lblBriefing1);
-            pnlBriefingText.Controls.Add(pnlTitleRow);
-
-            // 우측 상단 액션 버튼 영역 (네온 사이버 스타일 2행 3열 반응형 그리드)
-            var tblButtons = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                ColumnCount = 3,
-                RowCount = 2,
-                Margin = new Padding(0)
-            };
-            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.33f));
-            tblButtons.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.34f));
-            tblButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-            tblButtons.RowStyles.Add(new RowStyle(SizeType.Percent, 50f));
-
-            _btnDiagnose = CreateNeonButton("★ AI 참모 진단\r\n(진단 대기)", Color.FromArgb(14, 38, 56), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
-            _btnDiagnose.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
-            _btnDiagnose.Dock = DockStyle.Fill;
-            _btnDiagnose.Margin = new Padding(1);
+            _btnDiagnose = CreateNeonButton("AI 참모 진단\n(진단 대기)", Color.FromArgb(14, 38, 56), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
+            _btnDiagnose.Font = new Font("Malgun Gothic", 7.8f, FontStyle.Bold);
+            _btnDiagnose.Size = new Size(138, 36);
+            _btnDiagnose.Margin = new Padding(3, 1, 3, 1);
             _btnDiagnose.Click += async (s, e) => await RunAiDiagnosisAsync();
 
-            _btnEvaluateStock = CreateNeonButton("🔍 종목 평가\r\n(퀀트 스캐너)", Color.FromArgb(16, 44, 58), Color.FromArgb(0, 220, 245), Color.FromArgb(215, 250, 255));
+            _btnEvaluateStock = CreateNeonButton("종목 평가", Color.FromArgb(16, 44, 58), Color.FromArgb(0, 220, 245), Color.FromArgb(215, 250, 255));
             _btnEvaluateStock.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
-            _btnEvaluateStock.Dock = DockStyle.Fill;
-            _btnEvaluateStock.Margin = new Padding(1);
+            _btnEvaluateStock.Size = new Size(100, 36);
+            _btnEvaluateStock.Margin = new Padding(3, 1, 3, 1);
             _btnEvaluateStock.Click += (s, e) => ShowStockEvaluatorDialog();
 
-            _btnRefreshPrice = CreateNeonButton("↻ 시세 갱신", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
-            _btnRefreshPrice.Dock = DockStyle.Fill;
-            _btnRefreshPrice.Margin = new Padding(1);
+            _btnRefreshPrice = CreateNeonButton("시세 갱신", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
+            _btnRefreshPrice.Font = new Font("Malgun Gothic", 8.8f);
+            _btnRefreshPrice.Size = new Size(90, 36);
+            _btnRefreshPrice.Margin = new Padding(3, 1, 3, 1);
             _btnRefreshPrice.Click += async (s, e) => await RefreshPricesAsync();
 
-            _btnScoreHelp = CreateNeonButton("?", Color.FromArgb(24, 38, 55), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 245, 255));
-            _btnScoreHelp.Dock = DockStyle.Fill;
-            _btnScoreHelp.Margin = new Padding(1);
-            _btnScoreHelp.Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold);
-            _btnScoreHelp.Cursor = Cursors.Hand;
-            _btnScoreHelp.Click += (s, e) => ShowScoreHelpDialog();
-
-            var ttHelp = new ToolTip();
-            ttHelp.SetToolTip(_btnScoreHelp, "4대 진단 점수(차트/뉴스/손익비/종합) 산출 기준 및 대응 가이드 열기");
-
-            var tblRefreshAndHelp = new TableLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                Margin = new Padding(0),
-                ColumnCount = 2,
-                RowCount = 1
-            };
-            tblRefreshAndHelp.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            tblRefreshAndHelp.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 38f));
-            tblRefreshAndHelp.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
-            tblRefreshAndHelp.Controls.Add(_btnRefreshPrice, 0, 0);
-            tblRefreshAndHelp.Controls.Add(_btnScoreHelp, 1, 0);
-
             _btnAddStock = CreateNeonButton("+ 종목 추가", Color.FromArgb(16, 42, 32), Color.FromArgb(0, 230, 118), Color.FromArgb(215, 255, 230));
-            _btnAddStock.Dock = DockStyle.Fill;
-            _btnAddStock.Margin = new Padding(1);
+            _btnAddStock.Font = new Font("Malgun Gothic", 8.8f);
+            _btnAddStock.Size = new Size(95, 36);
+            _btnAddStock.Margin = new Padding(3, 1, 3, 1);
             _btnAddStock.Click += (s, e) => ShowAddStockDialog();
 
             _btnImportPortfolio = CreateNeonButton("계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
-            _btnImportPortfolio.Dock = DockStyle.Fill;
-            _btnImportPortfolio.Margin = new Padding(1);
+            _btnImportPortfolio.Font = new Font("Malgun Gothic", 8.8f);
+            _btnImportPortfolio.Size = new Size(100, 36);
+            _btnImportPortfolio.Margin = new Padding(3, 1, 3, 1);
             _btnImportPortfolio.Click += (s, e) => ShowImportPortfolioDialog();
 
-            _btnEmergencyGuide = CreateNeonButton("★ 중요 종목", Color.FromArgb(45, 36, 20), Color.FromArgb(255, 190, 40), Color.FromArgb(255, 245, 210));
-            _btnEmergencyGuide.Dock = DockStyle.Fill;
-            _btnEmergencyGuide.Margin = new Padding(1);
+            _btnEmergencyGuide = CreateNeonButton("중요 종목", Color.FromArgb(45, 36, 20), Color.FromArgb(255, 190, 40), Color.FromArgb(255, 245, 210));
+            _btnEmergencyGuide.Font = new Font("Malgun Gothic", 8.8f);
+            _btnEmergencyGuide.Size = new Size(90, 36);
+            _btnEmergencyGuide.Margin = new Padding(3, 1, 3, 1);
             _btnEmergencyGuide.Click += (s, e) => ShowKeyStockSummaryDialog();
 
-            // 1행: [AI 진단] + [🔍 종목 평가] + [시세 갱신 + ? 도움말]
-            tblButtons.Controls.Add(_btnDiagnose, 0, 0);
-            tblButtons.Controls.Add(_btnEvaluateStock, 1, 0);
-            tblButtons.Controls.Add(tblRefreshAndHelp, 2, 0);
+            flpButtons.Controls.Add(_btnDiagnose);
+            flpButtons.Controls.Add(_btnEvaluateStock);
+            flpButtons.Controls.Add(_btnRefreshPrice);
+            flpButtons.Controls.Add(_btnAddStock);
+            flpButtons.Controls.Add(_btnImportPortfolio);
+            flpButtons.Controls.Add(_btnEmergencyGuide);
 
-            // 2행: [종목 추가] + [계좌 가져오기] + [★ 중요 종목]
-            tblButtons.Controls.Add(_btnAddStock, 0, 1);
-            tblButtons.Controls.Add(_btnImportPortfolio, 1, 1);
-            tblButtons.Controls.Add(_btnEmergencyGuide, 2, 1);
+            pnlHeader.Controls.Add(flpButtons);
+            pnlHeader.Controls.Add(pnlLeft);
 
-            tblHeader.Controls.Add(_lblTrafficLight, 0, 0);
-            tblHeader.Controls.Add(pnlBriefingText, 1, 0);
-            tblHeader.Controls.Add(tblButtons, 2, 0);
-            _pnlHeader = tblHeader;
-
-            // 1-2. 글로벌 매크로 지표 슬림 티커 바
-            _pnlMacroTicker = new Panel
+            pnlHeader.Paint += (s, e) =>
             {
-                Dock = DockStyle.Top,
-                Height = 26,
-                BackColor = Color.FromArgb(20, 24, 34),
-                Padding = new Padding(12, 4, 12, 4)
+                using (var pen = new Pen(Color.FromArgb(42, 50, 70)))
+                {
+                    e.Graphics.DrawLine(pen, 0, pnlHeader.Height - 1, pnlHeader.Width, pnlHeader.Height - 1);
+                }
             };
-            _lblMacroTicker = new Label
-            {
-                Text = "⚡ [글로벌 매크로 인텔] NVDA: 대기 | SOX(반도체): 대기 | 나스닥: 대기 | 미 연방관보: BIS 반도체 정책 모니터링",
-                Font = new Font("Segoe UI", 8.5f),
-                ForeColor = Color.FromArgb(170, 205, 245),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
-            _pnlMacroTicker.Controls.Add(_lblMacroTicker);
+
+            _pnlHeader = pnlHeader;
 
             // 2. 하단 계좌 요약 상태바
             _pnlFooter = new Panel
@@ -232,9 +170,16 @@ namespace GateHelper.StockAdvisor
 
             _lblLastUpdated = new Label
             {
-                Visible = false
+                Text = "동기화: 대기 중",
+                Font = new Font("Malgun Gothic", 8.8f),
+                ForeColor = Color.FromArgb(130, 160, 195),
+                Dock = DockStyle.Right,
+                TextAlign = ContentAlignment.MiddleRight,
+                AutoSize = true
             };
 
+            // 도킹 순서: Right 도킹 먼저 추가 후 Left 추가
+            _pnlFooter.Controls.Add(_lblLastUpdated);
             _pnlFooter.Controls.Add(_lblAccountSummary);
 
             // 3. 중앙 분할 컨테이너 (좌측 리스트뷰 최적폭 880px, 우측 상세 카드 380px 쾌적 확보)
@@ -256,7 +201,8 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(18, 20, 26),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9.2f),
-                BorderStyle = BorderStyle.None
+                BorderStyle = BorderStyle.None,
+                ShowItemToolTips = true
             };
             _lvStocks.Columns.Add("코드", 62, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("종목명", 120);
@@ -272,11 +218,12 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("14일 RSI", 62, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("5일 거래량", 80, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("차트", 46, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("수급재무", 58, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("뉴스", 46, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("손익비", 50, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("★종합점수", 75, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("종합점수", 75, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("타이밍 안전벨트", 115, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("권고 지침", 220);
+            _lvStocks.Columns.Add("최종 액션", 140, HorizontalAlignment.Center);
 
             _lvStocks.Resize += (s, e) => AutoFitLastColumn();
             _lvStocks.SelectedIndexChanged += LvStocks_SelectedIndexChanged;
@@ -321,6 +268,7 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(12)
             };
 
+            // 1. 종목명 및 현재가 타이틀
             _lblDetailTitle = new Label
             {
                 Text = "선택된 종목이 없습니다",
@@ -330,100 +278,53 @@ namespace GateHelper.StockAdvisor
                 Height = 28
             };
 
-            _lblDetailTimingWarning = new Label
+            // 2. AI 참모 최종 결론 바 (0.1초 직관 배지 + 1줄 행동 지침)
+            _lblFinalVerdict = new Label
             {
-                Text = "🚨 [타이밍 가이드] 지표 분석 대기 중",
-                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(255, 230, 100),
-                BackColor = Color.FromArgb(36, 32, 24),
+                Text = "[ AI 참모 최종 결론 : 좌측 목록에서 종목을 선택하세요 ]\n종목을 선택하시면 단일화된 최종 행동 결론이 표시됩니다.",
+                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(255, 220, 90),
+                BackColor = Color.FromArgb(36, 32, 20),
                 BorderStyle = BorderStyle.FixedSingle,
                 Dock = DockStyle.Top,
-                Height = 38,
-                Padding = new Padding(6, 4, 6, 4),
+                Height = 48,
+                Padding = new Padding(8, 4, 8, 4),
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            _lblDetailScores = new Label
+            // 3. 핵심 가격 타점 바 (목표가 / 손절가 / 인터락 매수가 단일 표시)
+            _lblDetailPriceTargets = new Label
             {
-                Text = "차트: -점 | 뉴스: -점 | 손익비: -점\n★ 최종 종합 점수 : ★ -점 / 10점",
+                Text = "• 목표가: - 원   |   손절가: - 원\n• 매수가: 1차 - 원   |   2차(추매): - 원",
                 Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(255, 225, 120),
+                ForeColor = Color.FromArgb(220, 240, 255),
+                BackColor = Color.FromArgb(18, 26, 38),
+                BorderStyle = BorderStyle.FixedSingle,
                 Dock = DockStyle.Top,
-                Height = 36
+                Height = 44,
+                Padding = new Padding(8, 4, 8, 4),
+                TextAlign = ContentAlignment.MiddleLeft
             };
 
-            _lblDetailTechnicalFacts = new Label
+            // 4. 진단 스펙 & 수급 지뢰 요약 바 (권고 액션 중복 제거 후 2줄 압축)
+            _lblDetailSummary = new Label
             {
-                Text = "• 14일 RSI: - | 거래량: -%\n• 20일 지지선: -원 (하방: -%)",
+                Text = "• AI 등급: -   |   종합 점수: -점\n• 수급: -   |   지뢰: -",
                 Font = new Font("Malgun Gothic", 8.8f),
-                ForeColor = Color.FromArgb(170, 210, 255),
+                ForeColor = Color.FromArgb(190, 210, 235),
                 Dock = DockStyle.Top,
-                Height = 34
-            };
-
-            _lblDetailIntelligence = new Label
-            {
-                Text = "수급: 대기 중  |  지뢰: 검증 대기 중",
-                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(140, 230, 220),
-                Dock = DockStyle.Top,
-                Height = 34
-            };
-
-            _lblDetailGroupBadge = new Label
-            {
-                Text = "포지션 판정: -",
-                Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
-                ForeColor = Color.Silver,
-                Dock = DockStyle.Top,
-                Height = 22,
-                AutoEllipsis = true
-            };
-
-            _lblDetailAction = new Label
-            {
-                Text = "권고 액션: -",
-                Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(255, 215, 100),
-                Dock = DockStyle.Top,
-                Height = 22,
-                AutoEllipsis = true
-            };
-
-            _lblDetailReliability = new Label
-            {
-                Text = "출처 신뢰도: ★★★☆☆ (3/5)",
-                Font = new Font("Malgun Gothic", 8.8f),
-                ForeColor = Color.FromArgb(220, 220, 230),
-                Dock = DockStyle.Top,
-                Height = 20
-            };
-
-            _lblDetailImpact = new Label
-            {
-                Text = "정책/실적 직결도: 0 (-5 ~ +5)",
-                Font = new Font("Malgun Gothic", 8.8f),
-                ForeColor = Color.FromArgb(220, 220, 230),
-                Dock = DockStyle.Top,
-                Height = 20
-            };
-
-            _lblDetailTargetCut = new Label
-            {
-                Text = "권고 손절/방어선: - 원",
-                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(255, 140, 140),
-                Dock = DockStyle.Top,
-                Height = 22
+                Height = 38,
+                Padding = new Padding(2, 4, 2, 2)
             };
 
             var lblReasonTitle = new Label
             {
-                Text = "[분석] AI 참모 진단 사유 및 대응 논리:",
-                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(170, 190, 210),
+                Text = "[AI 참모 심층 진단 사유 및 대응 논리]",
+                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(100, 215, 255),
                 Dock = DockStyle.Top,
-                Height = 22
+                Height = 26,
+                Padding = new Padding(0, 4, 0, 0)
             };
 
             _rtbDetailReason = new RichTextBox
@@ -438,13 +339,29 @@ namespace GateHelper.StockAdvisor
                 DetectUrls = false
             };
 
-            var pnlDetailBtns = new FlowLayoutPanel
+            var pnlDetailBtns = new Panel
             {
                 Dock = DockStyle.Bottom,
                 Height = 42,
+                Padding = new Padding(0, 4, 0, 0)
+            };
+
+            _btnOption = CreateNeonButton("Option", Color.FromArgb(20, 32, 46), Color.FromArgb(0, 216, 255), Color.FromArgb(200, 240, 255), 88);
+            _btnOption.Dock = DockStyle.Left;
+            _btnOption.Font = new Font("Malgun Gothic", 9f, FontStyle.Bold);
+            _btnOption.Cursor = Cursors.Hand;
+            _btnOption.Click += (s, e) => ShowOptionDialog();
+
+            var ttOpt = new ToolTip();
+            ttOpt.SetToolTip(_btnOption, "시세·AI 진단 자동 동기화 주기 설정 및 점수 산출 가이드 열기");
+
+            var pnlRightBtns = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Right,
+                AutoSize = true,
                 FlowDirection = FlowDirection.RightToLeft,
                 WrapContents = false,
-                Padding = new Padding(0, 4, 0, 0)
+                Margin = new Padding(0)
             };
 
             _btnDeleteItem = CreateNeonButton("[삭제]", Color.FromArgb(48, 18, 24), Color.FromArgb(255, 65, 85), Color.FromArgb(255, 220, 225), 80);
@@ -453,20 +370,18 @@ namespace GateHelper.StockAdvisor
             _btnEditItem = CreateNeonButton("[수정]", Color.FromArgb(18, 36, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255), 80);
             _btnEditItem.Click += (s, e) => EditSelectedStock();
 
-            pnlDetailBtns.Controls.Add(_btnDeleteItem);
-            pnlDetailBtns.Controls.Add(_btnEditItem);
+            pnlRightBtns.Controls.Add(_btnDeleteItem);
+            pnlRightBtns.Controls.Add(_btnEditItem);
 
+            pnlDetailBtns.Controls.Add(_btnOption);
+            pnlDetailBtns.Controls.Add(pnlRightBtns);
+
+            // 도킹 역순: 마지막에 맨 위 컨트롤이 오도록 추가 (Fill -> Top 4 -> Top 3 -> Top 2 -> Top 1 -> Bottom)
             _pnlDetail.Controls.Add(_rtbDetailReason);
             _pnlDetail.Controls.Add(lblReasonTitle);
-            _pnlDetail.Controls.Add(_lblDetailTargetCut);
-            _pnlDetail.Controls.Add(_lblDetailImpact);
-            _pnlDetail.Controls.Add(_lblDetailReliability);
-            _pnlDetail.Controls.Add(_lblDetailAction);
-            _pnlDetail.Controls.Add(_lblDetailGroupBadge);
-            _pnlDetail.Controls.Add(_lblDetailIntelligence);
-            _pnlDetail.Controls.Add(_lblDetailTechnicalFacts);
-            _pnlDetail.Controls.Add(_lblDetailScores);
-            _pnlDetail.Controls.Add(_lblDetailTimingWarning);
+            _pnlDetail.Controls.Add(_lblDetailSummary);
+            _pnlDetail.Controls.Add(_lblDetailPriceTargets);
+            _pnlDetail.Controls.Add(_lblFinalVerdict);
             _pnlDetail.Controls.Add(_lblDetailTitle);
             _pnlDetail.Controls.Add(pnlDetailBtns);
 
@@ -475,7 +390,6 @@ namespace GateHelper.StockAdvisor
             // 메인 컨트롤 배치 (도킹 역순)
             this.Controls.Add(_splitMain);
             this.Controls.Add(_pnlFooter);
-            this.Controls.Add(_pnlMacroTicker);
             this.Controls.Add(_pnlHeader);
 
             this.ResumeLayout(false);
@@ -483,7 +397,7 @@ namespace GateHelper.StockAdvisor
 
         private void AutoFitLastColumn()
         {
-            if (_lvStocks == null || _lvStocks.Columns.Count < 19) return;
+            if (_lvStocks == null || _lvStocks.Columns.Count < 20) return;
             try
             {
                 int fixedWidth = 0;

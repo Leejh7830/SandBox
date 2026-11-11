@@ -25,7 +25,7 @@ namespace GateHelper.StockAdvisor
 
         private void InitializeCustomComponent()
         {
-            this.Text = "★ [핵심 포커스] 내 포트폴리오 중요 종목 종합 브리핑";
+            this.Text = "[핵심 포커스] 내 포트폴리오 중요 종목 종합 브리핑";
             this.Size = new Size(840, 580);
             this.MinimumSize = new Size(780, 500);
             this.StartPosition = FormStartPosition.CenterParent;
@@ -45,7 +45,7 @@ namespace GateHelper.StockAdvisor
 
             var lblTitle = new Label
             {
-                Text = "★ 포트폴리오 핵심/요주의 종목 종합 브리핑 (Key Stock Focus)",
+                Text = "포트폴리오 핵심/요주의 종목 종합 브리핑 (Key Stock Focus)",
                 Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 64),
                 Dock = DockStyle.Top,
@@ -179,16 +179,16 @@ namespace GateHelper.StockAdvisor
             lv.Columns.Add("수급", 85, HorizontalAlignment.Center);
             lv.Columns.Add("지뢰검증", 85, HorizontalAlignment.Center);
             lv.Columns.Add("14일 RSI", 60, HorizontalAlignment.Right);
-            lv.Columns.Add("★종합점수", 70, HorizontalAlignment.Center);
+            lv.Columns.Add("종합점수", 70, HorizontalAlignment.Center);
             lv.Columns.Add("타이밍 안전벨트", 110, HorizontalAlignment.Center);
             lv.Columns.Add("권고 지침 및 핵심 사유", 260);
 
             foreach (var item in list)
             {
                 string rsiStr = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
-                string scoreStr = item.FinalScore > 0 ? $"★ {item.FinalScore}점" : "-";
-                string supplyStr = !string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "⚪ 수급대기";
-                string landmineStr = !string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "🛡️ 클린안전";
+                string scoreStr = item.FinalScore > 0 ? $"{item.FinalScore}점" : "-";
+                string supplyStr = !string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기";
+                string landmineStr = !string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "클린안전";
                 string actionStr = item.LastDiagnosis?.RecommendedAction;
                 if (string.IsNullOrEmpty(actionStr))
                 {

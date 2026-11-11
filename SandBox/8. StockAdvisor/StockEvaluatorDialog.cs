@@ -85,7 +85,7 @@ namespace GateHelper.StockAdvisor
 
             var lblTitle = new Label
             {
-                Text = "🔍 종목 AI 즉시 진단 & 정통 퀀트 8대 우량주 스캐너",
+                Text = "종목 AI 즉시 진단 & 정통 퀀트 8대 우량주 스캐너",
                 Font = new Font("Malgun Gothic", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 230, 255),
                 Dock = DockStyle.Top,
@@ -126,7 +126,7 @@ namespace GateHelper.StockAdvisor
                 }
             };
 
-            _btnSearch = CreateNeonButton("🔍 AI 즉시 진단", Color.FromArgb(14, 46, 68), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
+            _btnSearch = CreateNeonButton("AI 즉시 진단", Color.FromArgb(14, 46, 68), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
             _btnSearch.Location = new Point(288, 3);
             _btnSearch.Size = new Size(130, 31);
             _btnSearch.Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
@@ -150,7 +150,7 @@ namespace GateHelper.StockAdvisor
 
             _lblStatus = new Label
             {
-                Text = "💡 종목명(예: 기아) 또는 6자리 코드(000270)를 입력하고 [AI 즉시 진단]을 누르세요.",
+                Text = "종목명(예: 기아) 또는 6자리 코드(000270)를 입력하고 [AI 즉시 진단]을 누르세요.",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(140, 215, 255),
                 Location = new Point(2, 40),
@@ -206,7 +206,7 @@ namespace GateHelper.StockAdvisor
             _btnAddToPortfolio.Enabled = false;
             _btnAddToPortfolio.Click += (s, e) => AddCurrentStockToPortfolio();
 
-            _btnOpenNaverWeb = CreateNeonButton("🌐 네이버 증권 열기", Color.FromArgb(24, 34, 52), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
+            _btnOpenNaverWeb = CreateNeonButton("네이버 증권 열기", Color.FromArgb(24, 34, 52), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
             _btnOpenNaverWeb.Font = new Font("Malgun Gothic", 9f);
             _btnOpenNaverWeb.Dock = DockStyle.Left;
             _btnOpenNaverWeb.Width = 160;
@@ -239,21 +239,22 @@ namespace GateHelper.StockAdvisor
                 Margin = new Padding(6),
                 Padding = new Padding(12)
             };
-
-            var lblHeader = new Label
-            {
-                Text = headerText,
-                Font = new Font("Malgun Gothic", 10f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 216, 255),
-                Dock = DockStyle.Top,
-                Height = 28
-            };
-            pnl.Controls.Add(lblHeader);
             return pnl;
         }
 
         private void BuildCard1Content(Panel card)
         {
+            card.Controls.Clear();
+
+            var lblCardTitle = new Label
+            {
+                Text = "【 1. 기술적 AI 종합 점수 】",
+                Font = new Font("Malgun Gothic", 10.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Dock = DockStyle.Top,
+                Height = 28
+            };
+
             _lblStockHeader = new Label
             {
                 Text = "종목을 검색해주세요",
@@ -274,7 +275,7 @@ namespace GateHelper.StockAdvisor
 
             _lblOverallScore = new Label
             {
-                Text = "★ 종합 점수: -점 / 10점",
+                Text = "종합 점수: -점 / 10점",
                 Font = new Font("Malgun Gothic", 11f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 64),
                 Dock = DockStyle.Top,
@@ -301,7 +302,7 @@ namespace GateHelper.StockAdvisor
 
             _lblTechnicalFacts = new Label
             {
-                Text = "• 14일 RSI: - | 5일 거래량: -\n• 20일 지지선: -원 (하방 -%)\n• 🎯 1차 매수가: -원 (방어선: -원)\n• 🚀 1차 목표가: -원 (2차 슈팅: -원)",
+                Text = "• 14일 RSI: - | 5일 거래량: -\n• 20일 지지선: -원 (하방 -%)\n• 1차 매수가: -원 (방어선: -원)\n• 1차 목표가: -원 (2차: -원)",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(170, 205, 245),
                 Dock = DockStyle.Top,
@@ -310,16 +311,18 @@ namespace GateHelper.StockAdvisor
 
             _lblTimingGuide = new Label
             {
-                Text = "🚨 [타이밍 지침]\n진단 대기 중",
+                Text = "[타이밍 지침]\n진단 대기 중",
                 Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 220, 100),
                 BackColor = Color.FromArgb(36, 32, 24),
                 BorderStyle = BorderStyle.FixedSingle,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(8),
-                TextAlign = ContentAlignment.MiddleLeft
+                Padding = new Padding(10),
+                Margin = new Padding(0, 6, 0, 0),
+                TextAlign = ContentAlignment.TopLeft
             };
 
+            // 도킹 역순: 맨 위 타이틀(lblCardTitle)을 가장 마지막에 Add
             card.Controls.Add(_lblTimingGuide);
             card.Controls.Add(_lblTechnicalFacts);
             card.Controls.Add(_lblThreeScores);
@@ -327,10 +330,22 @@ namespace GateHelper.StockAdvisor
             card.Controls.Add(_lblOverallScore);
             card.Controls.Add(_lblPriceAndRate);
             card.Controls.Add(_lblStockHeader);
+            card.Controls.Add(lblCardTitle);
         }
 
         private void BuildCard2Content(Panel card)
         {
+            card.Controls.Clear();
+
+            var lblCardTitle = new Label
+            {
+                Text = "【 2. 메이저 수급 & 재무·지뢰 검증 】",
+                Font = new Font("Malgun Gothic", 10.2f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Dock = DockStyle.Top,
+                Height = 28
+            };
+
             _lblSupplyBadge = new Label
             {
                 Text = "수급 주체: 대기 중",
@@ -373,7 +388,7 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(170, 200, 235),
                 Dock = DockStyle.Top,
-                Height = 22
+                Height = 24
             };
 
             _lblDisclosures = new Label
@@ -384,15 +399,19 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(16, 20, 28),
                 BorderStyle = BorderStyle.FixedSingle,
                 Dock = DockStyle.Fill,
-                Padding = new Padding(8)
+                Padding = new Padding(10),
+                Margin = new Padding(0, 6, 0, 0),
+                TextAlign = ContentAlignment.TopLeft
             };
 
+            // 도킹 역순: 맨 위 타이틀(lblCardTitle)을 가장 마지막에 Add
             card.Controls.Add(_lblDisclosures);
             card.Controls.Add(lblDiscTitle);
             card.Controls.Add(_lblLandmineDetails);
             card.Controls.Add(_lblLandmineBadge);
             card.Controls.Add(_lblSupplyDetails);
             card.Controls.Add(_lblSupplyBadge);
+            card.Controls.Add(lblCardTitle);
         }
 
         private void BuildCard3Content(Panel card)
@@ -532,7 +551,7 @@ namespace GateHelper.StockAdvisor
                 var priceInfo = await NaverStockPriceService.FetchPriceAsync(cleanQuery);
                 if (!priceInfo.IsSuccess)
                 {
-                    _lblStatus.Text = $"❌ 네이버 증권 시세 수집 실패: {priceInfo.ErrorMessage ?? "종목명 또는 6자리 코드를 확인해주세요."}";
+                    _lblStatus.Text = $"[오류] 네이버 증권 시세 수집 실패: {priceInfo.ErrorMessage ?? "종목명 또는 6자리 코드를 확인해주세요."}";
                     _lblStatus.ForeColor = Color.FromArgb(255, 90, 90);
                     _btnAddToPortfolio.Enabled = false;
                     _btnOpenNaverWeb.Enabled = false;
@@ -556,32 +575,14 @@ namespace GateHelper.StockAdvisor
                 // 3. 정통 퀀트 8대 필터 분석 (14일 RSI 연동)
                 var quant = await StockIntelligenceService.AnalyzeQuantAsync(stockCode, tech.Rsi);
 
-                // 4. 점수 및 등급 산출
-                int chartScore = tech.ChartScore;
-                int riskScore = tech.RiskScore;
+                // 4. 단일 기준(Single Source of Truth) 통합 4대 팩터 점수 산출
+                var scoreRes = StockIntelligenceService.CalculateUnifiedScores(tech, intel, 0, 0);
 
-                // 뉴스 점수 가중치 (쌍끌이 호재, 주주환원 호재 반영)
-                int newsScore = 5;
-                if (intel.SupplyBadge.Contains("쌍끌이매수") || intel.SupplyBadge.Contains("메이저쌍끌이")) newsScore += 2;
-                if (intel.LandmineBadge.Contains("주주환원")) newsScore += 2;
-                if (intel.HasCriticalLandmine) newsScore = 1;
-                newsScore = Math.Max(1, Math.Min(10, newsScore));
+                // AI 등급 (보유 여부와 무관한 순수 시장 팩터 객관적 등급)
+                PositionGrade grade = scoreRes.Grade;
+                int finalScore = scoreRes.FinalScore;
 
-                // 종합 점수 = 차트(40%) + 뉴스(30%) + 손익비(30%)
-                int finalScore = (int)Math.Round((chartScore * 0.40) + (newsScore * 0.30) + (riskScore * 0.30), MidpointRounding.AwayFromZero);
-                if (finalScore < 1) finalScore = 1;
-                if (finalScore > 10) finalScore = 10;
-
-                // 치명적 지뢰 감지 시 강제 F등급 강등 룰
-                if (intel.HasCriticalLandmine)
-                {
-                    finalScore = Math.Min(finalScore, 2);
-                }
-
-                // AI 등급 계산
-                PositionGrade grade = GradeHelper.CalculateGrade(finalScore, tech.Rsi, changeRate);
-
-                // 임시 종목 아이템 구성
+                // 임시 종목 아이템 구성 (미보유 상태 Quantity = 0)
                 _currentEvaluatedItem = new StockHoldingItem
                 {
                     StockCode = stockCode,
@@ -590,16 +591,18 @@ namespace GateHelper.StockAdvisor
                     ChangeRate = changeRate,
                     BuyPrice = currentPrice,
                     Quantity = 0,
-                    ChartScore = chartScore,
-                    NewsScore = newsScore,
-                    RiskScore = riskScore,
-                    FinalScore = finalScore,
+                    ChartScore = scoreRes.ChartScore,
+                    SupplyFinanceScore = scoreRes.SupplyFinanceScore,
+                    NewsScore = scoreRes.NewsScore,
+                    RiskScore = scoreRes.RiskScore,
+                    FinalScore = scoreRes.FinalScore,
                     Rsi = tech.Rsi,
                     VolumeRatio = tech.VolumeRatio,
                     SupportPrice = tech.SupportPrice,
                     ResistancePrice = tech.ResistancePrice,
                     DownsideRiskPercent = tech.DownsideRiskPercent,
                     RecommendedBuyPrice = tech.RecommendedBuyPrice,
+                    SecondaryBuyPrice = tech.SecondaryBuyPrice,
                     TargetStopPrice = tech.TargetStopPrice,
                     EntryTimingBadge = tech.EntryTimingBadge,
                     EntryTimingGuide = tech.EntryTimingGuide,
@@ -633,7 +636,7 @@ namespace GateHelper.StockAdvisor
             }
             catch (Exception ex)
             {
-                _lblStatus.Text = $"❌ 진단 중 예외 발생: {ex.Message}";
+                _lblStatus.Text = $"[오류] 진단 중 예외 발생: {ex.Message}";
                 _lblStatus.ForeColor = Color.FromArgb(255, 100, 100);
             }
             finally
@@ -645,53 +648,39 @@ namespace GateHelper.StockAdvisor
         private void RenderResults(StockPriceDto price, TechnicalIndicatorService.IndicatorAnalysisResult tech, SupplyAndLandmineDto intel, QuantAnalysisResult quant, int finalScore, PositionGrade grade)
         {
             // 카드 1 갱신
-            _lblStockHeader.Text = $"◆ {price.StockName} ({price.StockCode})";
+            _lblStockHeader.Text = $"{price.StockName} ({price.StockCode})";
             string chgPrefix = price.ChangeRate > 0 ? "+" : "";
             _lblPriceAndRate.Text = $"현재가: {price.CurrentPrice:N0}원 ({chgPrefix}{price.ChangeRate:F2}%)";
             _lblPriceAndRate.ForeColor = price.ChangeRate > 0 ? Color.FromArgb(255, 95, 95) : (price.ChangeRate < 0 ? Color.FromArgb(85, 160, 255) : Color.White);
 
-            _lblOverallScore.Text = $"★ 최종 종합 점수 : ★ {finalScore}점 / 10점";
+            _lblOverallScore.Text = $"최종 종합 점수 : {finalScore}점 / 10점";
             _lblOverallScore.ForeColor = finalScore >= 8 ? Color.FromArgb(255, 215, 0) : (finalScore <= 2 ? Color.FromArgb(255, 95, 95) : Color.FromArgb(255, 225, 120));
 
             _lblGradeBadge.Text = $"AI 등급: {GradeHelper.GetGradeDescription(grade)}";
             _lblGradeBadge.ForeColor = GradeHelper.GetGradeColor(grade);
 
-            _lblThreeScores.Text = $"• 차트 점수: {tech.ChartScore}점 | 뉴스: {_currentEvaluatedItem.NewsScore}점 | 손익비: {tech.RiskScore}점";
+            int sfScore = _currentEvaluatedItem != null ? _currentEvaluatedItem.SupplyFinanceScore : 5;
+            int newsScore = _currentEvaluatedItem != null ? _currentEvaluatedItem.NewsScore : 5;
+            int riskScore = _currentEvaluatedItem != null ? _currentEvaluatedItem.RiskScore : tech.RiskScore;
+            _lblThreeScores.Text = $"• 차트: {tech.ChartScore}점 | 수급·재무: {sfScore}점 | 뉴스: {newsScore}점 | 손익비: {riskScore}점";
             
             string buyPriceStr = tech.RecommendedBuyPrice > 0 ? $"{tech.RecommendedBuyPrice:N0}원" : "시장가 분할";
+            string secBuyStr = tech.SecondaryBuyPrice > 0 ? $" | 2차: {tech.SecondaryBuyPrice:N0}원" : "";
             string stopPriceStr = tech.TargetStopPrice > 0 ? $"{tech.TargetStopPrice:N0}원" : "20일선 이탈";
             decimal upside1 = (price.CurrentPrice > 0 && tech.RecommendedTargetPrice > price.CurrentPrice)
                 ? ((tech.RecommendedTargetPrice - price.CurrentPrice) / price.CurrentPrice * 100m) : 0m;
 
             _lblTechnicalFacts.Text = $"• 14일 RSI: {tech.Rsi:F1} | 5일 거래량: {tech.VolumeRatio:F0}%\n" +
                                        $"• 20일 지지선: {(tech.SupportPrice > 0 ? $"{tech.SupportPrice:N0}원" : "-")} (하방 -{tech.DownsideRiskPercent:F1}%)\n" +
-                                       $"• 🎯 1차 매수가: {buyPriceStr} (방어선: {stopPriceStr})\n" +
-                                       $"• 🚀 1차 목표가: {tech.RecommendedTargetPrice:N0}원 (+{upside1:F1}%) [2차: {tech.SecondaryTargetPrice:N0}원]";
+                                       $"• 1차 매수가: {buyPriceStr}{secBuyStr} (방어선: {stopPriceStr})\n" +
+                                       $"• 1차 목표가: {tech.RecommendedTargetPrice:N0}원 (+{upside1:F1}%) [2차: {tech.SecondaryTargetPrice:N0}원]";
 
-            string tb = tech.EntryTimingBadge ?? tech.TimingBadge ?? "⚪ 관망유지";
-            string tg = !string.IsNullOrEmpty(tech.EntryTimingGuide) ? tech.EntryTimingGuide : tech.TimingWarning;
+            // AI 참모 최종 결론 & 행동 판정 (미보유 종목 전용 객관적 진입/관망 가이드)
+            StockVerdictInfo verdict = StockVerdictHelper.Evaluate(_currentEvaluatedItem);
             string exitGuide = !string.IsNullOrEmpty(tech.ExitTimingGuide) ? tech.ExitTimingGuide : tech.ExitTimingBadge;
-            _lblTimingGuide.Text = $"【 🎯 진입 지침: {tb} 】\n{tg}\n\n【 🚀 청산 지침: {tech.ExitTimingBadge} 】\n{exitGuide}";
-            if (tb.Contains("과열"))
-            {
-                _lblTimingGuide.BackColor = Color.FromArgb(58, 20, 28);
-                _lblTimingGuide.ForeColor = Color.FromArgb(255, 120, 130);
-            }
-            else if (tb.Contains("골든") || tb.Contains("눌림목") || tb.Contains("매수권"))
-            {
-                _lblTimingGuide.BackColor = Color.FromArgb(16, 46, 32);
-                _lblTimingGuide.ForeColor = Color.FromArgb(100, 255, 180);
-            }
-            else if (tb.Contains("과매도"))
-            {
-                _lblTimingGuide.BackColor = Color.FromArgb(20, 36, 56);
-                _lblTimingGuide.ForeColor = Color.FromArgb(120, 210, 255);
-            }
-            else
-            {
-                _lblTimingGuide.BackColor = Color.FromArgb(36, 32, 24);
-                _lblTimingGuide.ForeColor = Color.FromArgb(255, 220, 100);
-            }
+            _lblTimingGuide.Text = $"{verdict.TitleText}\n{verdict.GuideText}\n\n【 청산/방어 지침 : {tech.ExitTimingBadge} 】\n{exitGuide}";
+            _lblTimingGuide.BackColor = verdict.BackColor;
+            _lblTimingGuide.ForeColor = verdict.ForeColor;
 
             // 카드 2 갱신
             _lblSupplyBadge.Text = $"수급 주체: {intel.SupplyBadge}";
@@ -715,7 +704,7 @@ namespace GateHelper.StockAdvisor
             _lvQuantFilters.Items.Clear();
             foreach (var itm in quant.Items)
             {
-                string passMark = itm.IsPassed ? "PASS ✅" : "FAIL ❌";
+                string passMark = itm.IsPassed ? "PASS" : "FAIL";
                 var lvi = new ListViewItem(new[]
                 {
                     itm.Name,                   // 1열: 검증항목 (앞에 E. C. 등 알파벳 완전 제거)

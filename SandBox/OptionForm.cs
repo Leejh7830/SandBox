@@ -105,7 +105,7 @@ namespace GateHelper
             {
                 Text = "◆ Google Gemini AI 공용 연동 설정",
                 Dock = DockStyle.Top,
-                Height = 160,
+                Height = 168,
                 ForeColor = Color.FromArgb(120, 210, 255),
                 Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
                 Padding = new Padding(12)
@@ -137,14 +137,26 @@ namespace GateHelper
             _chkAutoPreloadAi = new CheckBox
             {
                 Text = "프로그램 시작 시 AI 데일리 브리핑 백그라운드 자동 예열",
-                Location = new Point(16, 114),
-                Size = new Size(480, 26),
+                Location = new Point(16, 110),
+                Size = new Size(480, 22),
                 Checked = _settings.AutoPreloadAiTrend,
                 Font = new Font("Segoe UI", 8.5f),
                 ForeColor = Color.FromArgb(220, 225, 235),
                 Cursor = Cursors.Hand
             };
 
+            var lblPreloadWarning = new Label
+            {
+                Text = "※ (주식참모진단 한도에 영향이 갈 수 있습니다.)",
+                Location = new Point(34, 134),
+                Size = new Size(460, 20),
+                Font = new Font("Segoe UI", 8.2f),
+                ForeColor = Color.FromArgb(255, 180, 100),
+                Cursor = Cursors.Hand
+            };
+            lblPreloadWarning.Click += (s, e) => _chkAutoPreloadAi.Checked = !_chkAutoPreloadAi.Checked;
+
+            grpAi.Controls.Add(lblPreloadWarning);
             grpAi.Controls.Add(_chkAutoPreloadAi);
             grpAi.Controls.Add(_btnRegisterApi);
             grpAi.Controls.Add(_lblApiStatus);

@@ -209,6 +209,7 @@
     <Compile Include="SandBox\8. StockAdvisor\Services\GeminiRiskAdvisorService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\TechnicalIndicatorService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\StockIntelligenceService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\MarketThermometerService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingModels.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingClient.cs" />
     <Compile Include="SandBox\8. StockAdvisor\StockItemDialog.cs">
@@ -235,7 +236,13 @@
     <Compile Include="SandBox\8. StockAdvisor\StockScoreHelpDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorOptionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="SandBox\8. StockAdvisor\StockEvaluatorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\MarketThermometerDialog.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.cs">

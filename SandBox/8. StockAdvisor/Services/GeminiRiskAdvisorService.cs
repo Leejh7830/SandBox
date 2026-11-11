@@ -280,8 +280,10 @@ namespace GateHelper.StockAdvisor.Services
                             string rsn = token["reason"]?.ToString() ?? string.Empty;
 
                             int cScore = matchedItem?.ChartScore ?? 5;
+                            int sfScore = matchedItem?.SupplyFinanceScore ?? 5;
                             int rScore = matchedItem?.RiskScore ?? 5;
-                            int fScore = (int)Math.Round(cScore * 0.4 + nScore * 0.3 + rScore * 0.3);
+                            // 4대 통합 팩터: 차트 30% + 수급재무 25% + 뉴스 25% + 손익비 20%
+                            int fScore = (int)Math.Round((cScore * 0.30) + (sfScore * 0.25) + (nScore * 0.25) + (rScore * 0.20), MidpointRounding.AwayFromZero);
                             fScore = Math.Max(1, Math.Min(10, fScore));
 
                             string timingWarn = string.Empty;
@@ -307,11 +309,12 @@ namespace GateHelper.StockAdvisor.Services
                                 PolicyImpact = Math.Max(-5, Math.Min(5, pol)),
                                 NewsScore = nScore,
                                 ChartScore = cScore,
+                                SupplyFinanceScore = sfScore,
                                 RiskScore = rScore,
                                 FinalScore = fScore,
                                 TimingWarning = timingWarn,
                                 Group = posGroup,
-                                Grade = GradeHelper.CalculateGrade(fScore, matchedItem?.Rsi ?? 50m, matchedItem?.ProfitRate ?? 0m),
+                                Grade = GradeHelper.CalculateGrade(fScore, matchedItem?.Rsi ?? 50m, matchedItem?.ChangeRate ?? 0m),
                                 RecommendedAction = act,
                                 TargetCutPrice = cut,
                                 ReasonSummary = rsn,
@@ -462,24 +465,24 @@ namespace GateHelper.StockAdvisor.Services
                     diag.ReasonSummary = $"경미한 조정(-{Math.Abs(profitRate):F1}%) 구간입니다. 물타기는 자제하고 업종 섹터 수급 유입 여부를 점검하세요.";
                 }
 
-                // 3대 점수 및 최종점수 반영
+                // 4대 통합 팩터 점수 및 최종점수 반영 (보유 여부 무관한 객관적 산출)
                 int cScore = item.ChartScore > 0 ? item.ChartScore : 5;
+                int sfScore = item.SupplyFinanceScore > 0 ? item.SupplyFinanceScore : 5;
                 int rScore = item.RiskScore > 0 ? item.RiskScore : 5;
-                int nScore = 5; // 오프라인 모드는 중립 5점
-                if (item.ProfitRate >= 10m) nScore = 7;
-                else if (item.ProfitRate <= -10m) nScore = 3;
+                int nScore = item.NewsScore > 0 ? item.NewsScore : 5;
 
-                int fScore = (int)Math.Round(cScore * 0.4 + nScore * 0.3 + rScore * 0.3);
+                int fScore = (int)Math.Round((cScore * 0.30) + (sfScore * 0.25) + (nScore * 0.25) + (rScore * 0.20), MidpointRounding.AwayFromZero);
                 fScore = Math.Max(1, Math.Min(10, fScore));
 
                 item.NewsScore = nScore;
                 item.FinalScore = fScore;
 
                 diag.ChartScore = cScore;
+                diag.SupplyFinanceScore = sfScore;
                 diag.RiskScore = rScore;
                 diag.NewsScore = nScore;
                 diag.FinalScore = fScore;
-                diag.Grade = GradeHelper.CalculateGrade(fScore, item.Rsi, item.ProfitRate);
+                diag.Grade = GradeHelper.CalculateGrade(fScore, item.Rsi, item.ChangeRate);
                 diag.TimingWarning = item.TimingWarning;
 
                 // RSI 과열 안전벨트 적용

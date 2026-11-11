@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 namespace GateHelper.StockAdvisor.Models
@@ -87,24 +88,29 @@ namespace GateHelper.StockAdvisor.Models
         public decimal ChangePrice { get; set; } = 0m;
         public string Memo { get; set; } = string.Empty;
 
-        // --- 객관적 정량 지표 & 3대 점수 체계 ---
+        // --- 객관적 정량 지표 & 4대 점수 체계 ---
         /// <summary>
-        /// 차트 점수 (1~10점): 20일 일봉 정배열, 거래량 수급, 추세 기반
+        /// 차트 점수 (1~10점): 20일 일봉 정배열, 거래량 수급, 추세 기반 (가중치 30%)
         /// </summary>
         public int ChartScore { get; set; } = 5;
 
         /// <summary>
-        /// 뉴스 점수 (1~10점): 공시, 수출통제, 실적 팩트 기반 호악재 감성
+        /// 수급·재무 점수 (1~10점): 외인/기관 순매수 수급 + 부채비율/배당 건전성 (가중치 25%)
+        /// </summary>
+        public int SupplyFinanceScore { get; set; } = 5;
+
+        /// <summary>
+        /// 뉴스·공시 점수 (1~10점): 공시, 수출통제, 실적 팩트 기반 호악재 감성 (가중치 25%)
         /// </summary>
         public int NewsScore { get; set; } = 5;
 
         /// <summary>
-        /// 손익비/안전 점수 (1~10점): 20일 지지선까지의 거리(손절폭 %)
+        /// 손익비/안전 점수 (1~10점): 20일 지지선까지의 거리(손절폭 %) (가중치 20%)
         /// </summary>
         public int RiskScore { get; set; } = 5;
 
         /// <summary>
-        /// 최종 종목 점수 (1~10점): [차트 40% + 뉴스 30% + 손익비 30%]
+        /// 최종 종목 점수 (1~10점): [차트 30% + 수급재무 25% + 뉴스 25% + 손익비 20%]
         /// </summary>
         public int FinalScore { get; set; } = 5;
 
@@ -136,49 +142,50 @@ namespace GateHelper.StockAdvisor.Models
         /// <summary>
         /// 타이밍 상태 뱃지 (🔴 과열(매수금지), 🟢 골든진입, 🟡 눌림목대기, 🔵 과매도반등, ⚪ 관망유지, ❌ 보유불필요)
         /// </summary>
-        public string TimingBadge { get; set; } = "⚪ 관망유지";
+        public string TimingBadge { get; set; } = "관망유지";
 
         /// <summary>
         /// 추격매수 방지 경고 및 타이밍 가이드 코멘트
         /// </summary>
         public string TimingWarning { get; set; } = string.Empty;
 
-        // --- 🌊 수급 및 스마트 머니(외인/기관) 지표 ---
+        // --- 수급 및 스마트 머니(외인/기관) 지표 ---
         /// <summary>
-        /// 외인/기관 수급 뱃지 (예: 🌊쌍끌이매수, 🦅외인매수, 🏦기관매수, 🐜개미매수, 🌧️쌍끌이매도, ⚪수급대기)
+        /// 외인/기관 수급 뱃지 (예: 쌍끌이매수, 외인매수, 기관매수, 개미매수, 쌍끌이매도, 수급대기)
         /// </summary>
-        public string MajorSupplyBadge { get; set; } = "⚪ 수급대기";
+        public string MajorSupplyBadge { get; set; } = "수급대기";
         public string MajorSupplyDetail { get; set; } = string.Empty;
 
-        // --- 🛡️ 재무 및 공시 지뢰 탐지 지표 ---
+        // --- 재무 및 공시 지뢰 탐지 지표 ---
         /// <summary>
-        /// 재무/공시 지뢰 탐지 뱃지 (예: 🛡️클린안전, 💀3년적자, 🚨CB발행, ⚠️부채과다, 💎주주환원)
+        /// 재무/공시 지뢰 탐지 뱃지 (예: 클린안전, 3년적자, CB발행, 부채과다, 주주환원)
         /// </summary>
-        public string LandmineBadge { get; set; } = "🛡️ 클린안전";
+        public string LandmineBadge { get; set; } = "클린안전";
         public string LandmineDetail { get; set; } = string.Empty;
         public bool HasCriticalLandmine { get; set; } = false;
         public decimal DebtRatio { get; set; } = 0m;
         public int ConsecutiveLossYears { get; set; } = 0;
 
-        // --- 📡 네이버 스크래핑 무결성 검증 필터 ---
+        // --- 네이버 스크래핑 무결성 검증 필터 ---
         public bool IsPriceScrapeSuccess { get; set; } = true;
         public string ScrapeErrorMessage { get; set; } = string.Empty;
         public DateTime? LastScrapedTime { get; set; } = null;
 
-        // --- 🎯 AI 퀀트 권고 매수가 및 진입 타점 ---
+        // --- AI 퀀트 권고 매수가 및 진입 타점 ---
         public decimal RecommendedBuyPrice { get; set; } = 0m;  // 1차 눌림목 권고 매수가
+        public decimal SecondaryBuyPrice { get; set; } = 0m;    // 2차 분할/눌림목 권고 매수가 (물타기/추매 지지선)
         public decimal TargetStopPrice { get; set; } = 0m;       // 2차 방어선 / 손절 기준가
-        public string EntryTimingBadge { get; set; } = "⚪ 관망대기"; // 진입 판정 뱃지
+        public string EntryTimingBadge { get; set; } = "관망대기"; // 진입 판정 뱃지
         public string EntryTimingGuide { get; set; } = string.Empty; // 구체적 매수 가이드 문구
 
-        // --- 🚀 AI 퀀트 권고 매도(익절) 타점 & 청산 시나리오 ---
+        // --- AI 퀀트 권고 매도(익절) 타점 & 청산 시나리오 ---
         public decimal RecommendedTargetPrice { get; set; } = 0m; // 1차 권고 목표가 (분할 익절선)
         public decimal SecondaryTargetPrice { get; set; } = 0m;   // 2차 최종 목표가 (슈팅/과열 청산선)
-        public string ExitTimingBadge { get; set; } = "⚪ 추세보유"; // 매도 판정 뱃지
+        public string ExitTimingBadge { get; set; } = "추세보유"; // 매도 판정 뱃지
         public string ExitTimingGuide { get; set; } = string.Empty; // 구체적 익절 가이드 문구
 
-        // --- 📊 정통 퀀트 우량주 8대 필터 요약 ---
-        public string QuantBadge { get; set; } = "⚪ 퀀트대기";
+        // --- 정통 퀀트 우량주 8대 필터 요약 ---
+        public string QuantBadge { get; set; } = "퀀트대기";
         public string QuantSummary { get; set; } = string.Empty;
 
         // 최종 AI 진단 결과
@@ -206,7 +213,7 @@ namespace GateHelper.StockAdvisor.Models
             {
                 if (LastDiagnosis != null && LastDiagnosis.Grade.HasValue)
                     return LastDiagnosis.Grade.Value;
-                return GradeHelper.CalculateGrade(FinalScore, Rsi, ProfitRate);
+                return GradeHelper.CalculateGrade(FinalScore, Rsi, ChangeRate);
             }
         }
     }
@@ -243,6 +250,11 @@ namespace GateHelper.StockAdvisor.Models
         /// 차트 기술적 점수 (1~10점)
         /// </summary>
         public int ChartScore { get; set; } = 5;
+
+        /// <summary>
+        /// 수급·재무 점수 (1~10점)
+        /// </summary>
+        public int SupplyFinanceScore { get; set; } = 5;
 
         /// <summary>
         /// 손익비 안전 점수 (1~10점)
@@ -307,6 +319,13 @@ namespace GateHelper.StockAdvisor.Models
         public string KbAppKey { get; set; } = string.Empty;
         public string KbAppSecret { get; set; } = string.Empty;
         public string KbAccountNumber { get; set; } = string.Empty;
+
+        // 자동 동기화 옵션
+        public bool AutoPriceSyncEnabled { get; set; } = false;
+        public int PriceSyncIntervalMinutes { get; set; } = 5;
+
+        public bool AutoAiDiagnosisEnabled { get; set; } = false;
+        public int AiDiagnosisIntervalMinutes { get; set; } = 5;
     }
 
     /// <summary>
@@ -342,10 +361,228 @@ namespace GateHelper.StockAdvisor.Models
 
         public int PassCount { get; set; } = 0;
         public int TotalCount { get; set; } = 8;
-        public string QuantGradeBadge { get; set; } = "⚪ 보통";
+        public string QuantGradeBadge { get; set; } = "보통";
         public List<QuantFilterItem> Items { get; set; } = new List<QuantFilterItem>();
 
         public decimal PassPercent => (TotalCount > 0) ? ((decimal)PassCount / TotalCount * 100m) : 0m;
+    }
+
+    /// <summary>
+    /// UI 표시 전 모든 이모지 및 특수기호 난립을 차단하고 단정하게 정돈하는 헬퍼
+    /// </summary>
+    public static class TextCleanHelper
+    {
+        private static readonly Regex EmojiRegex = new Regex(@"[\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF]|[\u2300-\u23FF]|[\uFE00-\uFE0F]", RegexOptions.Compiled);
+
+        public static string StripEmoji(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return string.Empty;
+            return EmojiRegex.Replace(input, "").Trim();
+        }
+    }
+
+    /// <summary>
+    /// AI 참모가 내리는 최종 투자 행동 판정 열거형
+    /// </summary>
+    public enum ActionVerdictType
+    {
+        AvoidOrReduce,   // 🔴 매수 금지 / 비중 축소 (역배열, C/F등급, 악재)
+        TakeProfit,      // 🔵 추격매수 금지 / 분할 익절 (RSI 68+ 과열 슈팅)
+        HoldOrWatch,     // 🟡 관망 / 지지선 확인 대기 (중립 B등급, 방향성 탐색)
+        BuyEntry         // 🟢 적극 분할 매수 진입 유효 (A등급, 7점+ 골든크로스)
+    }
+
+    /// <summary>
+    /// 최종 투자 행동 판정 상세 모델
+    /// </summary>
+    public class StockVerdictInfo
+    {
+        public ActionVerdictType Type { get; set; } = ActionVerdictType.HoldOrWatch;
+        public string BadgeText { get; set; } = "[관망대기]";
+        public string TitleText { get; set; } = "[ AI 참모 최종 결론 : 관망 및 지지선 확인 대기 ]";
+        public string GuideText { get; set; } = "추세 방향성 탐색 중. 20일 지지선 안착 확인 전까지 진입 보류";
+        public string BuyPriceText { get; set; } = "• 매수가: [관망 대기] (1차 -원 | 2차 -원)";
+        public Color BackColor { get; set; } = Color.FromArgb(36, 32, 20);
+        public Color ForeColor { get; set; } = Color.FromArgb(255, 220, 90);
+        public Color BorderColor { get; set; } = Color.FromArgb(160, 130, 40);
+        public Color ListBadgeColor { get; set; } = Color.FromArgb(240, 200, 80);
+        public bool CanBuy { get; set; } = false;
+        public bool IsEmergency { get; set; } = false;
+        public string EmergencyReason { get; set; } = string.Empty;
+    }
+
+    /// <summary>
+    /// 객관적 정량 지표와 AI 진단을 종합하여 단 1초 만에 명쾌한 결론을 내려주는 헬퍼
+    /// </summary>
+    public static class StockVerdictHelper
+    {
+        public static StockVerdictInfo Evaluate(StockHoldingItem item)
+        {
+            if (item == null)
+            {
+                return new StockVerdictInfo
+                {
+                    Type = ActionVerdictType.HoldOrWatch,
+                    BadgeText = "[선택대기]",
+                    TitleText = "[ AI 참모 최종 결론 : 좌측 종목을 선택하세요 ]",
+                    GuideText = "종목을 선택하시면 단일화된 최종 행동 결론이 표시됩니다.",
+                    BuyPriceText = "• 매수가: 1차 - 원   |   2차(추매): - 원",
+                    BackColor = Color.FromArgb(24, 28, 38),
+                    ForeColor = Color.FromArgb(170, 185, 205),
+                    BorderColor = Color.FromArgb(60, 75, 100),
+                    ListBadgeColor = Color.FromArgb(170, 185, 205),
+                    CanBuy = false,
+                    IsEmergency = false
+                };
+            }
+
+            var info = new StockVerdictInfo();
+
+            // 1. 위급 종목 판단 (당일 -5% 급락 또는 손절가 이탈)
+            decimal stopPrice = item.TargetStopPrice > 0 ? item.TargetStopPrice : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : item.CurrentPrice * 0.93m);
+            if (item.ChangeRate <= -5.0m)
+            {
+                info.IsEmergency = true;
+                info.EmergencyReason = $"당일 급락({item.ChangeRate:+0.00;-0.00}%)";
+            }
+            else if (stopPrice > 0 && item.CurrentPrice > 0 && item.CurrentPrice <= stopPrice)
+            {
+                info.IsEmergency = true;
+                info.EmergencyReason = $"손절가({stopPrice:N0}원) 터치/이탈";
+            }
+
+            // 매수가 기초 문자열 구성
+            string buy1Str = item.RecommendedBuyPrice > 0 ? $"{item.RecommendedBuyPrice:N0}원" : (item.CurrentPrice > 0 ? $"{item.CurrentPrice:N0}원" : "-");
+            string buy2Str = item.SecondaryBuyPrice > 0 ? $"{item.SecondaryBuyPrice:N0}원" : "-";
+
+            // 2. 판정 로직 분기
+            bool isAvoid = item.Grade == PositionGrade.C || item.Grade == PositionGrade.F ||
+                           item.FinalScore <= 4 || item.HasCriticalLandmine ||
+                           (item.LastDiagnosis != null && (item.LastDiagnosis.RecommendedAction.Contains("손절") || item.LastDiagnosis.RecommendedAction.Contains("축소") || item.LastDiagnosis.RecommendedAction.Contains("경보")));
+
+            bool isOverheat = item.Rsi >= 68.0m || (item.TimingBadge != null && item.TimingBadge.Contains("과열"));
+
+            bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7) && !item.HasCriticalLandmine && item.Rsi < 65.0m;
+            bool isHeld = item.Quantity > 0;
+
+            if (isAvoid)
+            {
+                info.Type = ActionVerdictType.AvoidOrReduce;
+                if (isHeld)
+                {
+                    info.BadgeText = "[비중축소]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 반등 시 비중 축소 / 손절 권고 ]";
+                    if (item.LastDiagnosis?.PolicyImpact < 0)
+                    {
+                        info.GuideText = $"정책/규제 악재({item.LastDiagnosis.PolicyImpact}점) 및 역배열 지속. 추가 손실 방지를 위해 반등 시 비중 40~50% 축소 권고";
+                    }
+                    else if (item.HasCriticalLandmine)
+                    {
+                        info.GuideText = "재무/공시 지뢰(적자/CB 등) 탐지! 손실 고착화 방지를 위해 조속한 비중 축소 및 리스크 정리 권고";
+                    }
+                    else
+                    {
+                        info.GuideText = "하락 추세 지속. 추가 하락에 대비하여 기술적 반등 구간에서 단계적 비중 축소 권고";
+                    }
+                    info.BuyPriceText = $"• 매수가: [매수 불가] (정량 1차선: {buy1Str} / 종합 {item.Grade}등급으로 추가 매수 불가)";
+                }
+                else
+                {
+                    info.BadgeText = "[매수금지]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 신규 매수 금지 (리스크 경보) ]";
+                    if (item.LastDiagnosis?.PolicyImpact < 0)
+                    {
+                        info.GuideText = $"정책/규제 악재({item.LastDiagnosis.PolicyImpact}점) 및 역배열 지속. 신규 진입 절대 금지";
+                    }
+                    else if (item.HasCriticalLandmine)
+                    {
+                        info.GuideText = "재무/공시 지뢰(적자/CB 등) 탐지! 신규 진입 절대 금지 및 리스크 주의";
+                    }
+                    else
+                    {
+                        info.GuideText = "하락 추세 및 불확실성 지속. 신규 매수를 금지하며 안전한 지지선 형성 대기";
+                    }
+                    info.BuyPriceText = $"• 매수가: [진입 금지] (정량 1차선: {buy1Str} / 종합 {item.Grade}등급으로 매수 불가)";
+                }
+
+                info.BackColor = Color.FromArgb(48, 18, 26);
+                info.ForeColor = Color.FromArgb(255, 120, 130);
+                info.BorderColor = Color.FromArgb(200, 50, 70);
+                info.ListBadgeColor = Color.FromArgb(255, 95, 110);
+                info.CanBuy = false;
+            }
+            else if (isOverheat)
+            {
+                info.Type = ActionVerdictType.TakeProfit;
+                if (isHeld)
+                {
+                    info.BadgeText = "[분할익절]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 분할 익절 (30~50% 수익 확정) ]";
+                    info.GuideText = "단기 과열 슈팅 구간! 욕심을 줄이고 보유 물량의 30~50%를 분할 매도하여 수익을 확정하세요.";
+                    info.BuyPriceText = $"• 매수가: [추격 금지] (20일 눌림목 대기선: {buy1Str} 도달 시에만 검토)";
+                }
+                else
+                {
+                    info.BadgeText = "[추격금지]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 단기 과열! 추격 매수 절대 금지 ]";
+                    info.GuideText = "단기 과열 슈팅 구간! 지금 사면 상투 물림 위험. 20일선 눌림목 도달 시까지 매수 금지";
+                    info.BuyPriceText = $"• 매수가: [추격 금지] (20일 눌림목 대기선: {buy1Str} 도달 시에만 검토)";
+                }
+                info.BackColor = Color.FromArgb(16, 32, 54);
+                info.ForeColor = Color.FromArgb(100, 215, 255);
+                info.BorderColor = Color.FromArgb(50, 130, 210);
+                info.ListBadgeColor = Color.FromArgb(70, 190, 255);
+                info.CanBuy = false;
+            }
+            else if (isBuy)
+            {
+                info.Type = ActionVerdictType.BuyEntry;
+                if (isHeld)
+                {
+                    info.BadgeText = "[보유/추매]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 추세 유지 홀딩 & 분할 추매 유효 ]";
+                    info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 1차 매수가 부근 분할 추매 유효";
+                    info.BuyPriceText = $"• 추가매수가: 1차 {buy1Str}   |   2차: {buy2Str}";
+                }
+                else
+                {
+                    info.BadgeText = "[분할매수]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 유효 ]";
+                    info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 1차 매수가 부근 분할 진입 권장";
+                    info.BuyPriceText = $"• 매수가: 1차 {buy1Str}   |   2차(추매): {buy2Str}";
+                }
+                info.BackColor = Color.FromArgb(16, 44, 28);
+                info.ForeColor = Color.FromArgb(90, 255, 170);
+                info.BorderColor = Color.FromArgb(40, 170, 90);
+                info.ListBadgeColor = Color.FromArgb(0, 230, 118);
+                info.CanBuy = true;
+            }
+            else
+            {
+                info.Type = ActionVerdictType.HoldOrWatch;
+                if (isHeld)
+                {
+                    info.BadgeText = "[보유관망]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 기존 물량 유지 및 지지선 관망 ]";
+                    info.GuideText = "추세 방향성 탐색 중. 20일 지지선 안착 확인 시까지 섣부른 물타기를 자제하고 관망 권고";
+                    info.BuyPriceText = $"• 매수가: [관망 대기] (1차 지지선: {buy1Str}   |   2차: {buy2Str})";
+                }
+                else
+                {
+                    info.BadgeText = "[관망대기]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 관망 및 지지선 확인 대기 ]";
+                    info.GuideText = "추세 방향성 탐색 중. 20일 지지선 안착 및 추가 거래량 수급 확인 전까지 신규 진입 보류";
+                    info.BuyPriceText = $"• 매수가: [관망 대기] (1차 지지선: {buy1Str}   |   2차: {buy2Str})";
+                }
+                info.BackColor = Color.FromArgb(36, 32, 20);
+                info.ForeColor = Color.FromArgb(255, 220, 90);
+                info.BorderColor = Color.FromArgb(170, 140, 40);
+                info.ListBadgeColor = Color.FromArgb(240, 200, 80);
+                info.CanBuy = false;
+            }
+
+            return info;
+        }
     }
 }
 

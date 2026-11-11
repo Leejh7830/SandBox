@@ -50,19 +50,20 @@ namespace GateHelper.StockAdvisor.Services
             public decimal DownsideRiskPercent { get; set; } = 0m;
             public int ChartScore { get; set; } = 5;
             public int RiskScore { get; set; } = 5;
-            public string TimingBadge { get; set; } = "⚪ 관망유지";
+            public string TimingBadge { get; set; } = "관망유지";
             public string TimingWarning { get; set; } = string.Empty;
 
-            // 🎯 AI 퀀트 권고 매수가 및 진입 타점
+            // AI 퀀트 권고 매수가 및 진입 타점
             public decimal RecommendedBuyPrice { get; set; } = 0m;
+            public decimal SecondaryBuyPrice { get; set; } = 0m;
             public decimal TargetStopPrice { get; set; } = 0m;
-            public string EntryTimingBadge { get; set; } = "⚪ 관망대기";
+            public string EntryTimingBadge { get; set; } = "관망대기";
             public string EntryTimingGuide { get; set; } = string.Empty;
 
-            // 🚀 AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오
+            // AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오
             public decimal RecommendedTargetPrice { get; set; } = 0m;
             public decimal SecondaryTargetPrice { get; set; } = 0m;
-            public string ExitTimingBadge { get; set; } = "⚪ 추세보유";
+            public string ExitTimingBadge { get; set; } = "추세보유";
             public string ExitTimingGuide { get; set; } = string.Empty;
         }
 
@@ -201,36 +202,36 @@ namespace GateHelper.StockAdvisor.Services
                 // 7. 타이밍 안전벨트 뱃지 & 경고 판정
                 if (result.Rsi >= 70.0m)
                 {
-                    result.TimingBadge = "🔴 과열(매수금지)";
+                    result.TimingBadge = "과열(매수금지)";
                     result.TimingWarning = $"[과열 주의] RSI({result.Rsi:F1}) 과열 구간 진입! 신규 매수 금지, 5일/20일선 눌림목까지 대기 권고";
                 }
                 else if (result.Rsi <= 30.0m)
                 {
-                    result.TimingBadge = "🔵 과매도(반등대기)";
+                    result.TimingBadge = "과매도(반등대기)";
                     result.TimingWarning = $"[과매도] RSI({result.Rsi:F1}) 침체권. 지지선 확인 후 분할 접근 유효";
                 }
                 else if (result.ChartScore >= 7 && result.RiskScore >= 7)
                 {
-                    result.TimingBadge = "🟢 골든진입";
+                    result.TimingBadge = "골든진입";
                     result.TimingWarning = $"[최적 진입] 손익비 우수(하방 {result.DownsideRiskPercent:F1}%), 지지선 확인된 골든 진입 구간";
                 }
                 else if (result.ChartScore >= 6)
                 {
-                    result.TimingBadge = "🟡 눌림목대기";
+                    result.TimingBadge = "눌림목대기";
                     result.TimingWarning = $"[눌림목 대기] 추세 양호하나 지지선 이격 존재({result.DownsideRiskPercent:F1}%). 추격매수 지양";
                 }
                 else if (result.ChartScore <= 3)
                 {
-                    result.TimingBadge = "❌ 보유불필요";
+                    result.TimingBadge = "보유불필요";
                     result.TimingWarning = $"[비중 축소] 역배열 추세 이탈 및 하방 리스크 확대. 반등 시 비중 축소 권고";
                 }
                 else
                 {
-                    result.TimingBadge = "⚪ 관망유지";
+                    result.TimingBadge = "관망유지";
                     result.TimingWarning = $"[관망] 뚜렷한 추세 모멘텀 형성 전까지 시장 관망";
                 }
 
-                // 8. 🎯 AI 퀀트 권고 매수가 및 진입 타점 계산
+                // 8. AI 퀀트 권고 매수가 및 진입 타점 계산
                 decimal stopBase = result.SupportPrice > 0 ? result.SupportPrice : currentPrice * 0.95m;
                 result.TargetStopPrice = Math.Round(stopBase * 0.97m, 0); // 지지선 -3% 이탈 시 손절선
 
@@ -238,13 +239,13 @@ namespace GateHelper.StockAdvisor.Services
                 {
                     decimal pullbackPrice = result.Ma20 > 0 ? result.Ma20 : currentPrice * 0.93m;
                     result.RecommendedBuyPrice = Math.Round(pullbackPrice, 0);
-                    result.EntryTimingBadge = "⛔ 추격매수 금지 (대기)";
+                    result.EntryTimingBadge = "추격매수 금지 (대기)";
                     result.EntryTimingGuide = $"현재가 과열권! 지금 사지 말고 20일선({result.RecommendedBuyPrice:N0}원)까지 눌림목 도달 시 진입 권고";
                 }
                 else if (result.Rsi <= 35.0m && result.Rsi > 0m)
                 {
                     result.RecommendedBuyPrice = currentPrice;
-                    result.EntryTimingBadge = "💎 스나이퍼 바닥 매수존";
+                    result.EntryTimingBadge = "바닥 분할매수존";
                     result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 공포 구간! 현재가({currentPrice:N0}원) 분할 매수 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
                 else
@@ -253,11 +254,16 @@ namespace GateHelper.StockAdvisor.Services
                         ? (result.Ma20 + result.SupportPrice) / 2m
                         : currentPrice * 0.97m;
                     result.RecommendedBuyPrice = Math.Round(safeEntry, 0);
-                    result.EntryTimingBadge = "🟢 눌림목 분할 진입존";
+                    result.EntryTimingBadge = "눌림목 분할 진입존";
                     result.EntryTimingGuide = $"20일 지지선 부근({result.RecommendedBuyPrice:N0}원) 도달 시 분할 진입 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
 
-                // 9. 🚀 AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
+                // 2차 매수가 (물타기/눌림목 지지선): 1차 매수가 대비 -5~-6% 추가 조정 시 손절선 직전 마지막 강력 반등 지지선
+                decimal secBuyBase = result.SupportPrice > 0 ? result.SupportPrice : result.RecommendedBuyPrice * 0.94m;
+                decimal secBuy = Math.Min(result.RecommendedBuyPrice * 0.95m, Math.Max(result.TargetStopPrice * 1.015m, secBuyBase));
+                result.SecondaryBuyPrice = Math.Round(secBuy, 0);
+
+                // 9. AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
                 if (result.ResistancePrice > currentPrice * 1.01m)
                 {
                     result.RecommendedTargetPrice = Math.Round(result.ResistancePrice, 0);
@@ -273,22 +279,22 @@ namespace GateHelper.StockAdvisor.Services
 
                 if (result.Rsi >= 70.0m)
                 {
-                    result.ExitTimingBadge = "🔴 RSI 과열 분할익절 (30~50%)";
+                    result.ExitTimingBadge = "RSI 과열 분할익절 (30~50%)";
                     result.ExitTimingGuide = $"14일 RSI({result.Rsi:F1}) 과열 슈팅 구간! 1차 목표가({result.RecommendedTargetPrice:N0}원) 도달 시 물량의 30~50%를 분할 매도하여 수익을 확정하세요.";
                 }
                 else if (currentPrice >= result.RecommendedTargetPrice * 0.98m)
                 {
-                    result.ExitTimingBadge = "🟠 1차 목표가 근접 (익절 대기)";
+                    result.ExitTimingBadge = "1차 목표가 근접 (익절 대기)";
                     result.ExitTimingGuide = $"1차 저항 목표가({result.RecommendedTargetPrice:N0}원) 도달 직전! 분할 매도를 준비하세요. (돌파 시 2차: {result.SecondaryTargetPrice:N0}원)";
                 }
                 else if (result.ChartScore <= 3)
                 {
-                    result.ExitTimingBadge = "❌ 추세 이탈 (반등 시 비중 축소)";
+                    result.ExitTimingBadge = "추세 이탈 (반등 시 비중축소)";
                     result.ExitTimingGuide = $"역배열 하향 이탈 국면! 반등 시마다 비중을 축소하고, 손절 방어선({result.TargetStopPrice:N0}원) 이탈 시 전량 손절 권고";
                 }
                 else
                 {
-                    result.ExitTimingBadge = "🟢 추세 유지 (목표가 대기)";
+                    result.ExitTimingBadge = "추세 유지 (목표가 대기)";
                     result.ExitTimingGuide = $"1차 목표가({result.RecommendedTargetPrice:N0}원, +{upside1:F1}%)까지 상승 여력 유효. 손절 방어선({result.TargetStopPrice:N0}원)을 지키며 홀딩";
                 }
             }

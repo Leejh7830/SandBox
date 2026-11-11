@@ -5,22 +5,33 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using GateHelper.StockAdvisor.Models;
 
 namespace GateHelper.StockAdvisor.Services
 {
+    public class UnifiedScoreResult
+    {
+        public int ChartScore { get; set; } = 5;          // 가중치 30%
+        public int SupplyFinanceScore { get; set; } = 5;  // 가중치 25%
+        public int NewsScore { get; set; } = 5;           // 가중치 25%
+        public int RiskScore { get; set; } = 5;           // 가중치 20%
+        public int FinalScore { get; set; } = 5;
+        public PositionGrade Grade { get; set; } = PositionGrade.B;
+    }
+
     public class SupplyAndLandmineDto
     {
         public string StockCode { get; set; } = string.Empty;
 
         // 수급 지표
-        public string SupplyBadge { get; set; } = "⚪ 수급대기";
+        public string SupplyBadge { get; set; } = "수급대기";
         public string SupplyDetail { get; set; } = string.Empty;
         public long ForeignNetQuantity { get; set; } = 0;
         public long OrganNetQuantity { get; set; } = 0;
         public long IndividualNetQuantity { get; set; } = 0;
 
         // 지뢰 탐지 지표
-        public string LandmineBadge { get; set; } = "🛡️ 클린안전";
+        public string LandmineBadge { get; set; } = "클린안전";
         public string LandmineDetail { get; set; } = "재무·공시 지뢰 없음";
         public bool HasCriticalLandmine { get; set; } = false;
         public decimal DebtRatio { get; set; } = 0m;
@@ -92,25 +103,25 @@ namespace GateHelper.StockAdvisor.Services
                 else if (finData.ConsecutiveLossYears >= 3)
                 {
                     result.HasCriticalLandmine = true;
-                    result.LandmineBadge = "💀 3년적자";
+                    result.LandmineBadge = "3년연속적자";
                     result.LandmineDetail = $"[재무지뢰] 3개년 연속 영업손실 (관리종목/상폐 위험)";
                 }
                 else if (finData.DebtRatio >= 250m)
                 {
                     result.HasCriticalLandmine = false;
-                    result.LandmineBadge = "⚠️ 부채과다";
+                    result.LandmineBadge = "부채주의";
                     result.LandmineDetail = $"[재무주의] 부채비율 {finData.DebtRatio:F1}% 과다 (재무 건전성 점검 필요)";
                 }
                 else if (discData.HasShareholderFriendly)
                 {
                     result.HasCriticalLandmine = false;
-                    result.LandmineBadge = "💎 주주환원";
+                    result.LandmineBadge = "주주환원";
                     result.LandmineDetail = $"[호재공시] {discData.ShareholderDetail}";
                 }
                 else
                 {
                     result.HasCriticalLandmine = false;
-                    result.LandmineBadge = "🛡️ 클린안전";
+                    result.LandmineBadge = "클린안전";
                     result.LandmineDetail = $"부채비율 {finData.DebtRatio:F0}% 건전 | 최근 CB/유증 지뢰 0건";
                 }
             }
@@ -126,7 +137,7 @@ namespace GateHelper.StockAdvisor.Services
 
         private class TrendResult
         {
-            public string Badge { get; set; } = "⚪ 수급대기";
+            public string Badge { get; set; } = "수급대기";
             public string Detail { get; set; } = string.Empty;
             public long ForeignNet { get; set; }
             public long OrganNet { get; set; }
@@ -177,37 +188,37 @@ namespace GateHelper.StockAdvisor.Services
                 // 수급 뱃지 판정
                 if (latestFor > 0 && latestOrg > 0)
                 {
-                    res.Badge = "🌊 메이저쌍끌이";
+                    res.Badge = "메이저쌍끌이";
                     res.Detail = $"외인(+{latestFor:N0}) & 기관(+{latestOrg:N0}) 동시 순매수 유입";
                 }
                 else if (forBuyDays >= 2 && orgBuyDays >= 2)
                 {
-                    res.Badge = "🌊 메이저쌍끌이";
+                    res.Badge = "메이저쌍끌이";
                     res.Detail = $"최근 3일 중 2일 이상 외인·기관 연속 매집";
                 }
                 else if (latestFor > 0 && latestOrg <= 0)
                 {
-                    res.Badge = forBuyDays >= 2 ? "🦅 외인연속매수" : "🦅 외인매수";
+                    res.Badge = forBuyDays >= 2 ? "외인연속매수" : "외인매수";
                     res.Detail = $"외국인 순매수(+{latestFor:N0}주) 주도";
                 }
                 else if (latestOrg > 0 && latestFor <= 0)
                 {
-                    res.Badge = orgBuyDays >= 2 ? "🏦 기관연속매수" : "🏦 기관매수";
+                    res.Badge = orgBuyDays >= 2 ? "기관연속매수" : "기관매수";
                     res.Detail = $"기관 순매수(+{latestOrg:N0}주) 주도";
                 }
                 else if (latestFor < 0 && latestOrg < 0 && latestInd > 0)
                 {
-                    res.Badge = "🐜 개미홀로매수";
+                    res.Badge = "개미홀로매수";
                     res.Detail = $"외인({latestFor:N0})/기관({latestOrg:N0}) 쌍끌이 매도, 개인만 매수 중 (주의)";
                 }
                 else if (latestFor < 0 && latestOrg < 0)
                 {
-                    res.Badge = "🌧️ 메이저쌍끌이매도";
+                    res.Badge = "메이저쌍끌이매도";
                     res.Detail = $"외인과 기관이 동시 이탈 중 (리스크 관리 필요)";
                 }
                 else
                 {
-                    res.Badge = "⚪ 수급공방";
+                    res.Badge = "수급공방";
                     res.Detail = $"외인 {latestFor:+0;-0;0} / 기관 {latestOrg:+0;-0;0}";
                 }
             }
@@ -303,35 +314,35 @@ namespace GateHelper.StockAdvisor.Services
                     if (title.Contains("전환사채") || title.Contains("신주인수권부사채") || title.Contains("CB발행") || title.Contains("BW발행"))
                     {
                         res.HasCriticalLandmine = true;
-                        res.CriticalBadge = "🚨 CB/BW발행";
+                        res.CriticalBadge = "CB/BW발행";
                         res.CriticalDetail = title;
                         break;
                     }
                     if (title.Contains("유상증자 결정"))
                     {
                         res.HasCriticalLandmine = true;
-                        res.CriticalBadge = "🚨 유상증자";
+                        res.CriticalBadge = "유상증자";
                         res.CriticalDetail = title;
                         break;
                     }
                     if (title.Contains("감사의견") && (title.Contains("거절") || title.Contains("한정") || title.Contains("부적정")))
                     {
                         res.HasCriticalLandmine = true;
-                        res.CriticalBadge = "💀 감사의견거절";
+                        res.CriticalBadge = "감사의견거절";
                         res.CriticalDetail = title;
                         break;
                     }
                     if (title.Contains("관리종목") || title.Contains("상장폐지") || title.Contains("거래정지"))
                     {
                         res.HasCriticalLandmine = true;
-                        res.CriticalBadge = "💀 관리종목위기";
+                        res.CriticalBadge = "관리종목위기";
                         res.CriticalDetail = title;
                         break;
                     }
                     if (title.Contains("횡령") || title.Contains("배임"))
                     {
                         res.HasCriticalLandmine = true;
-                        res.CriticalBadge = "💀 횡령배임발생";
+                        res.CriticalBadge = "횡령배임발생";
                         res.CriticalDetail = title;
                         break;
                     }
@@ -616,6 +627,85 @@ namespace GateHelper.StockAdvisor.Services
             }
             catch { }
             return dict;
+        }
+
+        #endregion
+
+        #region [Unified 4-Factor Score Engine]
+
+        /// <summary>
+        /// 4대 정통 퀀트 팩터(차트 30%, 수급·재무 25%, 뉴스·공시 25%, 손익비 20%) 기반 종합 점수 및 등급 단일 산출기
+        /// (보유 여부 및 개인 계좌 정보와 100% 독립된 순수 객관적 시장 가치 산출)
+        /// </summary>
+        public static UnifiedScoreResult CalculateUnifiedScores(
+            TechnicalIndicatorService.IndicatorAnalysisResult tech,
+            SupplyAndLandmineDto intel,
+            int geminiNewsScore = 0,
+            int policyImpact = 0)
+        {
+            var res = new UnifiedScoreResult();
+
+            // 1. 차트 점수 (30%): 20일선 이격도, RSI, 거래량 기반 (1~10점)
+            res.ChartScore = tech != null ? Math.Max(1, Math.Min(10, tech.ChartScore)) : 5;
+
+            // 2. 수급·재무 점수 (25%): 외인/기관 순매수 수급 + 부채비율 + 배당/주주환원 건전성 (1~10점)
+            int sfScore = 5;
+            if (intel != null)
+            {
+                // 수급 반영
+                if (!string.IsNullOrEmpty(intel.SupplyBadge))
+                {
+                    if (intel.SupplyBadge.Contains("쌍끌이매수") || intel.SupplyBadge.Contains("메이저쌍끌이")) sfScore += 2;
+                    else if (intel.SupplyBadge.Contains("외인매수") || intel.SupplyBadge.Contains("기관매수")) sfScore += 1;
+                    else if (intel.SupplyBadge.Contains("쌍끌이매도")) sfScore -= 2;
+                    else if (intel.SupplyBadge.Contains("개미홀로매수")) sfScore -= 1;
+                }
+
+                // 재무/지뢰 반영
+                if (!string.IsNullOrEmpty(intel.LandmineBadge) && intel.LandmineBadge.Contains("주주환원")) sfScore += 2;
+                if (intel.DebtRatio > 0 && intel.DebtRatio <= 100m) sfScore += 1;
+                else if (intel.DebtRatio >= 250m) sfScore -= 1;
+                if (intel.ConsecutiveLossYears >= 2) sfScore -= 2;
+
+                // 치명적 지뢰(3년 연속 적자, CB/BW 발행 등) 탐지 시 강제 1점
+                if (intel.HasCriticalLandmine) sfScore = 1;
+            }
+            res.SupplyFinanceScore = Math.Max(1, Math.Min(10, sfScore));
+
+            // 3. 뉴스·공시 점수 (25%): DART 공시 모니터링 + 정책 영향 + Gemini AI 팩트 진단 (1~10점)
+            int nScore = (geminiNewsScore > 0) ? geminiNewsScore : 5;
+            if (policyImpact != 0)
+            {
+                nScore += policyImpact; // 정책 호재(+) 또는 규제 악재(-) 반영
+            }
+            if (geminiNewsScore <= 0 && intel != null && !string.IsNullOrEmpty(intel.RecentDisclosuresSummary))
+            {
+                string disc = intel.RecentDisclosuresSummary;
+                if (disc.Contains("배당") || disc.Contains("취득") || disc.Contains("공급계약") || disc.Contains("호실적")) nScore += 1;
+                if (disc.Contains("적자") || disc.Contains("소송") || disc.Contains("손실") || disc.Contains("감자")) nScore -= 2;
+            }
+            res.NewsScore = Math.Max(1, Math.Min(10, nScore));
+
+            // 4. 손익비 점수 (20%): 20일 지지선 하방 리스크(Downside Risk) 대비 목표가 매력도 (1~10점)
+            res.RiskScore = tech != null ? Math.Max(1, Math.Min(10, tech.RiskScore)) : 5;
+
+            // 5. 4대 가중치 최종 종합 점수 산출
+            // 차트 30% + 수급재무 25% + 뉴스 25% + 손익비 20%
+            double rawFinal = (res.ChartScore * 0.30) + (res.SupplyFinanceScore * 0.25) + (res.NewsScore * 0.25) + (res.RiskScore * 0.20);
+            int finalScore = (int)Math.Round(rawFinal, MidpointRounding.AwayFromZero);
+
+            // 치명적 지뢰 감지 시 F등급 강제 강등 (최대 2점 캡)
+            if (intel != null && intel.HasCriticalLandmine)
+            {
+                finalScore = Math.Min(finalScore, 2);
+            }
+            res.FinalScore = Math.Max(1, Math.Min(10, finalScore));
+
+            // 6. 등급 산정 (보유 수익률과 독립적으로 순수 종합 점수 및 RSI 과열 여부만으로 객관 산정)
+            decimal rsi = tech != null ? tech.Rsi : 50m;
+            res.Grade = GradeHelper.CalculateGrade(res.FinalScore, rsi, 0m);
+
+            return res;
         }
 
         #endregion

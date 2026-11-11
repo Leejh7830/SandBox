@@ -21,6 +21,7 @@ namespace GateHelper.StockAdvisor
         private TextBox _txtSearch;
         private Button _btnSearch;
         private Label _lblStatus;
+        private StockSearchPopup _searchPopup;
 
         // 좌측: 기술적 AI 종합 점수 카드
         private Panel _pnlCard1;
@@ -107,6 +108,18 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(0, 2, 0, 0)
             };
 
+            _searchPopup = new StockSearchPopup();
+            _searchPopup.StockSelected += async (item) =>
+            {
+                _txtSearch.Text = item.Name;
+                await ExecuteDiagnosisAsync(item.Code);
+            };
+            this.FormClosing += (s, e) =>
+            {
+                _searchPopup?.Close();
+                _searchPopup?.Dispose();
+            };
+
             _txtSearch = new TextBox
             {
                 Font = new Font("Malgun Gothic", 11f, FontStyle.Bold),
@@ -122,7 +135,17 @@ namespace GateHelper.StockAdvisor
                 if (e.KeyCode == Keys.Enter)
                 {
                     e.SuppressKeyPress = true;
-                    await ExecuteDiagnosisAsync(_txtSearch.Text);
+                    await SearchAndDiagnoseAsync(_txtSearch.Text);
+                }
+                else if (e.KeyCode == Keys.Down && _searchPopup.Visible)
+                {
+                    _searchPopup.FocusList();
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.Escape && _searchPopup.Visible)
+                {
+                    _searchPopup.Close();
+                    e.Handled = true;
                 }
             };
 
@@ -130,7 +153,7 @@ namespace GateHelper.StockAdvisor
             _btnSearch.Location = new Point(288, 3);
             _btnSearch.Size = new Size(130, 31);
             _btnSearch.Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
-            _btnSearch.Click += async (s, e) => await ExecuteDiagnosisAsync(_txtSearch.Text);
+            _btnSearch.Click += async (s, e) => await SearchAndDiagnoseAsync(_txtSearch.Text);
 
             // 빠른 추천 태그
             int tagX = 428;
@@ -142,7 +165,7 @@ namespace GateHelper.StockAdvisor
                 btnTag.Click += async (s, e) =>
                 {
                     _txtSearch.Text = tag;
-                    await ExecuteDiagnosisAsync(tag);
+                    await SearchAndDiagnoseAsync(tag);
                 };
                 pnlSearchInput.Controls.Add(btnTag);
                 tagX += btnTag.Width + 6;
@@ -536,9 +559,63 @@ namespace GateHelper.StockAdvisor
             return btn;
         }
 
+        private async Task SearchAndDiagnoseAsync(string query)
+        {
+            if (string.IsNullOrWhiteSpace(query)) return;
+            string cleanQuery = query.Trim();
+
+            // 1. 순수 6자리 숫자인 경우: 국내 종목코드로 즉시 직통 진단 실행
+            if (cleanQuery.Length <= 6 && System.Text.RegularExpressions.Regex.IsMatch(cleanQuery, @"^\d+$"))
+            {
+                _searchPopup?.Close();
+                await ExecuteDiagnosisAsync(cleanQuery);
+                return;
+            }
+
+            _lblStatus.Text = $"🔍 [{cleanQuery}] 종목 후보 검색 중...";
+            _lblStatus.ForeColor = Color.FromArgb(0, 230, 255);
+            _btnSearch.Enabled = false;
+
+            try
+            {
+                var searchResults = await NaverStockPriceService.SearchStockAsync(cleanQuery);
+                if (searchResults == null || searchResults.Count == 0)
+                {
+                    _searchPopup?.Close();
+                    _lblStatus.Text = $"[안내] '{cleanQuery}' 종목을 네이버 증권에서 찾을 수 없습니다.";
+                    _lblStatus.ForeColor = Color.FromArgb(255, 160, 60);
+                    return;
+                }
+
+                if (searchResults.Count == 1)
+                {
+                    _searchPopup?.Close();
+                    _txtSearch.Text = searchResults[0].Name;
+                    await ExecuteDiagnosisAsync(searchResults[0].Code);
+                }
+                else
+                {
+                    // 2건 이상인 경우: 검색 텍스트박스 바로 아래에 다크 테마 후보 리스트 팝업 표시
+                    _lblStatus.Text = $"🔍 '{cleanQuery}' 검색 결과 {searchResults.Count}건. 아래 목록에서 원하는 종목을 선택하세요 (클릭 또는 Enter).";
+                    _lblStatus.ForeColor = Color.FromArgb(120, 220, 255);
+                    _searchPopup.ShowResults(_txtSearch, searchResults);
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"검색 중 오류 발생: {ex.Message}";
+                _lblStatus.ForeColor = Color.FromArgb(255, 110, 110);
+            }
+            finally
+            {
+                _btnSearch.Enabled = true;
+            }
+        }
+
         private async Task ExecuteDiagnosisAsync(string query)
         {
             if (string.IsNullOrWhiteSpace(query)) return;
+            _searchPopup?.Close();
 
             string cleanQuery = query.Trim();
             _lblStatus.Text = $"⏳ [{cleanQuery}] 실시간 시세, 외인·기관 수급, DART 공시, 정통 퀀트 8대 팩트 수집 중...";

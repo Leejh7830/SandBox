@@ -20,6 +20,7 @@ namespace GateHelper.StockAdvisor
         private Button btnSave;
         private Button btnCancel;
         private Label lblPreviewPrice;
+        private StockSearchPopup _searchPopup;
 
         private bool _isPriceVerified = false;
 
@@ -89,6 +90,18 @@ namespace GateHelper.StockAdvisor
                 Margin = new Padding(0)
             };
 
+            _searchPopup = new StockSearchPopup();
+            _searchPopup.StockSelected += async (item) =>
+            {
+                txtSearchQuery.Text = item.Name;
+                await FetchPriceDirectAsync(item.Code, item.Name);
+            };
+            this.FormClosing += (s, e) =>
+            {
+                _searchPopup?.Close();
+                _searchPopup?.Dispose();
+            };
+
             btnFetchPrice = new Button
             {
                 Text = "시세 조회",
@@ -117,6 +130,16 @@ namespace GateHelper.StockAdvisor
                 {
                     e.SuppressKeyPress = true;
                     await AutoFetchStockInfoAsync();
+                }
+                else if (e.KeyCode == Keys.Down && _searchPopup.Visible)
+                {
+                    _searchPopup.FocusList();
+                    e.Handled = true;
+                }
+                else if (e.KeyCode == Keys.Escape && _searchPopup.Visible)
+                {
+                    _searchPopup.Close();
+                    e.Handled = true;
                 }
             };
 
@@ -287,16 +310,71 @@ namespace GateHelper.StockAdvisor
                 return false;
             }
 
+            // 6자리 순수 숫자 코드인 경우 직통 조회
+            if (query.Length <= 6 && System.Text.RegularExpressions.Regex.IsMatch(query, @"^\d+$"))
+            {
+                _searchPopup?.Close();
+                return await FetchPriceDirectAsync(query);
+            }
+
+            btnFetchPrice.Enabled = false;
+            btnFetchPrice.Text = "검색 중...";
+            lblPreviewPrice.Text = $"🔍 [{query}] 종목 후보 검색 중...";
+            lblPreviewPrice.ForeColor = Color.FromArgb(0, 230, 255);
+
+            try
+            {
+                var searchResults = await NaverStockPriceService.SearchStockAsync(query);
+                if (searchResults == null || searchResults.Count == 0)
+                {
+                    _searchPopup?.Close();
+                    _isPriceVerified = false;
+                    lblPreviewPrice.Text = $"❌ '{query}' 종목을 네이버 증권에서 찾을 수 없습니다.";
+                    lblPreviewPrice.ForeColor = Color.FromArgb(255, 110, 110);
+                    return false;
+                }
+
+                if (searchResults.Count == 1)
+                {
+                    _searchPopup?.Close();
+                    txtSearchQuery.Text = searchResults[0].Name;
+                    return await FetchPriceDirectAsync(searchResults[0].Code, searchResults[0].Name);
+                }
+                else
+                {
+                    // 2건 이상인 경우 드롭다운 후보 리스트 팝업 표시
+                    lblPreviewPrice.Text = $"🔍 '{query}' 검색 결과 {searchResults.Count}건. 아래 목록에서 원하는 종목을 선택하세요.";
+                    lblPreviewPrice.ForeColor = Color.FromArgb(120, 220, 255);
+                    _searchPopup.ShowResults(txtSearchQuery, searchResults);
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                lblPreviewPrice.Text = $"오류: {ex.Message}";
+                lblPreviewPrice.ForeColor = Color.FromArgb(255, 110, 110);
+                return false;
+            }
+            finally
+            {
+                btnFetchPrice.Enabled = true;
+                btnFetchPrice.Text = "시세 조회";
+            }
+        }
+
+        private async Task<bool> FetchPriceDirectAsync(string code, string fallbackName = null)
+        {
+            _searchPopup?.Close();
             btnFetchPrice.Enabled = false;
             btnFetchPrice.Text = "조회 중...";
 
             try
             {
-                var priceInfo = await NaverStockPriceService.FetchPriceAsync(query);
+                var priceInfo = await NaverStockPriceService.FetchPriceAsync(code);
                 if (priceInfo.IsSuccess)
                 {
                     txtCode.Text = priceInfo.StockCode;
-                    txtName.Text = priceInfo.StockName;
+                    txtName.Text = !string.IsNullOrEmpty(priceInfo.StockName) ? priceInfo.StockName : (fallbackName ?? string.Empty);
 
                     if (numBuyPrice.Value == 0)
                     {
@@ -304,7 +382,7 @@ namespace GateHelper.StockAdvisor
                     }
 
                     string currency = priceInfo.IsForeign ? "$" : "원";
-                    lblPreviewPrice.Text = $"✔ 조회 성공: {priceInfo.StockName} | 현재가 {priceInfo.CurrentPrice:N0}{currency} ({priceInfo.ChangeRate:+0.00;-0.00}%)";
+                    lblPreviewPrice.Text = $"✔ 조회 성공: {txtName.Text} | 현재가 {priceInfo.CurrentPrice:N0}{currency} ({priceInfo.ChangeRate:+0.00;-0.00}%)";
                     lblPreviewPrice.ForeColor = Color.FromArgb(70, 230, 140);
                     _isPriceVerified = true;
                     return true;
@@ -327,7 +405,7 @@ namespace GateHelper.StockAdvisor
             finally
             {
                 btnFetchPrice.Enabled = true;
-                btnFetchPrice.Text = "🔍 시세 조회";
+                btnFetchPrice.Text = "시세 조회";
             }
         }
 

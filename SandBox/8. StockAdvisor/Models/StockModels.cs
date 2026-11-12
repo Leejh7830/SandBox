@@ -553,15 +553,17 @@ namespace GateHelper.StockAdvisor.Models
             bool isSharpDrop = item.ChangeRate <= -4.0m;
 
             // [매수 승인 판정 우선 계산] 종합 6점 이상(B등급 이상)에 수급 양호하고 지뢰가 없으면 객관적 우량 매수 승인
+            // (RSI 58 이상 상승 구간은 뒤쪽에서 [보유홀딩]으로 분리되므로 isBuy 자체는 6~7점 우량 팩터 전체에 대해 true 유지)
             bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7 ||
                          (item.Grade == PositionGrade.B && item.FinalScore >= 6 && item.ChartScore >= 6 && item.SupplyFinanceScore >= 5))
-                         && !item.HasCriticalLandmine && item.Rsi < 65.0m && !isSharpDrop;
+                         && !item.HasCriticalLandmine && !isSharpDrop;
 
             // [회피/비중축소 인터락] C/F등급, 종합 4점 이하, 또는 치명적 지뢰 발생 시.
-            // (과거 AI 진단 텍스트는 종합 6점 미만의 중립/열위 종목에서만 참고하며, 객관적 6~7점 우량 종목을 억울하게 비중축소로 왜곡하지 않음)
-            bool isAvoid = item.Grade == PositionGrade.C || item.Grade == PositionGrade.F ||
-                           item.FinalScore <= 4 || item.HasCriticalLandmine ||
-                           (!isBuy && item.LastDiagnosis != null && (item.LastDiagnosis.RecommendedAction.Contains("손절") || item.LastDiagnosis.RecommendedAction.Contains("축소") || item.LastDiagnosis.RecommendedAction.Contains("경보")));
+            // (종합 6점 이상 B등급 우량 종목은 과거 텍스트나 일시적 RSI 상승으로 인해 절대 비중축소/매수금지로 왜곡되지 않음)
+            bool isAvoid = (item.Grade == PositionGrade.C || item.Grade == PositionGrade.F ||
+                           item.FinalScore <= 4 || item.HasCriticalLandmine) ||
+                           (item.FinalScore < 6 && item.LastDiagnosis != null &&
+                           (item.LastDiagnosis.RecommendedAction.Contains("손절") || item.LastDiagnosis.RecommendedAction.Contains("축소") || item.LastDiagnosis.RecommendedAction.Contains("경보")));
 
             bool isOverheat = item.Rsi >= 68.0m || (item.TimingBadge != null && item.TimingBadge.Contains("과열"));
 

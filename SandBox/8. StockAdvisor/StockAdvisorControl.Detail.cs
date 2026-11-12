@@ -97,7 +97,7 @@ namespace GateHelper.StockAdvisor
 
                     string gradeText = item.Grade.ToString();
                     string supplyText = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기");
-                    string landmineText = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "클린안전");
+                    var landmineInfo = LandmineHelper.GetSimplifiedBadge(item);
 
                     string priceDisplay = item.IsPriceScrapeSuccess ? $"{item.CurrentPrice:N0}" : $"{item.CurrentPrice:N0} [오류]";
                     string changeDisplay = item.IsPriceScrapeSuccess ? $"{item.ChangeRate:+0.00;-0.00;0.00}%" : "[수집실패]";
@@ -118,7 +118,7 @@ namespace GateHelper.StockAdvisor
                         profitRateDisplay,                                   // 6: 수익률
                         gradeText,                                           // 7: AI 등급
                         supplyText,                                          // 8: 수급(외인·기관)
-                        landmineText,                                        // 9: 지뢰검증
+                        landmineInfo.Text,                                   // 9: 지뢰검증 (우수/안전/주의/위험)
                         rsiText,                                             // 10: 14일 RSI
                         volText,                                             // 11: 5일 거래량
                         finalScoreText,                                      // 12: ★종합점수
@@ -190,15 +190,9 @@ namespace GateHelper.StockAdvisor
                     else if (supplyText.Contains("매도")) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 110, 110);
                     else lvi.SubItems[8].ForeColor = Color.FromArgb(180, 195, 215);
 
-                    // 9: 지뢰검증
-                    if (item.HasCriticalLandmine || landmineText.Contains("적자") || landmineText.Contains("CB") || landmineText.Contains("유상") || landmineText.Contains("위기") || landmineText.Contains("횡령"))
-                    {
-                        lvi.SubItems[9].ForeColor = Color.FromArgb(255, 75, 75);
-                        lvi.SubItems[9].Font = SubItemBoldFont;
-                    }
-                    else if (landmineText.Contains("부채")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 180, 60);
-                    else if (landmineText.Contains("환원")) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 180);
-                    else lvi.SubItems[9].ForeColor = Color.FromArgb(100, 240, 140);
+                    // 9: 지뢰검증 (간결 4단계: 우수/안전 -> 연초록, 주의 -> 주황, 위험 -> 빨강)
+                    lvi.SubItems[9].ForeColor = landmineInfo.Color;
+                    if (landmineInfo.IsBold) lvi.SubItems[9].Font = SubItemBoldFont;
 
                     // 10: 14일 RSI
                     if (item.Rsi >= 70m) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 80, 80);
@@ -370,12 +364,14 @@ namespace GateHelper.StockAdvisor
 
             // 4. 진단 스펙 & 수급 지뢰 요약 (권고 액션은 상단 결론 바가 전담하므로 중복 제거)
             string supBadge = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기");
-            string mineBadge = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "클린안전");
+            string rawMineBadge = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "클린안전");
+            var landmineInfo = LandmineHelper.GetSimplifiedBadge(item);
+            string mineBadgeDisplay = $"[{landmineInfo.Text}] {rawMineBadge}";
             var diag = item.LastDiagnosis;
 
             _lblDetailSummary.Text =
                 $"• AI 등급: {GradeHelper.GetGradeDescription(item.Grade)}  |  종합 점수: {item.FinalScore}점 / 10점\n" +
-                $"• 수급: {supBadge}  |  지뢰: {mineBadge}  |  세부: 차트{item.ChartScore}·수급{item.SupplyFinanceScore}·뉴스{item.NewsScore}·손익{item.RiskScore}";
+                $"• 수급: {supBadge}  |  지뢰: {mineBadgeDisplay}  |  세부: 차트{item.ChartScore}·수급{item.SupplyFinanceScore}·뉴스{item.NewsScore}·손익{item.RiskScore}";
 
             // 5. 20일 일봉 & AI 타점 미니 차트 갱신
             _miniChart?.SetData(item);
@@ -608,8 +604,8 @@ namespace GateHelper.StockAdvisor
                 case 8: // 수급(외인·기관) (문자열 정렬)
                     result = string.Compare(itemX.MajorSupplyBadge, itemY.MajorSupplyBadge, StringComparison.CurrentCultureIgnoreCase);
                     break;
-                case 9: // 지뢰검증 (문자열 정렬)
-                    result = string.Compare(itemX.LandmineBadge, itemY.LandmineBadge, StringComparison.CurrentCultureIgnoreCase);
+                case 9: // 지뢰검증 (간결 4단계 우선순위 정렬: 우수 > 안전 > 주의 > 위험)
+                    result = LandmineHelper.GetLandminePriority(itemX).CompareTo(LandmineHelper.GetLandminePriority(itemY));
                     break;
                 case 10: // 14일 RSI (수치 정렬)
                     result = itemX.Rsi.CompareTo(itemY.Rsi);

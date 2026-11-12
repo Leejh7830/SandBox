@@ -221,7 +221,7 @@ namespace GateHelper.StockAdvisor
                 string rsiStr = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                 string scoreStr = item.FinalScore > 0 ? $"{item.FinalScore}점" : "-";
                 string supplyStr = !string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기";
-                string landmineStr = !string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "클린안전";
+                var landmineInfo = LandmineHelper.GetSimplifiedBadge(item);
                 string actionStr = item.LastDiagnosis?.RecommendedAction;
                 if (string.IsNullOrEmpty(actionStr))
                 {
@@ -238,7 +238,7 @@ namespace GateHelper.StockAdvisor
                     rateStr,
                     item.Grade.ToString(),
                     supplyStr,
-                    landmineStr,
+                    landmineInfo.Text,
                     rsiStr,
                     scoreStr,
                     item.TimingBadge,
@@ -263,14 +263,9 @@ namespace GateHelper.StockAdvisor
                 else if (supplyStr.Contains("개미")) lvi.SubItems[5].ForeColor = Color.FromArgb(210, 170, 255);
                 else lvi.SubItems[5].ForeColor = Color.FromArgb(180, 195, 215);
 
-                // 지뢰검증 (SubItem 6)
-                if (item.HasCriticalLandmine || landmineStr.Contains("적자") || landmineStr.Contains("CB") || landmineStr.Contains("유상"))
-                {
-                    lvi.SubItems[6].ForeColor = Color.FromArgb(255, 75, 75);
-                    lvi.SubItems[6].Font = BoldFont;
-                }
-                else if (landmineStr.Contains("부채")) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 180, 60);
-                else lvi.SubItems[6].ForeColor = Color.FromArgb(100, 240, 140);
+                // 지뢰검증 (SubItem 6: 우수/안전 -> 연초록, 주의 -> 주황, 위험 -> 빨강)
+                lvi.SubItems[6].ForeColor = landmineInfo.Color;
+                if (landmineInfo.IsBold) lvi.SubItems[6].Font = BoldFont;
 
                 // RSI 색상 (SubItem 7)
                 if (item.Rsi >= 70m) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 80, 80);

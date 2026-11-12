@@ -73,6 +73,49 @@ namespace GateHelper.StockAdvisor.Models
         }
     }
 
+    /// <summary>
+    /// 메인 테이블 지뢰검증 간결 4단계 뱃지 & 컬러 헬퍼
+    /// - 우수 (주주환원 친화 공시 등 호재): 연초록 (0, 230, 118)
+    /// - 안전 (부채 건전 + 악재 지뢰 0건 기본 클린): 연초록 (0, 230, 118)
+    /// - 주의 (부채비율 250% 이상): 주황색 (255, 170, 50)
+    /// - 위험 (CB/BW, 유상증자, 감사의견거절, 3년적자, 횡령 등): 빨간색 (255, 75, 75)
+    /// </summary>
+    public static class LandmineHelper
+    {
+        public static (string Text, Color Color, bool IsBold) GetSimplifiedBadge(StockHoldingItem item)
+        {
+            if (item == null) return ("안전", Color.FromArgb(0, 230, 118), false);
+
+            string raw = item.LandmineBadge ?? string.Empty;
+            if (item.HasCriticalLandmine || raw.Contains("적자") || raw.Contains("CB") || raw.Contains("BW") || raw.Contains("유상") || raw.Contains("위기") || raw.Contains("횡령") || raw.Contains("감사"))
+            {
+                return ("위험", Color.FromArgb(255, 75, 75), true);
+            }
+            if (raw.Contains("부채") || item.DebtRatio >= 250m)
+            {
+                return ("주의", Color.FromArgb(255, 170, 50), true);
+            }
+            if (raw.Contains("환원") || raw.Contains("우수"))
+            {
+                return ("우수", Color.FromArgb(0, 230, 118), true);
+            }
+            return ("안전", Color.FromArgb(0, 230, 118), false);
+        }
+
+        public static int GetLandminePriority(StockHoldingItem item)
+        {
+            var badge = GetSimplifiedBadge(item).Text;
+            switch (badge)
+            {
+                case "우수": return 4;
+                case "안전": return 3;
+                case "주의": return 2;
+                case "위험": return 1;
+                default: return 0;
+            }
+        }
+    }
+
     public enum PositionGroup
     {
         GroupA, // 반등 시 손절 / 비중 축소 권고 (적색/주황)

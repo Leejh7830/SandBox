@@ -147,16 +147,16 @@ namespace GateHelper.StockAdvisor
                 "■ [5. 주요 보조지표 색상 변화 기준] (한눈에 보는 직관성)",
                 Color.FromArgb(255, 205, 70), Color.FromArgb(32, 26, 18), Color.FromArgb(210, 160, 40), cardWidth);
             card5.AddFullLine("• 14일 RSI (상대강도지수)", Color.FromArgb(170, 185, 205), true);
-            card5.AddItem("  ●", Color.FromArgb(255, 80, 80), "빨간색 (70 이상): ", Color.FromArgb(255, 80, 80), "단기 과열 슈팅 구간 (상투 물림 주의)");
-            card5.AddItem("  ●", Color.FromArgb(0, 230, 118), "연초록 (30~70): ", Color.FromArgb(0, 230, 118), "정상 추세 유효 구간");
-            card5.AddItem("  ●", Color.FromArgb(80, 180, 255), "하늘색 (30 이하): ", Color.FromArgb(80, 180, 255), "과매도 바닥 침체권 (역발상 반등 기회)");
+            card5.AddItem("  ●", Color.FromArgb(255, 80, 80), "70 이상: ", Color.FromArgb(255, 80, 80), "단기 과열 슈팅 구간 (상투 물림 주의)");
+            card5.AddItem("  ●", Color.FromArgb(0, 230, 118), "30~70: ", Color.FromArgb(0, 230, 118), "정상 추세 유효 구간");
+            card5.AddItem("  ●", Color.FromArgb(80, 180, 255), "30 이하: ", Color.FromArgb(80, 180, 255), "과매도 바닥 침체권 (역발상 반등 기회)");
             card5.AddFullLine("• 5일 거래량 (최근 5일 평균 대비 비율)", Color.FromArgb(170, 185, 205), true);
-            card5.AddItem("  ●", Color.FromArgb(0, 230, 200), "청록 네온 (140% 이상): ", Color.FromArgb(0, 230, 200), "최근 5일 평균 대비 거래량 급증 / 수급 유입");
-            card5.AddItem("  ●", Color.FromArgb(200, 215, 235), "연회색 (140% 미만): ", Color.FromArgb(200, 215, 235), "통상적인 평이한 거래량");
+            card5.AddItem("  ●", Color.FromArgb(0, 230, 200), "140% 이상: ", Color.FromArgb(0, 230, 200), "최근 5일 평균 대비 거래량 급증 / 수급 유입");
+            card5.AddItem("  ●", Color.FromArgb(200, 215, 235), "140% 미만: ", Color.FromArgb(200, 215, 235), "통상적인 평이한 거래량");
             card5.AddFullLine("• 종합점수 (10점 만점)", Color.FromArgb(170, 185, 205), true);
-            card5.AddItem("  ●", Color.FromArgb(255, 215, 0), "황금색 (8~10점): ", Color.FromArgb(255, 215, 0), "차트·수급·재무 완성된 최우량 S/A급 주도주");
-            card5.AddItem("  ●", Color.FromArgb(235, 240, 255), "밝은 흰색 (4~7점): ", Color.FromArgb(235, 240, 255), "일반적인 B/C급 평이한 종목");
-            card5.AddItem("  ●", Color.FromArgb(255, 110, 110), "빨간색 (1~3점): ", Color.FromArgb(255, 110, 110), "결함/지뢰 많은 부실 위험 F급 종목");
+            card5.AddItem("  ●", Color.FromArgb(255, 215, 0), "8~10점: ", Color.FromArgb(255, 215, 0), "차트·수급·재무 완성된 최우량 S/A급 주도주");
+            card5.AddItem("  ●", Color.FromArgb(235, 240, 255), "4~7점: ", Color.FromArgb(235, 240, 255), "일반적인 B/C급 평이한 종목");
+            card5.AddItem("  ●", Color.FromArgb(255, 110, 110), "1~3점: ", Color.FromArgb(255, 110, 110), "결함/지뢰 많은 부실 위험 F급 종목");
             card5.FinishLayout();
 
             _flpBody.Controls.Add(card1);

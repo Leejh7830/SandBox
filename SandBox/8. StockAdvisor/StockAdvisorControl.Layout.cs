@@ -136,6 +136,8 @@ namespace GateHelper.StockAdvisor
 
             // 부가 도구 드롭다운 메뉴 (공간 절약 및 사용자 맞춤 메뉴화)
             var cmsMoreTools = new ContextMenuStrip();
+            var mnuAlertHistory = new ToolStripMenuItem("★ 가격 도달 알림 기록 내역");
+            mnuAlertHistory.Click += (s, e) => ShowAlertHistoryDialog();
             var mnuKeyStock = new ToolStripMenuItem("★ 중요 종목 요약 브리핑");
             mnuKeyStock.Click += (s, e) => ShowKeyStockSummaryDialog();
             var mnuImport = new ToolStripMenuItem("📁 증권사 계좌 잔고 가져오기 (엑셀/CSV)");
@@ -145,6 +147,8 @@ namespace GateHelper.StockAdvisor
             var mnuHelpScore = new ToolStripMenuItem("AI 종목 종합 평가 점수 산출 기준 안내");
             mnuHelpScore.Click += (s, e) => ShowScoreHelpDialog();
 
+            cmsMoreTools.Items.Add(mnuAlertHistory);
+            cmsMoreTools.Items.Add(new ToolStripSeparator());
             cmsMoreTools.Items.Add(mnuKeyStock);
             cmsMoreTools.Items.Add(new ToolStripSeparator());
             cmsMoreTools.Items.Add(mnuImport);
@@ -452,14 +456,34 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(0, 4, 0, 0)
             };
 
-            _btnOption = CreateNeonButton("Option", Color.FromArgb(20, 32, 46), Color.FromArgb(0, 216, 255), Color.FromArgb(200, 240, 255), 88);
-            _btnOption.Dock = DockStyle.Left;
+            var pnlLeftBtns = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Margin = new Padding(0)
+            };
+
+            _btnOption = CreateNeonButton("Option", Color.FromArgb(20, 32, 46), Color.FromArgb(0, 216, 255), Color.FromArgb(200, 240, 255), 84);
             _btnOption.Font = new Font("Malgun Gothic", 9f, FontStyle.Bold);
             _btnOption.Cursor = Cursors.Hand;
             _btnOption.Click += (s, e) => ShowOptionDialog();
 
             var ttOpt = new ToolTip();
             ttOpt.SetToolTip(_btnOption, "시세·AI 진단 자동 동기화 주기 설정 및 점수 산출 가이드 열기");
+
+            _btnAlertHistory = CreateNeonButton("알림 기록", Color.FromArgb(20, 28, 40), Color.FromArgb(60, 85, 120), Color.FromArgb(170, 195, 230), 100);
+            _btnAlertHistory.Font = new Font("Malgun Gothic", 9f);
+            _btnAlertHistory.Cursor = Cursors.Hand;
+            _btnAlertHistory.Margin = new Padding(6, 0, 0, 0);
+            _btnAlertHistory.Click += (s, e) => ShowAlertHistoryDialog();
+
+            var ttHist = new ToolTip();
+            ttHist.SetToolTip(_btnAlertHistory, "실시간 가격 도달(목표가/손절가/적정매수가) 토스트 알림 누적 기록 열기");
+
+            pnlLeftBtns.Controls.Add(_btnOption);
+            pnlLeftBtns.Controls.Add(_btnAlertHistory);
 
             var pnlRightBtns = new FlowLayoutPanel
             {
@@ -479,7 +503,7 @@ namespace GateHelper.StockAdvisor
             pnlRightBtns.Controls.Add(_btnDeleteItem);
             pnlRightBtns.Controls.Add(_btnEditItem);
 
-            pnlDetailBtns.Controls.Add(_btnOption);
+            pnlDetailBtns.Controls.Add(pnlLeftBtns);
             pnlDetailBtns.Controls.Add(pnlRightBtns);
 
             // 도킹 역순: 마지막에 맨 위 컨트롤이 오도록 추가 (Fill -> Top 5 -> Top 4 -> Top 3 -> Top 2 -> Top 1 -> Bottom)

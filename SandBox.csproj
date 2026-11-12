@@ -267,6 +267,9 @@
     <Compile Include="SandBox\8. StockAdvisor\MarketLeaderRadarDialog.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAlertHistoryDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="SandBox\8. StockAdvisor\StockSearchPopup.cs">
       <SubType>Component</SubType>
     </Compile>

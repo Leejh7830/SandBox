@@ -2,24 +2,19 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using GateHelper.StockAdvisor.Models;
 
 namespace GateHelper.StockAdvisor
 {
-    public enum ToastAlertType
-    {
-        TargetHit, // 목표가 도달 (익절 권고)
-        StopHit,   // 손절 방어선 터치/이탈 (리스크 관리 권고)
-        BuyHit     // 🎯 적정 매수가 도달 (관심종목 1차 진입 / 보유종목 추가매수)
-    }
-
     /// <summary>
-    /// 보유 종목 목표가 도달 또는 손절가 이탈 시 화면 우측 하단에 부드럽게 표시되는 초경량 다크 네온 토스트 알림
-    /// (Zero-Resource: 스마트 자동 종료, 다중 알림 시 위로 자동 스택, 마우스 클릭 시 해당 종목 자동 포커스 이동)
+    /// 보유 종목 목표가/손절가 또는 관심 종목 적정 매수가 도달 시 화면 우측 하단에 표시되는 다크 네온 토스트 알림
+    /// (Sticky 모드: 사용자가 직접 클릭 또는 닫기[✕]할 때까지 화면에 영구 유지되어 중요한 타점을 놓치지 않음)
     /// </summary>
     public class StockToastNotification : Form
     {
         private static readonly List<StockToastNotification> _openToasts = new List<StockToastNotification>();
-        private readonly Timer _autoCloseTimer;
+        public static event Action<StockAlertLogItem> AlertLogged;
+
         private readonly Action _onClickAction;
         private readonly ToastAlertType _alertType;
 
@@ -39,7 +34,7 @@ namespace GateHelper.StockAdvisor
             this.ShowInTaskbar = false;
             this.TopMost = true;
             this.StartPosition = FormStartPosition.Manual;
-            this.Size = new Size(360, 90);
+            this.Size = new Size(370, 96);
             this.BackColor = Color.FromArgb(18, 22, 32);
             this.ForeColor = Color.White;
             this.DoubleBuffered = true;
@@ -51,7 +46,7 @@ namespace GateHelper.StockAdvisor
                     ? Color.FromArgb(0, 216, 255) // 네온 사이언
                     : Color.FromArgb(255, 75, 85));  // 네온 레드
 
-            string icon = alertType == ToastAlertType.TargetHit ? "🚀" : (alertType == ToastAlertType.BuyHit ? "★" : "⚠️");
+            string icon = alertType == ToastAlertType.TargetHit ? "★" : (alertType == ToastAlertType.BuyHit ? "★" : "▲");
             string typeTitle = alertType == ToastAlertType.TargetHit
                 ? "목표가 달성 (분할 익절 검토)"
                 : (alertType == ToastAlertType.BuyHit ? "AI 적정 매수가 도달 (진입 검토)" : "손절 방어선 터치 (리스크 관리)");
@@ -63,7 +58,7 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
                 ForeColor = accentColor,
                 Location = new Point(14, 10),
-                Size = new Size(305, 38),
+                Size = new Size(310, 38),
                 BackColor = Color.Transparent
             };
             lblTitle.Click += (s, e) => HandleClick();
@@ -80,13 +75,39 @@ namespace GateHelper.StockAdvisor
                 Text = priceDetail,
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(220, 230, 245),
-                Location = new Point(14, 52),
-                Size = new Size(330, 24),
+                Location = new Point(14, 50),
+                Size = new Size(340, 20),
                 BackColor = Color.Transparent
             };
             lblBody.Click += (s, e) => HandleClick();
 
-            // 3. 닫기 버튼
+            // 3. 하단 안내 텍스트 & 확인 버튼
+            var lblHint = new Label
+            {
+                Text = "클릭 시 해당 종목 차트로 즉시 이동",
+                Font = new Font("Malgun Gothic", 7.8f),
+                ForeColor = Color.FromArgb(130, 150, 180),
+                Location = new Point(14, 72),
+                Size = new Size(240, 18),
+                BackColor = Color.Transparent
+            };
+            lblHint.Click += (s, e) => HandleClick();
+
+            var btnConfirm = new Button
+            {
+                Text = "확인",
+                Font = new Font("Malgun Gothic", 8f, FontStyle.Bold),
+                ForeColor = accentColor,
+                BackColor = Color.FromArgb(28, 36, 50),
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(48, 22),
+                Location = new Point(this.Width - 62, 68),
+                Cursor = Cursors.Hand
+            };
+            btnConfirm.FlatAppearance.BorderColor = accentColor;
+            btnConfirm.Click += (s, e) => HandleClick();
+
+            // 4. 닫기 버튼 (X)
             var btnClose = new Button
             {
                 Text = "✕",
@@ -102,12 +123,14 @@ namespace GateHelper.StockAdvisor
             btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(40, 50, 70);
             btnClose.Click += (s, e) => this.Close();
 
+            this.Controls.Add(btnConfirm);
             this.Controls.Add(btnClose);
             this.Controls.Add(lblTitle);
             this.Controls.Add(lblBody);
+            this.Controls.Add(lblHint);
             this.Click += (s, e) => HandleClick();
 
-            // 4. 우측 하단 작업표시줄 위 배치 (동시 알림 시 위로 차곡차곡 스택)
+            // 5. 우측 하단 작업표시줄 위 배치 (동시 알림 시 위로 차곡차곡 스택, 확인 전까지 유지)
             Rectangle workArea = Screen.PrimaryScreen.WorkingArea;
             int offsetIndex = 0;
             lock (_openToasts)
@@ -128,31 +151,12 @@ namespace GateHelper.StockAdvisor
                     _openToasts.Remove(this);
                 }
             };
-
-            // 5. 자동 종료 타이머 (4.5초)
-            _autoCloseTimer = new Timer { Interval = 4500 };
-            _autoCloseTimer.Tick += (s, e) =>
-            {
-                _autoCloseTimer.Stop();
-                this.Close();
-            };
-
-            // 마우스 호버 시 닫힘 일시 정지
-            this.MouseEnter += (s, e) => _autoCloseTimer.Stop();
-            this.MouseLeave += (s, e) => _autoCloseTimer.Start();
-            lblTitle.MouseEnter += (s, e) => _autoCloseTimer.Stop();
-            lblTitle.MouseLeave += (s, e) => _autoCloseTimer.Start();
-            lblBody.MouseEnter += (s, e) => _autoCloseTimer.Stop();
-            lblBody.MouseLeave += (s, e) => _autoCloseTimer.Start();
-
-            this.Shown += (s, e) => _autoCloseTimer.Start();
         }
 
         private void HandleClick()
         {
             try
             {
-                _autoCloseTimer?.Stop();
                 this.Close();
                 _onClickAction?.Invoke();
             }
@@ -190,13 +194,12 @@ namespace GateHelper.StockAdvisor
                 {
                     _openToasts.Remove(this);
                 }
-                _autoCloseTimer?.Dispose();
             }
             base.Dispose(disposing);
         }
 
         /// <summary>
-        /// 안전한 토스트 알림 팝업 호출 헬퍼
+        /// 안전한 토스트 알림 팝업 호출 헬퍼 (확인 전까지 영구 유지 & 알림 기록 자동 누적)
         /// </summary>
         public static void ShowAlert(
             string stockName,
@@ -205,12 +208,27 @@ namespace GateHelper.StockAdvisor
             decimal triggerPrice,
             decimal changeRate,
             ToastAlertType alertType,
-            Action onClickAction = null)
+            Action onClickAction = null,
+            string message = null)
         {
             try
             {
                 var toast = new StockToastNotification(stockName, stockCode, currentPrice, triggerPrice, changeRate, alertType, onClickAction);
                 toast.Show();
+
+                // 히스토리 이벤트 브로드캐스트
+                AlertLogged?.Invoke(new StockAlertLogItem
+                {
+                    AlertTime = DateTime.Now,
+                    StockCode = stockCode,
+                    StockName = stockName,
+                    AlertType = alertType,
+                    CurrentPrice = currentPrice,
+                    TriggerPrice = triggerPrice,
+                    ChangeRate = changeRate,
+                    Message = message ?? (alertType == ToastAlertType.TargetHit ? "목표가 달성 분할 익절 검토" : (alertType == ToastAlertType.BuyHit ? "AI 권고 매수가 도달 진입 검토" : "손절선 이탈 방어")),
+                    IsRead = false
+                });
             }
             catch { }
         }

@@ -23,6 +23,9 @@ namespace GateHelper
         private PocketFarmControl _pocketFarmControl;
         private StockAdvisorControl _stockAdvisorControl;
 
+        private NotifyIcon _trayIcon;
+        private ContextMenuStrip _trayMenu;
+
         public SandBox() : this(null)
         {
         }
@@ -53,9 +56,126 @@ namespace GateHelper
             if (!DesignMode)
             {
                 InitializeCustomControls();
+                InitializeSystemTray();
                 if (!string.IsNullOrEmpty(initialGame))
                 {
                     SwitchToGame(initialGame);
+                }
+            }
+        }
+
+        private void InitializeSystemTray()
+        {
+            try
+            {
+                _trayMenu = new ContextMenuStrip();
+
+                var mnuOpen = new ToolStripMenuItem("★ SandBox 열기");
+                mnuOpen.Font = new Font("Malgun Gothic", 9f, FontStyle.Bold);
+                mnuOpen.Click += (s, e) => ShowSandBoxWindow();
+
+                var mnuStock = new ToolStripMenuItem("AI 주식 리스크 참모 열기");
+                mnuStock.Click += (s, e) =>
+                {
+                    ShowSandBoxWindow();
+                    SwitchToGame("StockAdvisor");
+                };
+
+                var mnuAlertHistory = new ToolStripMenuItem("가격 도달 알림 기록");
+                mnuAlertHistory.Click += (s, e) =>
+                {
+                    ShowSandBoxWindow();
+                    SwitchToGame("StockAdvisor");
+                    _stockAdvisorControl?.ShowAlertHistoryDialog();
+                };
+
+                var mnuRefresh = new ToolStripMenuItem("실시간 시세 즉시 갱신");
+                mnuRefresh.Click += async (s, e) =>
+                {
+                    if (_stockAdvisorControl != null)
+                    {
+                        await _stockAdvisorControl.RefreshPricesAsync();
+                    }
+                };
+
+                var mnuExit = new ToolStripMenuItem("프로그램 종료");
+                mnuExit.Click += (s, e) =>
+                {
+                    if (_trayIcon != null)
+                    {
+                        _trayIcon.Visible = false;
+                    }
+                    Application.Exit();
+                };
+
+                _trayMenu.Items.Add(mnuOpen);
+                _trayMenu.Items.Add(mnuStock);
+                _trayMenu.Items.Add(mnuAlertHistory);
+                _trayMenu.Items.Add(new ToolStripSeparator());
+                _trayMenu.Items.Add(mnuRefresh);
+                _trayMenu.Items.Add(new ToolStripSeparator());
+                _trayMenu.Items.Add(mnuExit);
+
+                _trayIcon = new NotifyIcon
+                {
+                    Text = "SandBox - 주식 AI 리스크 참모 (초절전 가동 중)",
+                    ContextMenuStrip = _trayMenu,
+                    Visible = false
+                };
+
+                try
+                {
+                    var resIcon = GateHelper.Properties.Resources.sandbox_icon;
+                    _trayIcon.Icon = resIcon != null ? (Icon)resIcon.Clone() : this.Icon;
+                }
+                catch
+                {
+                    _trayIcon.Icon = this.Icon;
+                }
+
+                _trayIcon.DoubleClick += (s, e) => ShowSandBoxWindow();
+                _trayIcon.BalloonTipClicked += (s, e) =>
+                {
+                    ShowSandBoxWindow();
+                    SwitchToGame("StockAdvisor");
+                };
+
+                // 알림 발생 시 트레이 풍선 알림 연동
+                GateHelper.StockAdvisor.StockToastNotification.AlertLogged += (item) =>
+                {
+                    if (item == null || _trayIcon == null) return;
+                    if (this.WindowState == FormWindowState.Minimized || !this.Visible)
+                    {
+                        string title = $"[{item.StockName}] {item.Message}";
+                        string body = $"현재가: {item.CurrentPrice:N0}원 | 감지가격: {item.TriggerPrice:N0}원 ({item.ChangeRate:+0.00;-0.00}%)";
+                        _trayIcon.ShowBalloonTip(3000, title, body, ToolTipIcon.Info);
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "SandBox.InitializeSystemTray");
+            }
+        }
+
+        public void ShowSandBoxWindow()
+        {
+            this.Show();
+            this.WindowState = FormWindowState.Normal;
+            this.BringToFront();
+            this.Activate();
+        }
+
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (this.WindowState == FormWindowState.Minimized)
+            {
+                this.Hide();
+                if (_trayIcon != null)
+                {
+                    _trayIcon.Visible = true;
+                    _trayIcon.ShowBalloonTip(2000, "SandBox 백그라운드 가동", "주식 시세 및 적정가격 감시가 초절전 모드(0.0%)에서 가동 중입니다.", ToolTipIcon.Info);
                 }
             }
         }
@@ -185,6 +305,17 @@ namespace GateHelper
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
+            try
+            {
+                if (_trayIcon != null)
+                {
+                    _trayIcon.Visible = false;
+                    _trayIcon.Dispose();
+                    _trayIcon = null;
+                }
+            }
+            catch { }
+
             _bitFlipGame?.OnTabVisibilityChanged(false);
             _signalLinkGame?.OnTabVisibilityChanged(false);
             _serverTycoonControl?.OnTabVisibilityChanged(false);

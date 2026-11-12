@@ -29,6 +29,8 @@ namespace GateHelper.StockAdvisor
         private Button _btnEvaluateStock;
         private Button _btnRefreshPrice;
         private Button _btnOption;
+        private Button _btnAlertHistory; // 실시간 가격 도달 알림 기록 열기
+        private static readonly List<StockAlertLogItem> _alertHistory = new List<StockAlertLogItem>();
         private Button _btnEarningsRadar; // 실적 발표 D-Day 레이더
         private Button _btnMarketCloseReport; // 장마감 결산 & 포트폴리오 리뷰
         private Button _btnImportPortfolio;
@@ -93,12 +95,19 @@ namespace GateHelper.StockAdvisor
             SetupAutoSyncTimers();
             _ = RefreshMarketThermometerAsync();
             _ = RefreshEarningsScheduleAsync();
+
+            StockToastNotification.AlertLogged += OnAlertLogged;
+
             this.VisibleChanged += (s, e) =>
             {
                 if (!this.Visible)
                 {
                     _kbSyncTimer?.Stop();
-                    _autoSyncTimer?.Stop();
+                    // 실시간 가격 도달 감시(초절전 백그라운드 모드)가 활성화되어 있으면 타이머 유지
+                    if (_portfolio == null || !_portfolio.EnablePriceTouchAlert)
+                    {
+                        _autoSyncTimer?.Stop();
+                    }
                 }
                 else
                 {
@@ -107,6 +116,8 @@ namespace GateHelper.StockAdvisor
                     _ = RefreshMarketThermometerAsync();
                     _ = RefreshEarningsScheduleAsync();
                     TriggerInitialDiagnosisIfNeeded();
+                    UpdateUi(); // 백그라운드에서 갱신된 시세/상태 동기화
+                    UpdateAlertHistoryButtonText();
                 }
             };
         }
@@ -400,6 +411,61 @@ namespace GateHelper.StockAdvisor
                     SetupAutoSyncTimers();
                     UpdateUi();
                 }
+            }
+        }
+
+        public void ShowAlertHistoryDialog()
+        {
+            try
+            {
+                using (var dlg = new StockAlertHistoryDialog(_alertHistory, code => SelectAndFocusStock(code)))
+                {
+                    Form parent = this.FindForm();
+                    if (parent != null) dlg.ShowDialog(parent);
+                    else dlg.ShowDialog(this);
+                }
+                UpdateAlertHistoryButtonText();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.ShowAlertHistoryDialog");
+            }
+        }
+
+        private void OnAlertLogged(StockAlertLogItem item)
+        {
+            if (item == null) return;
+            lock (_alertHistory)
+            {
+                _alertHistory.Add(item);
+            }
+            if (this.IsHandleCreated && !this.IsDisposed)
+            {
+                this.BeginInvoke(new Action(UpdateAlertHistoryButtonText));
+            }
+        }
+
+        private void UpdateAlertHistoryButtonText()
+        {
+            if (_btnAlertHistory == null || _btnAlertHistory.IsDisposed) return;
+            int unreadCount = 0;
+            lock (_alertHistory)
+            {
+                unreadCount = _alertHistory.Count(x => !x.IsRead);
+            }
+            if (unreadCount > 0)
+            {
+                _btnAlertHistory.Text = $"알림 기록 ({unreadCount})";
+                _btnAlertHistory.BackColor = Color.FromArgb(38, 30, 24);
+                _btnAlertHistory.FlatAppearance.BorderColor = Color.FromArgb(255, 170, 0);
+                _btnAlertHistory.ForeColor = Color.FromArgb(255, 220, 100);
+            }
+            else
+            {
+                _btnAlertHistory.Text = _alertHistory.Count > 0 ? $"알림 기록 ({_alertHistory.Count})" : "알림 기록";
+                _btnAlertHistory.BackColor = Color.FromArgb(20, 28, 40);
+                _btnAlertHistory.FlatAppearance.BorderColor = Color.FromArgb(60, 85, 120);
+                _btnAlertHistory.ForeColor = Color.FromArgb(170, 195, 230);
             }
         }
 

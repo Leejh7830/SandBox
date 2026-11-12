@@ -384,6 +384,29 @@ namespace GateHelper.StockAdvisor.Models
         public bool EnablePriceTouchAlert { get; set; } = true;
     }
 
+    public enum ToastAlertType
+    {
+        TargetHit, // 목표가 도달 (익절 권고)
+        StopHit,   // 손절 방어선 터치/이탈 (리스크 관리 권고)
+        BuyHit     // ★ 적정 매수가 도달 (관심종목 1차 진입 / 보유종목 추가매수)
+    }
+
+    /// <summary>
+    /// 목표가/손절가/적정매수가 도달 알림 이력 항목 (메모리 전용, 0B 디스크 I/O)
+    /// </summary>
+    public class StockAlertLogItem
+    {
+        public DateTime AlertTime { get; set; } = DateTime.Now;
+        public string StockCode { get; set; } = string.Empty;
+        public string StockName { get; set; } = string.Empty;
+        public ToastAlertType AlertType { get; set; } = ToastAlertType.TargetHit;
+        public decimal CurrentPrice { get; set; } = 0m;
+        public decimal TriggerPrice { get; set; } = 0m;
+        public decimal ChangeRate { get; set; } = 0m;
+        public string Message { get; set; } = string.Empty;
+        public bool IsRead { get; set; } = false;
+    }
+
     /// <summary>
     /// 정통 퀀트 조건식 개별 검증 항목
     /// </summary>

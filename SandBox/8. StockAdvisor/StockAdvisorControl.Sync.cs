@@ -314,7 +314,7 @@ namespace GateHelper.StockAdvisor
         {
             try
             {
-                bool needTimer = (_portfolio != null) && (_portfolio.AutoPriceSyncEnabled || _portfolio.AutoAiDiagnosisEnabled);
+                bool needTimer = (_portfolio != null) && (_portfolio.AutoPriceSyncEnabled || _portfolio.AutoAiDiagnosisEnabled || _portfolio.EnablePriceTouchAlert);
                 if (needTimer)
                 {
                     if (_autoSyncTimer == null)
@@ -338,11 +338,34 @@ namespace GateHelper.StockAdvisor
 
         private async Task HandleAutoSyncTickAsync()
         {
-            if (!this.Visible || _portfolio == null || _portfolio.Items.Count == 0) return;
+            if (_portfolio == null || _portfolio.Items.Count == 0) return;
             if (_isAiDiagnosing || _isRefreshingPrice) return;
+
+            Form parentForm = this.FindForm();
+            bool isMinimizedOrHidden = (parentForm == null || !parentForm.Visible || parentForm.WindowState == FormWindowState.Minimized);
+            bool isControlVisible = this.Visible && !isMinimizedOrHidden;
+
+            // 창이 비활성 상태이고 백그라운드 가격 도달 감시도 꺼져 있다면 즉시 패스
+            if (!isControlVisible && (!isMinimizedOrHidden || !_portfolio.EnablePriceTouchAlert))
+            {
+                return;
+            }
 
             DateTime now = DateTime.Now;
 
+            // [초절전 백그라운드 감시 모드] 메인 창이 최소화/트레이 상태일 때 (GDI+/UI 렌더링 0, CPU 0%)
+            if (isMinimizedOrHidden && _portfolio.EnablePriceTouchAlert)
+            {
+                int intervalMin = Math.Max(1, _portfolio.PriceSyncIntervalMinutes);
+                if (_lastAutoPriceSyncTime == DateTime.MinValue || now - _lastAutoPriceSyncTime >= TimeSpan.FromMinutes(intervalMin))
+                {
+                    _lastAutoPriceSyncTime = now;
+                    await RunBackgroundPriceCheckAsync();
+                }
+                return;
+            }
+
+            // [포그라운드 일반 동기화 모드]
             // 1. AI 참모 진단 주기 체크 (AI 진단 내부에 시세 갱신이 포함되므로 우선 처리)
             if (_portfolio.AutoAiDiagnosisEnabled && _portfolio.AiDiagnosisIntervalMinutes > 0)
             {
@@ -371,6 +394,27 @@ namespace GateHelper.StockAdvisor
                     _lastAutoPriceSyncTime = now;
                     await RefreshPricesAsync();
                 }
+            }
+        }
+
+        private async Task RunBackgroundPriceCheckAsync()
+        {
+            if (_isRefreshingPrice) return;
+            _isRefreshingPrice = true;
+            try
+            {
+                // UI 렌더링과 차트 그리기를 건너뛰고 오직 초경량 백그라운드 HTTP 시세 수집 및 가격 터치 판정만 수행
+                await RefreshPricesInternalAsync();
+                CheckAndDispatchPriceTouchAlerts();
+                SavePortfolio();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.RunBackgroundPriceCheckAsync");
+            }
+            finally
+            {
+                _isRefreshingPrice = false;
             }
         }
 
@@ -642,9 +686,26 @@ namespace GateHelper.StockAdvisor
 
         private void SelectAndFocusStock(string code)
         {
-            if (_lvStocks == null || string.IsNullOrEmpty(code) || _lvStocks.IsDisposed) return;
+            if (string.IsNullOrEmpty(code)) return;
             try
             {
+                // 1. 부모 SandBox 폼이 최소화 또는 트레이 숨김 상태일 경우 복원 및 주식 탭 전환
+                Form form = this.FindForm();
+                if (form is SandBox sb)
+                {
+                    sb.ShowSandBoxWindow();
+                    sb.SwitchToGame("StockAdvisor");
+                }
+                else if (form != null)
+                {
+                    if (!form.Visible) form.Show();
+                    form.WindowState = FormWindowState.Normal;
+                    form.BringToFront();
+                    form.Activate();
+                }
+
+                if (_lvStocks == null || _lvStocks.IsDisposed) return;
+
                 foreach (ListViewItem lvi in _lvStocks.Items)
                 {
                     if (lvi.Tag is StockHoldingItem itm &&
@@ -659,7 +720,10 @@ namespace GateHelper.StockAdvisor
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.SelectAndFocusStock");
+            }
         }
 
         #endregion

@@ -592,7 +592,7 @@ namespace GateHelper.StockAdvisor
                         }
                     }
 
-                    // (2) 손절가 계산 (2차 방어선 권고 손절가 우선 -> 20일 지지선 -3% -> 평단 -7%)
+                    // (2) 손절가 계산 (TechnicalIndicatorService에서 산출된 단일 손절가 SSOT 적용)
                     decimal stopPrice = item.TargetStopPrice > 0
                         ? item.TargetStopPrice
                         : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : (item.BuyPrice > 0 ? item.BuyPrice * 0.93m : 0m));
@@ -618,30 +618,6 @@ namespace GateHelper.StockAdvisor
                         else if (item.CurrentPrice > stopPrice * 1.015m)
                         {
                             item.WasStopAlerted = false;
-                        }
-                    }
-
-                    // (3) 보유 종목 2차 추가 매수가(눌림목 지지선) 도달 알림 (AI 매수 승인 시에만)
-                    if (verdict.CanBuy && item.SecondaryBuyPrice > 0)
-                    {
-                        if (item.CurrentPrice <= item.SecondaryBuyPrice)
-                        {
-                            if (!item.WasSecondaryBuyAlerted)
-                            {
-                                item.WasSecondaryBuyAlerted = true;
-                                StockHoldingItem buyItem = item;
-                                decimal hitBuyPrice = item.SecondaryBuyPrice;
-                                if (this.IsHandleCreated && !this.IsDisposed)
-                                {
-                                    this.BeginInvoke(new Action(() => StockToastNotification.ShowAlert(
-                                        buyItem.StockName, buyItem.StockCode, buyItem.CurrentPrice, hitBuyPrice, buyItem.ChangeRate, ToastAlertType.BuyHit,
-                                        onClickAction: () => SelectAndFocusStock(buyItem.StockCode))));
-                                }
-                            }
-                        }
-                        else if (item.CurrentPrice > item.SecondaryBuyPrice * 1.015m)
-                        {
-                            item.WasSecondaryBuyAlerted = false;
                         }
                     }
                 }

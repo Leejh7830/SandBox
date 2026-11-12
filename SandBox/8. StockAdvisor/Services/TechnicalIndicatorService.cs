@@ -203,8 +203,14 @@ namespace GateHelper.StockAdvisor.Services
                 result.ChartScore = (int)Math.Max(1, Math.Min(10, Math.Round(cScore)));
 
                 // 6. 손익비/안전 점수 (1~10점)
-                // 지지선(손절선)까지의 거리가 가까울수록(-3% 이내) 손실이 제한되므로 10점
-                if (result.DownsideRiskPercent <= 3.0m) result.RiskScore = 10;
+                // [신저가 왜곡 방지 인터락] 현재가가 20일 최저가를 계속 깨며 하락 중인 역배열 종목은 손익비 만점 왜곡 방지
+                bool isBreakingNewLow = currentPrice <= minLow * 1.005m && (result.Ma5 < result.Ma20 || currentPrice < result.Ma5);
+                if (isBreakingNewLow)
+                {
+                    // 바닥 이탈 하락 지속 구간: 손익비 3점 이하로 제한하여 매수 추천 방지
+                    result.RiskScore = 3;
+                }
+                else if (result.DownsideRiskPercent <= 3.0m) result.RiskScore = 10;
                 else if (result.DownsideRiskPercent <= 4.5m) result.RiskScore = 9;
                 else if (result.DownsideRiskPercent <= 6.0m) result.RiskScore = 7;
                 else if (result.DownsideRiskPercent <= 8.0m) result.RiskScore = 5;
@@ -244,6 +250,7 @@ namespace GateHelper.StockAdvisor.Services
                 }
 
                 // 8. AI 퀀트 권고 매수가 및 진입 타점 계산
+                // [단일 진실 공급원(SSOT)] 손절가는 지지선(최근 20일 최저가) 기준 -3% 단일 고정
                 decimal stopBase = result.SupportPrice > 0 ? result.SupportPrice : currentPrice * 0.95m;
                 result.TargetStopPrice = Math.Round(stopBase * 0.97m, 0); // 지지선 -3% 이탈 시 손절선
 
@@ -264,7 +271,7 @@ namespace GateHelper.StockAdvisor.Services
                         : currentPrice;
                     result.RecommendedBuyPrice = Math.Round(Math.Min(entryBase, currentPrice), 0);
                     result.EntryTimingBadge = "과매도 분할매수존";
-                    result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 및 지지선 안착 구간! 현재가({result.RecommendedBuyPrice:N0}원) 분할 매수 유효 (방어선: {result.TargetStopPrice:N0}원)";
+                    result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 및 지지선 안착 구간! 권고 매수가({result.RecommendedBuyPrice:N0}원) 분할 진입 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
                 else
                 {
@@ -284,25 +291,19 @@ namespace GateHelper.StockAdvisor.Services
                     result.EntryTimingGuide = $"20일 지지선 부근({result.RecommendedBuyPrice:N0}원) 도달 시 분할 진입 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
 
-                // 2차 매수가 (물타기/눌림목 지지선): 1차 매수가 대비 -3~-5% 추가 조정 시 손절선 직전 마지막 강력 반등 지지선
-                decimal secBuyBase = result.SupportPrice > 0 && result.SupportPrice < result.RecommendedBuyPrice
-                    ? result.SupportPrice
-                    : result.RecommendedBuyPrice * 0.95m;
-                // 2차 매수가 상한선/하한선 철벽 검증: 2차 매수가는 반드시 1차 매수가보다 낮고, 손절선보다는 높아야 함
-                decimal secBuy = Math.Min(result.RecommendedBuyPrice * 0.96m, Math.Max(result.TargetStopPrice * 1.01m, secBuyBase));
-                if (secBuy >= result.RecommendedBuyPrice)
+                // [철벽 가격 계단 인터락] 권고 매수가는 어떠한 경우에도 손절가보다 높아야 함!
+                if (result.RecommendedBuyPrice <= result.TargetStopPrice)
                 {
-                    secBuy = result.RecommendedBuyPrice * 0.95m;
+                    result.RecommendedBuyPrice = Math.Round(result.TargetStopPrice * 1.02m, 0);
                 }
-                result.SecondaryBuyPrice = Math.Round(secBuy, 0);
 
                 // 9. AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
-                // [철벽 인터락] 목표가는 반드시 현재가 및 1차 권고 매수가보다 높아야 함!
-                decimal baseTarget = result.ResistancePrice > currentPrice * 1.02m
+                // [철벽 인터락] 목표가는 반드시 현재가 및 권고 매수가보다 최소 3% 이상 높아야 함!
+                decimal minTarget = Math.Max(currentPrice * 1.03m, result.RecommendedBuyPrice * 1.03m);
+                decimal baseTarget = result.ResistancePrice > minTarget
                     ? result.ResistancePrice
-                    : currentPrice * 1.08m;
-                result.RecommendedTargetPrice = Math.Round(Math.Max(baseTarget, currentPrice * 1.03m), 0);
-
+                    : Math.Max(currentPrice * 1.08m, minTarget);
+                result.RecommendedTargetPrice = Math.Round(baseTarget, 0);
                 result.SecondaryTargetPrice = Math.Round(result.RecommendedTargetPrice * 1.09m, 0);
 
                 decimal upside1 = currentPrice > 0 ? ((result.RecommendedTargetPrice - currentPrice) / currentPrice * 100m) : 0m;

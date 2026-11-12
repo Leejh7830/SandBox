@@ -351,14 +351,13 @@ namespace GateHelper.StockAdvisor
                 _lblFinalVerdict.ForeColor = verdict.ForeColor;
             }
 
-            // 3. 핵심 가격 타점 (목표가 / 손절가 / 인터락 매수가 단일 표시)
+            // 3. 핵심 가격 타점 (목표가 / 손절가 / 권고 매수가 단일 3단 표시)
             decimal targetPrice = item.RecommendedTargetPrice > 0 ? item.RecommendedTargetPrice : item.ResistancePrice;
             decimal targetUp = (item.CurrentPrice > 0 && targetPrice > item.CurrentPrice)
                 ? ((targetPrice - item.CurrentPrice) / item.CurrentPrice * 100m) : 0m;
             string targetStr = targetPrice > 0 ? $"{targetPrice:N0}원 (+{targetUp:F1}%)" : "-";
-            string secTargetStr = item.SecondaryTargetPrice > 0 ? $" [2차: {item.SecondaryTargetPrice:N0}원]" : "";
 
-            // 손절가 단일화 (20일선 지지선 기준 객관적 단일가)
+            // 손절가 단일화 (TechnicalIndicatorService에서 산출된 TargetStopPrice 기준 단일가)
             decimal stopPrice = item.TargetStopPrice > 0 ? item.TargetStopPrice : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : item.CurrentPrice * 0.93m);
             stopPrice = Math.Round(stopPrice, 0);
             decimal stopDown = (item.CurrentPrice > 0 && stopPrice > 0)
@@ -367,7 +366,7 @@ namespace GateHelper.StockAdvisor
 
             _lblDetailPriceTargets.Text =
                 $"{verdict.BuyPriceText}\n" +
-                $"• 목표가: {targetStr}{secTargetStr}   |   손절가: {stopStr}";
+                $"• 목표가: {targetStr}   |   손절가: {stopStr}";
 
             // 4. 진단 스펙 & 수급 지뢰 요약 (권고 액션은 상단 결론 바가 전담하므로 중복 제거)
             string supBadge = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기");

@@ -25,6 +25,8 @@ namespace GateHelper
 
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
+        private Button _btnMinimizeToTray;
+        private FormWindowState _previousNonMinimizedState = FormWindowState.Normal;
 
         private System.Threading.EventWaitHandle _wakeEvent;
         private System.Threading.RegisteredWaitHandle _registeredWakeHandle;
@@ -67,6 +69,7 @@ namespace GateHelper
             {
                 InitializeCustomControls();
                 InitializeSystemTray();
+                InitializeTrayButton();
                 StartSingleInstanceWakeListener();
                 if (!string.IsNullOrEmpty(initialGame))
                 {
@@ -196,6 +199,79 @@ namespace GateHelper
             }
         }
 
+        private void InitializeTrayButton()
+        {
+            try
+            {
+                var skinManager = MaterialSkin.MaterialSkinManager.Instance;
+                Color statusBg = skinManager?.ColorScheme?.DarkPrimaryColor ?? Color.FromArgb(48, 63, 159);
+
+                _btnMinimizeToTray = new Button
+                {
+                    Size = new Size(26, 24),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = statusBg,
+                    ForeColor = Color.FromArgb(220, 235, 255),
+                    Font = new Font("Segoe UI Emoji", 8.5f),
+                    Text = "📥",
+                    Cursor = Cursors.Hand,
+                    Margin = Padding.Empty,
+                    Padding = Padding.Empty,
+                    TabStop = false
+                };
+                _btnMinimizeToTray.FlatAppearance.BorderSize = 0;
+                _btnMinimizeToTray.FlatAppearance.MouseOverBackColor = Color.FromArgb(0, 160, 230);
+                _btnMinimizeToTray.FlatAppearance.MouseDownBackColor = Color.FromArgb(0, 120, 180);
+                _btnMinimizeToTray.Click += (s, e) => MinimizeToTray();
+
+                var tt = new ToolTip();
+                tt.SetToolTip(_btnMinimizeToTray, "시스템 트레이로 최소화 (작업표시줄에서 숨기고 백그라운드 초절전 감시)");
+
+                this.Controls.Add(_btnMinimizeToTray);
+                _btnMinimizeToTray.BringToFront();
+                UpdateTrayButtonPosition();
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "SandBox.InitializeTrayButton");
+            }
+        }
+
+        private void UpdateTrayButtonPosition()
+        {
+            if (_btnMinimizeToTray != null && !_btnMinimizeToTray.IsDisposed)
+            {
+                int btnWidth = 26;
+                int btnHeight = 24;
+                int x = this.Width - 72 - btnWidth;
+                _btnMinimizeToTray.Size = new Size(btnWidth, btnHeight);
+                _btnMinimizeToTray.Location = new Point(x, 0);
+                _btnMinimizeToTray.BringToFront();
+            }
+        }
+
+        public void MinimizeToTray()
+        {
+            try
+            {
+                if (this.WindowState != FormWindowState.Minimized)
+                {
+                    _previousNonMinimizedState = this.WindowState;
+                }
+                this.WindowState = FormWindowState.Minimized;
+                this.Hide();
+                if (_trayIcon != null)
+                {
+                    _trayIcon.Visible = true;
+                    _trayIcon.ShowBalloonTip(2000, "SandBox 시스템 트레이 가동", "작업표시줄에서 숨겨지고 시스템 트레이에서 초절전 모드(0.0%)로 가동 중입니다.", ToolTipIcon.Info);
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "SandBox.MinimizeToTray");
+            }
+        }
+
         public void ShowSandBoxWindow()
         {
             try
@@ -203,7 +279,7 @@ namespace GateHelper
                 if (!this.Visible) this.Show();
                 if (this.WindowState == FormWindowState.Minimized)
                 {
-                    this.WindowState = FormWindowState.Normal;
+                    this.WindowState = _previousNonMinimizedState;
                 }
                 this.ShowInTaskbar = true;
                 ShowWindow(this.Handle, SW_RESTORE);
@@ -217,14 +293,23 @@ namespace GateHelper
         protected override void OnResize(EventArgs e)
         {
             base.OnResize(e);
-            if (this.WindowState == FormWindowState.Minimized)
+            UpdateTrayButtonPosition();
+
+            if (this.WindowState != FormWindowState.Minimized)
             {
-                this.Hide();
-                if (_trayIcon != null)
-                {
-                    _trayIcon.Visible = true;
-                    _trayIcon.ShowBalloonTip(2000, "SandBox 백그라운드 가동", "주식 시세 및 적정가격 감시가 초절전 모드(0.0%)에서 가동 중입니다.", ToolTipIcon.Info);
-                }
+                _previousNonMinimizedState = this.WindowState;
+                SB_tabControl1_SelectedIndexChanged(this, EventArgs.Empty);
+            }
+            else
+            {
+                // 표준 최소화 버튼(_) 클릭 시: 작업표시줄로만 이동 (this.Hide() 안 함)
+                // 작업표시줄 최소화 상태에서도 백그라운드 초절전 절전 모드(CPU 0.0%) 적용
+                _bitFlipGame?.OnTabVisibilityChanged(false);
+                _signalLinkGame?.OnTabVisibilityChanged(false);
+                _serverTycoonControl?.OnTabVisibilityChanged(false);
+                _dataFlipControl?.OnTabVisibilityChanged(false);
+                _pocketFarmControl?.OnTabVisibilityChanged(false);
+                _stockAdvisorControl?.OnTabVisibilityChanged(false);
             }
         }
 
@@ -358,6 +443,16 @@ namespace GateHelper
                 _registeredWakeHandle?.Unregister(null);
                 _wakeEvent?.Dispose();
                 _wakeEvent = null;
+            }
+            catch { }
+
+            try
+            {
+                if (_btnMinimizeToTray != null)
+                {
+                    _btnMinimizeToTray.Dispose();
+                    _btnMinimizeToTray = null;
+                }
             }
             catch { }
 

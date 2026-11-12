@@ -27,6 +27,7 @@ namespace GateHelper
         private ContextMenuStrip _trayMenu;
         private Button _btnMinimizeToTray;
         private FormWindowState _previousNonMinimizedState = FormWindowState.Normal;
+        private bool _hasShownTrayNotice = false;
 
         private System.Threading.EventWaitHandle _wakeEvent;
         private System.Threading.RegisteredWaitHandle _registeredWakeHandle;
@@ -254,6 +255,18 @@ namespace GateHelper
         {
             try
             {
+                if (!_hasShownTrayNotice)
+                {
+                    _hasShownTrayNotice = true;
+                    MessageBox.Show(
+                        this,
+                        "SandBox가 시스템 트레이로 이동합니다.\n\n• 화면 렌더링 및 게임 루프는 초절전 모드(CPU 0.0%)로 전환됩니다.\n• 보유/관심 종목의 시세 감시 및 적정가 도달 토스트 알림은 백그라운드에서 계속 정상 작동합니다.\n• 작업 표시줄 우측 하단 트레이 아이콘을 더블클릭하면 언제든 다시 열 수 있습니다.\n\n(이 안내는 프로그램 실행 후 최초 1회만 표시됩니다)",
+                        "시스템 트레이 백그라운드 감시 모드",
+                        MessageBoxButtons.OK,
+                        MessageBoxIcon.Information
+                    );
+                }
+
                 if (this.WindowState != FormWindowState.Minimized)
                 {
                     _previousNonMinimizedState = this.WindowState;

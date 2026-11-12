@@ -530,7 +530,7 @@ namespace GateHelper.StockAdvisor.Models
     public class StockVerdictInfo
     {
         public ActionVerdictType Type { get; set; } = ActionVerdictType.HoldOrWatch;
-        public string BadgeText { get; set; } = "[관망대기]";
+        public string BadgeText { get; set; } = "관망";
         public string TitleText { get; set; } = "[ AI 참모 최종 결론 : 관망 및 지지선 확인 대기 ]";
         public string GuideText { get; set; } = "추세 방향성 탐색 중. 20일 지지선 안착 확인 전까지 진입 보류";
         public string BuyPriceText { get; set; } = "• 매수가: [관망 대기] (1차 -원 | 2차 -원)";
@@ -555,7 +555,7 @@ namespace GateHelper.StockAdvisor.Models
                 return new StockVerdictInfo
                 {
                     Type = ActionVerdictType.HoldOrWatch,
-                    BadgeText = "[선택대기]",
+                    BadgeText = "선택대기",
                     TitleText = "[ AI 참모 최종 결론 : 좌측 종목을 선택하세요 ]",
                     GuideText = "종목을 선택하시면 단일화된 최종 행동 결론이 표시됩니다.",
                     BuyPriceText = "• 매수가: - 원",
@@ -619,14 +619,14 @@ namespace GateHelper.StockAdvisor.Models
                 info.Type = ActionVerdictType.SharpDropAlert;
                 if (isHeld)
                 {
-                    info.BadgeText = "[급락주의]";
+                    info.BadgeText = "급락주의";
                     info.TitleText = "[ AI 참모 최종 결론 : 당일 급락 발생! 성급한 물타기 금지 ]";
                     info.GuideText = $"당일 등락률({item.ChangeRate:+0.00;-0.00}%) 급락 발생. 하방 지지선 안착 확인 전까지 추가 매수 보류 및 관망 권고";
                     info.BuyPriceText = $"• 매수가: [진입 보류] (당일 급락 {item.ChangeRate:+0.00;-0.00}%로 섣부른 물타기 금지)";
                 }
                 else
                 {
-                    info.BadgeText = "[급락주의]";
+                    info.BadgeText = "급락주의";
                     info.TitleText = "[ AI 참모 최종 결론 : 당일 급락! 떨어지는 칼날 진입 금지 ]";
                     info.GuideText = $"당일 {item.ChangeRate:+0.00;-0.00}% 급락 중. 바닥 지지 확인 전까지 섣부른 역발상 매수를 엄격히 금지합니다.";
                     info.BuyPriceText = $"• 매수가: [진입 보류] (당일 -4% 초과 급락으로 하방 지지선 확인 전 진입 불가)";
@@ -642,7 +642,7 @@ namespace GateHelper.StockAdvisor.Models
                 info.Type = ActionVerdictType.AvoidOrReduce;
                 if (isHeld)
                 {
-                    info.BadgeText = "[비중축소]";
+                    info.BadgeText = "비중축소";
                     info.TitleText = "[ AI 참모 최종 결론 : 반등 시 비중 축소 / 손절 권고 ]";
                     if (item.LastDiagnosis?.PolicyImpact < 0)
                     {
@@ -660,7 +660,7 @@ namespace GateHelper.StockAdvisor.Models
                 }
                 else
                 {
-                    info.BadgeText = "[매수금지]";
+                    info.BadgeText = "매수금지";
                     info.TitleText = "[ AI 참모 최종 결론 : 신규 매수 금지 (리스크 경보) ]";
                     if (item.LastDiagnosis?.PolicyImpact < 0)
                     {
@@ -688,15 +688,15 @@ namespace GateHelper.StockAdvisor.Models
                 info.Type = ActionVerdictType.TakeProfit;
                 if (isHeld)
                 {
-                    info.BadgeText = "[분할익절]";
-                    info.TitleText = "[ AI 참모 최종 결론 : 분할 익절 (30~50% 수익 확정) ]";
+                    info.BadgeText = "과열주의";
+                    info.TitleText = "[ AI 참모 최종 결론 : 단기 과열 구간 / 분할 익절 및 수익 확정 권고 ]";
                     info.GuideText = "단기 과열 슈팅 구간! 욕심을 줄이고 보유 물량의 30~50%를 분할 매도하여 수익을 확정하세요.";
                     info.BuyPriceText = $"• 매수가: [추격 금지] (20일 눌림목 대기선: {buy1Str} 도달 시에만 검토)";
                 }
                 else
                 {
-                    info.BadgeText = "[추격금지]";
-                    info.TitleText = "[ AI 참모 최종 결론 : 단기 과열! 추격 매수 절대 금지 ]";
+                    info.BadgeText = "과열주의";
+                    info.TitleText = "[ AI 참모 최종 결론 : 단기 과열 주의 / 추격 매수 절대 금지 ]";
                     info.GuideText = "단기 과열 슈팅 구간! 지금 사면 상투 물림 위험. 20일선 눌림목 도달 시까지 매수 금지";
                     info.BuyPriceText = $"• 매수가: [추격 금지] (20일 눌림목 대기선: {buy1Str} 도달 시에만 검토)";
                 }
@@ -713,14 +713,14 @@ namespace GateHelper.StockAdvisor.Models
                     info.Type = ActionVerdictType.OversoldBounce;
                     if (isHeld)
                     {
-                        info.BadgeText = "[과매도반등]";
+                        info.BadgeText = "매수가능";
                         info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 추매 유효 ]";
                         info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 추매 가능";
                         info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
                     }
                     else
                     {
-                        info.BadgeText = "[과매도반등]";
+                        info.BadgeText = "매수가능";
                         info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 바닥 구간 분할 매수 유효 ]";
                         info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 진입 권장";
                         info.BuyPriceText = $"• 매수가: {buy1Str}";
@@ -740,22 +740,22 @@ namespace GateHelper.StockAdvisor.Models
                         // [RSI 58 이상 과열 진입 구간 인터락] 주가가 올라선 상태이므로 추가 매수는 금지하고 기존 물량만 안전 홀딩
                         if (item.Rsi >= 58.0m)
                         {
-                            info.BadgeText = "[보유홀딩]";
-                            info.TitleText = "[ AI 참모 최종 결론 : 추세 상승 홀딩 & 추격 추매 금지 ]";
+                            info.BadgeText = "상승추세";
+                            info.TitleText = "[ AI 참모 최종 결론 : 우량 상승추세 지속 / 수익 극대화 홀딩 ]";
                             info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 상승 추세 유지. 기존 물량은 수익 극대화 홀딩하되, RSI({item.Rsi:F1}) 상승권으로 추가 매수는 자제 권고";
                             info.BuyPriceText = $"• 매수가: [추매 보류] (상승 추세 홀딩 중 / 추가 매수는 20일선 눌림목까지 대기)";
                         }
                         else
                         {
-                            info.BadgeText = "[보유/추매]";
-                            info.TitleText = "[ AI 참모 최종 결론 : 추세 유지 홀딩 & 분할 추매 유효 ]";
+                            info.BadgeText = "매수가능";
+                            info.TitleText = "[ AI 참모 최종 결론 : 눌림목 지지 안착 / 분할 추매 유효 ]";
                             info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 매수가 부근 분할 추매 유효";
                             info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
                         }
                     }
                     else
                     {
-                        info.BadgeText = "[분할매수]";
+                        info.BadgeText = "매수가능";
                         info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 유효 ]";
                         info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 권고 매수가 부근 분할 진입 권장";
                         info.BuyPriceText = $"• 매수가: {buy1Str}";
@@ -772,14 +772,14 @@ namespace GateHelper.StockAdvisor.Models
                 info.Type = ActionVerdictType.HoldOrWatch;
                 if (isHeld)
                 {
-                    info.BadgeText = "[보유관망]";
+                    info.BadgeText = "관망";
                     info.TitleText = "[ AI 참모 최종 결론 : 기존 물량 유지 및 지지선 관망 ]";
                     info.GuideText = "추세 방향성 탐색 중. 20일 지지선 안착 확인 시까지 섣부른 물타기를 자제하고 관망 권고";
                     info.BuyPriceText = $"• 매수가: [관망 대기] (기준 지지선: {buy1Str})";
                 }
                 else
                 {
-                    info.BadgeText = "[관망대기]";
+                    info.BadgeText = "관망";
                     info.TitleText = "[ AI 참모 최종 결론 : 관망 및 지지선 확인 대기 ]";
                     info.GuideText = "추세 방향성 탐색 중. 20일 지지선 안착 및 추가 거래량 수급 확인 전까지 신규 진입 보류";
                     info.BuyPriceText = $"• 매수가: [관망 대기] (기준 지지선: {buy1Str})";
@@ -792,6 +792,21 @@ namespace GateHelper.StockAdvisor.Models
             }
 
             return info;
+        }
+
+        /// <summary>
+        /// 최종 액션 뱃지 우선순위 정렬 가중치 (매수가능 > 상승추세 > 과열주의 > 관망 > 급락주의 > 비중축소/매수금지)
+        /// </summary>
+        public static int GetActionPriority(string badgeText)
+        {
+            if (string.IsNullOrEmpty(badgeText)) return 0;
+            if (badgeText.Contains("매수가능")) return 6;
+            if (badgeText.Contains("상승추세")) return 5;
+            if (badgeText.Contains("과열주의")) return 4;
+            if (badgeText.Contains("관망")) return 3;
+            if (badgeText.Contains("급락주의")) return 2;
+            if (badgeText.Contains("비중축소") || badgeText.Contains("매수금지")) return 1;
+            return 0;
         }
     }
 }

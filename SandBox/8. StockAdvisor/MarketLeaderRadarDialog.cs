@@ -11,8 +11,9 @@ namespace GateHelper.StockAdvisor
 {
     public class MarketLeaderRadarDialog : Form
     {
-        private readonly Action<string, string, decimal> _onAddWatchlist;
         private readonly HashSet<string> _existingCodes;
+        private readonly Action<string, string, decimal> _onAddWatchlist;
+        private readonly Func<string, Form, bool> _onEvaluateStock;
         private readonly string _initialSelectCode;
 
         private List<MarketLeaderItem> _allLeaders = new List<MarketLeaderItem>();
@@ -33,12 +34,17 @@ namespace GateHelper.StockAdvisor
 
         private static readonly Font BoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
 
-        public MarketLeaderRadarDialog(HashSet<string> existingCodes, Action<string, string, decimal> onAddWatchlist, string initialSelectCode = null)
+        public MarketLeaderRadarDialog(
+            HashSet<string> existingCodes,
+            Action<string, string, decimal> onAddWatchlist,
+            string initialSelectCode = null,
+            Func<string, Form, bool> onEvaluateStock = null)
         {
             _existingCodes = existingCodes != null
                 ? new HashSet<string>(existingCodes.Select(x => x.TrimStart('0')), StringComparer.OrdinalIgnoreCase)
                 : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             _onAddWatchlist = onAddWatchlist;
+            _onEvaluateStock = onEvaluateStock;
             _initialSelectCode = initialSelectCode;
 
             this.Text = "주도주 AI 매수 레이더 (코스피 100 + 코스닥 50)";
@@ -187,6 +193,15 @@ namespace GateHelper.StockAdvisor
                 null, _lvRadar, new object[] { true });
 
             _lvRadar.SelectedIndexChanged += LvRadar_SelectedIndexChanged;
+
+            // 종목 행 더블클릭 시 종목 평가 다이얼로그로 즉시 이동
+            _lvRadar.DoubleClick += (s, e) =>
+            {
+                if (_lvRadar.SelectedItems.Count > 0 && _lvRadar.SelectedItems[0].Tag is MarketLeaderItem sel && !string.IsNullOrEmpty(sel.StockCode))
+                {
+                    _onEvaluateStock?.Invoke(sel.StockCode, this);
+                }
+            };
 
             // 테이블 내 [관심 등록] 컬럼의 [+ 담기] 셀 클릭 시에만 등록 (행 더블클릭 자동 등록 제거)
             _lvRadar.MouseClick += (s, e) =>

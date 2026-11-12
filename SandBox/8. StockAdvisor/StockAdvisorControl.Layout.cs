@@ -303,7 +303,13 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Resize += (s, e) => AutoFitLastColumn();
             _lvStocks.SelectedIndexChanged += LvStocks_SelectedIndexChanged;
             _lvStocks.ColumnClick += LvStocks_ColumnClick;
-            _lvStocks.DoubleClick += (s, e) => EditSelectedStock();
+            _lvStocks.DoubleClick += (s, e) =>
+            {
+                if (_lvStocks.SelectedItems.Count > 0 && _lvStocks.SelectedItems[0].Tag is StockHoldingItem sel)
+                {
+                    ShowStockEvaluatorDialog(sel.StockCode);
+                }
+            };
             _lvStocks.MouseDown += (s, e) =>
             {
                 if (e.Clicks > 1) _isDoubleClick = true;

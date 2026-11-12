@@ -692,7 +692,10 @@ namespace GateHelper.StockAdvisor
         private void ShowMarketLeaderRadarDialog(string initialSelectCode = null)
         {
             var existingCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode.TrimStart('0')), StringComparer.OrdinalIgnoreCase);
-            using (var dlg = new MarketLeaderRadarDialog(existingCodes, AddStockToWatchlist, initialSelectCode)) dlg.ShowDialog(this);
+            using (var dlg = new MarketLeaderRadarDialog(existingCodes, AddStockToWatchlist, initialSelectCode, (code, owner) => ShowStockEvaluatorDialog(code, owner)))
+            {
+                dlg.ShowDialog(this);
+            }
         }
 
         public void AddStockToWatchlist(string code, string name, decimal price)

@@ -161,7 +161,7 @@ namespace GateHelper.StockAdvisor
             // (4) 주도주 레이더 종목(관심 미등록 포함) 자동 알림 옵션
             _chkEnableLeaderRadarAlert = new CheckBox
             {
-                Text = "★ 주도주 매수 레이더 종목도 AI 권고 매수가 도달 시 자동 토스트 알림 (미등록 포함)",
+                Text = "주도주 매수 레이더 종목도 AI 권고 매수가 도달 시 자동 토스트 알림 (미등록 포함)",
                 Location = new Point(16, 188),
                 Size = new Size(555, 26),
                 Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),

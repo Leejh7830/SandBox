@@ -722,7 +722,7 @@ namespace GateHelper.StockAdvisor
                                 this.BeginInvoke(new Action(() =>
                                 {
                                     StockToastNotification.ShowAlert(
-                                        $"★레이더 {target.StockName}", target.StockCode, target.CurrentPrice, target.RecommendedBuyPrice, target.ChangeRate, ToastAlertType.BuyHit,
+                                        target.StockName, target.StockCode, target.CurrentPrice, target.RecommendedBuyPrice, target.ChangeRate, ToastAlertType.BuyHit,
                                         onClickAction: () =>
                                         {
                                             if (this.FindForm() is SandBox sb) { sb.ShowSandBoxWindow(); sb.SwitchToGame("StockAdvisor"); }

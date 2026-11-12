@@ -176,23 +176,19 @@ namespace GateHelper.StockAdvisor
             _btnMarketCloseReport.Margin = new Padding(2, 1, 2, 1);
             _btnMarketCloseReport.Click += (s, e) => ShowMarketCloseReportDialog();
 
-            // 부가 도구 드롭다운 메뉴 (공간 절약 및 사용자 맞춤 메뉴화)
+            // 부가 도구 드롭다운 메뉴 (공간 절약 및 사용자 맞춤 메뉴화 - 불필요한 이모지 및 중복 메뉴 제거)
             var cmsMoreTools = new ContextMenuStrip();
-            var mnuAlertHistory = new ToolStripMenuItem("★ 가격 도달 알림 기록 내역");
-            mnuAlertHistory.Click += (s, e) => ShowAlertHistoryDialog();
-            var mnuKeyStock = new ToolStripMenuItem("★ 중요 종목 요약 브리핑");
+            var mnuKeyStock = new ToolStripMenuItem("중요 종목 요약 브리핑");
             mnuKeyStock.Click += (s, e) => ShowKeyStockSummaryDialog();
-            var mnuPanicExit = new ToolStripMenuItem("🚨 비상 탈출 (패닉셀 방어) 시뮬레이터");
+            var mnuPanicExit = new ToolStripMenuItem("비상 탈출 (패닉셀 방어) 시뮬레이터");
             mnuPanicExit.Click += (s, e) => ShowPanicExitDialog();
-            var mnuImport = new ToolStripMenuItem("📁 증권사 계좌 잔고 가져오기 (엑셀/CSV)");
+            var mnuImport = new ToolStripMenuItem("증권사 계좌 잔고 가져오기 (엑셀/CSV)");
             mnuImport.Click += (s, e) => ShowImportPortfolioDialog();
             var mnuKbSec = new ToolStripMenuItem("KB증권 Open API 실시간 잔고 연동 설정");
             mnuKbSec.Click += (s, e) => ShowKbSettingDialog();
             var mnuHelpScore = new ToolStripMenuItem("AI 종목 종합 평가 점수 산출 기준 안내");
             mnuHelpScore.Click += (s, e) => ShowScoreHelpDialog();
 
-            cmsMoreTools.Items.Add(mnuAlertHistory);
-            cmsMoreTools.Items.Add(new ToolStripSeparator());
             cmsMoreTools.Items.Add(mnuKeyStock);
             cmsMoreTools.Items.Add(mnuPanicExit);
             cmsMoreTools.Items.Add(new ToolStripSeparator());

@@ -166,16 +166,7 @@ namespace GateHelper.StockAdvisor
 
             _lvRadar.SelectedIndexChanged += LvRadar_SelectedIndexChanged;
 
-            // 행 더블클릭 시 관심종목 즉시 등록
-            _lvRadar.DoubleClick += (s, e) =>
-            {
-                if (_lvRadar.SelectedItems.Count > 0)
-                {
-                    AddLeaderItemToWatchlist(_lvRadar.SelectedItems[0]);
-                }
-            };
-
-            // 테이블 내 [관심 등록] 컬럼의 [+ 담기] 셀 클릭 시 즉시 등록
+            // 테이블 내 [관심 등록] 컬럼의 [+ 담기] 셀 클릭 시에만 등록 (행 더블클릭 자동 등록 제거)
             _lvRadar.MouseClick += (s, e) =>
             {
                 var hit = _lvRadar.HitTest(e.Location);
@@ -214,7 +205,7 @@ namespace GateHelper.StockAdvisor
 
             _lblGuideBanner = new Label
             {
-                Text = "[안내] 테이블 우측의 [+ 담기] 셀을 클릭하면 내 관심종목에 즉시 등록됩니다. (더블클릭 가능)",
+                Text = "[안내] 테이블 우측의 [+ 담기] 셀을 클릭하면 내 관심종목에 즉시 등록됩니다.",
                 Font = new Font("Malgun Gothic", 9f),
                 ForeColor = Color.FromArgb(215, 235, 255),
                 Dock = DockStyle.Fill,

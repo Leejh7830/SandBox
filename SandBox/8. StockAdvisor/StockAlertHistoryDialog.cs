@@ -13,19 +13,16 @@ namespace GateHelper.StockAdvisor
     public class StockAlertHistoryDialog : Form
     {
         private readonly List<StockAlertLogItem> _history;
-        private readonly Action<string> _onSelectStock;
         private ListView _lvHistory;
         private Label _lblSummary;
-        private Button _btnNavigate;
         private Button _btnClear;
         private Button _btnClose;
 
         private static readonly Font BoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
 
-        public StockAlertHistoryDialog(List<StockAlertLogItem> history, Action<string> onSelectStock)
+        public StockAlertHistoryDialog(List<StockAlertLogItem> history, Action<string> onSelectStock = null)
         {
             _history = history ?? new List<StockAlertLogItem>();
-            _onSelectStock = onSelectStock;
 
             this.Text = "가격 도달 알림 기록 내역 (Price Alert History)";
             this.Size = new Size(860, 520);
@@ -52,7 +49,7 @@ namespace GateHelper.StockAdvisor
 
             var lblTitle = new Label
             {
-                Text = "★ 가격 도달 알림 기록 내역 (Price Alert History)",
+                Text = "가격 도달 알림 기록 내역 (Price Alert History)",
                 Font = new Font("Malgun Gothic", 11.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 190, 40),
                 Dock = DockStyle.Top,
@@ -61,7 +58,7 @@ namespace GateHelper.StockAdvisor
 
             _lblSummary = new Label
             {
-                Text = "보유종목의 목표가/손절가 및 관심종목의 AI 매수가 도달 알림 히스토리입니다. 항목을 더블클릭하면 해당 종목으로 즉시 이동합니다.",
+                Text = "보유종목의 목표가/손절가 및 관심·주도주 종목의 AI 매수가 도달 알림 히스토리입니다.",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(170, 190, 220),
                 Dock = DockStyle.Top,
@@ -99,8 +96,6 @@ namespace GateHelper.StockAdvisor
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
                 null, _lvHistory, new object[] { true });
 
-            _lvHistory.DoubleClick += (s, e) => NavigateToSelectedStock();
-
             // 3. 하단 푸터 바
             var pnlFooter = new Panel
             {
@@ -109,20 +104,6 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(24, 28, 40),
                 Padding = new Padding(16, 7, 16, 7)
             };
-
-            _btnNavigate = new Button
-            {
-                Text = "선택 종목 차트 이동",
-                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                Size = new Size(135, 32),
-                Dock = DockStyle.Left,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(18, 56, 74),
-                ForeColor = Color.FromArgb(0, 220, 255),
-                Cursor = Cursors.Hand
-            };
-            _btnNavigate.FlatAppearance.BorderColor = Color.FromArgb(0, 180, 220);
-            _btnNavigate.Click += (s, e) => NavigateToSelectedStock();
 
             _btnClose = new Button
             {
@@ -160,7 +141,6 @@ namespace GateHelper.StockAdvisor
                 LoadHistoryItems();
             };
 
-            pnlFooter.Controls.Add(_btnNavigate);
             pnlFooter.Controls.Add(_btnClear);
             pnlFooter.Controls.Add(_btnClose);
 
@@ -195,33 +175,36 @@ namespace GateHelper.StockAdvisor
 
                 if (item.AlertType == ToastAlertType.TargetHit)
                 {
-                    typeStr = "★ 목표가 달성 (익절)";
+                    typeStr = "목표가 달성 (익절)";
                     typeColor = Color.FromArgb(0, 230, 118);
                     targetCount++;
                 }
                 else if (item.AlertType == ToastAlertType.StopHit)
                 {
-                    typeStr = "★ 손절선 터치 (방어)";
+                    typeStr = "손절선 터치 (방어)";
                     typeColor = Color.FromArgb(255, 75, 85);
                     stopCount++;
                 }
                 else if (item.AlertType == ToastAlertType.BuyHit)
                 {
-                    typeStr = "★ AI 매수가 도달 (진입)";
+                    typeStr = "AI 매수가 도달 (진입)";
                     typeColor = Color.FromArgb(0, 216, 255);
                     buyCount++;
                 }
+
+                string cleanName = (item.StockName ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
+                string cleanMsg = (item.Message ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
 
                 var lvi = new ListViewItem(new[]
                 {
                     item.AlertTime.ToString("HH:mm:ss"),
                     typeStr,
                     item.StockCode,
-                    item.StockName,
+                    cleanName,
                     $"{item.CurrentPrice:N0}원",
                     $"{item.TriggerPrice:N0}원",
                     $"{item.ChangeRate:+0.00;-0.00;0.00}%",
-                    item.Message
+                    cleanMsg
                 });
 
                 lvi.Tag = item.StockCode;
@@ -245,23 +228,11 @@ namespace GateHelper.StockAdvisor
             _lvHistory.EndUpdate();
 
             _lblSummary.Text = $"총 {snapshot.Count}건의 알림 기록 (목표가 {targetCount}건 | 손절가 {stopCount}건 | 적정매수가 {buyCount}건)";
-            _btnNavigate.Enabled = _lvHistory.Items.Count > 0;
             _btnClear.Enabled = _lvHistory.Items.Count > 0;
 
             if (_lvHistory.Items.Count > 0)
             {
                 _lvHistory.Items[0].Selected = true;
-            }
-        }
-
-        private void NavigateToSelectedStock()
-        {
-            if (_lvHistory.SelectedItems.Count == 0) return;
-            string code = _lvHistory.SelectedItems[0].Tag as string;
-            if (!string.IsNullOrEmpty(code))
-            {
-                this.Close();
-                _onSelectStock?.Invoke(code);
             }
         }
     }

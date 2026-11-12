@@ -326,7 +326,7 @@ namespace GateHelper.StockAdvisor
                     _lblFinalVerdict.BackColor = Color.FromArgb(24, 28, 38);
                     _lblFinalVerdict.ForeColor = Color.FromArgb(170, 185, 205);
                 }
-                _lblDetailPriceTargets.Text = "• 목표가: - 원   |   손절가: - 원\n• 매수가: 1차 - 원   |   2차(추매): - 원";
+                _lblDetailPriceTargets.Text = "• 매수가: 1차 - 원   |   2차(추매): - 원\n• 목표가: - 원   |   손절가: - 원";
                 _lblDetailSummary.Text = "• AI 등급: -   |   종합 점수: -점\n• 수급: -   |   지뢰: -";
                 _miniChart?.SetData(null);
                 RenderEmptyReport();
@@ -366,8 +366,8 @@ namespace GateHelper.StockAdvisor
             string stopStr = stopPrice > 0 ? $"{stopPrice:N0}원 ({stopDown:F1}%)" : "-";
 
             _lblDetailPriceTargets.Text =
-                $"• 목표가: {targetStr}{secTargetStr}   |   손절가: {stopStr}\n" +
-                verdict.BuyPriceText;
+                $"{verdict.BuyPriceText}\n" +
+                $"• 목표가: {targetStr}{secTargetStr}   |   손절가: {stopStr}";
 
             // 4. 진단 스펙 & 수급 지뢰 요약 (권고 액션은 상단 결론 바가 전담하므로 중복 제거)
             string supBadge = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기");

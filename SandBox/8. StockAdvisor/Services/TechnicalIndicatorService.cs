@@ -250,40 +250,58 @@ namespace GateHelper.StockAdvisor.Services
                 if (result.Rsi >= 68.0m || (result.Ma20 > 0 && currentPrice > result.Ma20 * 1.12m))
                 {
                     decimal pullbackPrice = result.Ma20 > 0 ? result.Ma20 : currentPrice * 0.93m;
+                    // 과열 시 1차 매수가도 절대 현재가보다 높을 수 없음
+                    pullbackPrice = Math.Min(pullbackPrice, currentPrice * 0.96m);
                     result.RecommendedBuyPrice = Math.Round(pullbackPrice, 0);
                     result.EntryTimingBadge = "추격매수 금지 (대기)";
-                    result.EntryTimingGuide = $"현재가 과열권! 지금 사지 말고 20일선({result.RecommendedBuyPrice:N0}원)까지 눌림목 도달 시 진입 권고";
+                    result.EntryTimingGuide = $"현재가 과열권! 지금 사지 말고 20일선 눌림목({result.RecommendedBuyPrice:N0}원) 도달 시 진입 권고";
                 }
-                else if (result.Rsi <= 35.0m && result.Rsi > 0m && result.DownsideRiskPercent <= 4.5m && result.ChartScore >= 6)
+                else if (result.Rsi <= 36.5m && result.Rsi > 0m && result.ChartScore >= 6)
                 {
-                    result.RecommendedBuyPrice = currentPrice;
-                    result.EntryTimingBadge = "바닥 분할매수존";
-                    result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 및 지지선 안착 구간! 현재가({currentPrice:N0}원) 분할 매수 유효 (방어선: {result.TargetStopPrice:N0}원)";
+                    // 과매도 반등: 현재가가 이미 지지선 부근이거나 침체권이므로 현재가 또는 지지선 안착가를 1차 매수가로 부여 (절대 현재가 초과 금지)
+                    decimal entryBase = (result.SupportPrice > 0 && result.SupportPrice <= currentPrice)
+                        ? result.SupportPrice
+                        : currentPrice;
+                    result.RecommendedBuyPrice = Math.Round(Math.Min(entryBase, currentPrice), 0);
+                    result.EntryTimingBadge = "과매도 분할매수존";
+                    result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 및 지지선 안착 구간! 현재가({result.RecommendedBuyPrice:N0}원) 분할 매수 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
                 else
                 {
+                    // 일반 눌림목: 20일선 및 지지선 중간선 (단, 역배열이거나 지지선 이탈 시 1차 매수가가 현재가를 넘지 못하도록 엄격히 상한선 제한)
                     decimal safeEntry = (result.Ma20 > 0 && result.SupportPrice > 0)
                         ? (result.Ma20 + result.SupportPrice) / 2m
                         : currentPrice * 0.97m;
+
+                    // [철벽 인터락] 1차 매수가는 신규 진입/추매 시점의 '현재가'보다 비쌀 수 없음!
+                    if (safeEntry > currentPrice)
+                    {
+                        safeEntry = currentPrice;
+                    }
+
                     result.RecommendedBuyPrice = Math.Round(safeEntry, 0);
                     result.EntryTimingBadge = "눌림목 분할 진입존";
                     result.EntryTimingGuide = $"20일 지지선 부근({result.RecommendedBuyPrice:N0}원) 도달 시 분할 진입 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
 
-                // 2차 매수가 (물타기/눌림목 지지선): 1차 매수가 대비 -5~-6% 추가 조정 시 손절선 직전 마지막 강력 반등 지지선
-                decimal secBuyBase = result.SupportPrice > 0 ? result.SupportPrice : result.RecommendedBuyPrice * 0.94m;
-                decimal secBuy = Math.Min(result.RecommendedBuyPrice * 0.95m, Math.Max(result.TargetStopPrice * 1.015m, secBuyBase));
+                // 2차 매수가 (물타기/눌림목 지지선): 1차 매수가 대비 -3~-5% 추가 조정 시 손절선 직전 마지막 강력 반등 지지선
+                decimal secBuyBase = result.SupportPrice > 0 && result.SupportPrice < result.RecommendedBuyPrice
+                    ? result.SupportPrice
+                    : result.RecommendedBuyPrice * 0.95m;
+                // 2차 매수가 상한선/하한선 철벽 검증: 2차 매수가는 반드시 1차 매수가보다 낮고, 손절선보다는 높아야 함
+                decimal secBuy = Math.Min(result.RecommendedBuyPrice * 0.96m, Math.Max(result.TargetStopPrice * 1.01m, secBuyBase));
+                if (secBuy >= result.RecommendedBuyPrice)
+                {
+                    secBuy = result.RecommendedBuyPrice * 0.95m;
+                }
                 result.SecondaryBuyPrice = Math.Round(secBuy, 0);
 
                 // 9. AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
-                if (result.ResistancePrice > currentPrice * 1.01m)
-                {
-                    result.RecommendedTargetPrice = Math.Round(result.ResistancePrice, 0);
-                }
-                else
-                {
-                    result.RecommendedTargetPrice = Math.Round(currentPrice * 1.08m, 0);
-                }
+                // [철벽 인터락] 목표가는 반드시 현재가 및 1차 권고 매수가보다 높아야 함!
+                decimal baseTarget = result.ResistancePrice > currentPrice * 1.02m
+                    ? result.ResistancePrice
+                    : currentPrice * 1.08m;
+                result.RecommendedTargetPrice = Math.Round(Math.Max(baseTarget, currentPrice * 1.03m), 0);
 
                 result.SecondaryTargetPrice = Math.Round(result.RecommendedTargetPrice * 1.09m, 0);
 

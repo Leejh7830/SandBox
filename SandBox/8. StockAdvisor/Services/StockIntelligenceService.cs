@@ -188,12 +188,12 @@ namespace GateHelper.StockAdvisor.Services
                 // 수급 뱃지 판정
                 if (latestFor > 0 && latestOrg > 0)
                 {
-                    res.Badge = "메이저쌍끌이";
+                    res.Badge = "메이저 매수";
                     res.Detail = $"외인(+{latestFor:N0}) & 기관(+{latestOrg:N0}) 동시 순매수 유입";
                 }
                 else if (forBuyDays >= 2 && orgBuyDays >= 2)
                 {
-                    res.Badge = "메이저쌍끌이";
+                    res.Badge = "메이저 매수";
                     res.Detail = $"최근 3일 중 2일 이상 외인·기관 연속 매집";
                 }
                 else if (latestFor > 0 && latestOrg <= 0)
@@ -213,7 +213,7 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else if (latestFor < 0 && latestOrg < 0)
                 {
-                    res.Badge = "메이저쌍끌이매도";
+                    res.Badge = "메이저 매도";
                     res.Detail = $"외인과 기관이 동시 이탈 중 (리스크 관리 필요)";
                 }
                 else
@@ -654,10 +654,10 @@ namespace GateHelper.StockAdvisor.Services
                 // 수급 반영
                 if (!string.IsNullOrEmpty(intel.SupplyBadge))
                 {
-                    if (intel.SupplyBadge.Contains("쌍끌이매수") || intel.SupplyBadge.Contains("메이저쌍끌이")) sfScore += 2;
-                    else if (intel.SupplyBadge.Contains("외인매수") || intel.SupplyBadge.Contains("기관매수")) sfScore += 1;
-                    else if (intel.SupplyBadge.Contains("쌍끌이매도")) sfScore -= 2;
-                    else if (intel.SupplyBadge.Contains("개미홀로매수")) sfScore -= 1;
+                    if (intel.SupplyBadge.Contains("쌍끌이매수") || (intel.SupplyBadge.Contains("메이저") && intel.SupplyBadge.Contains("매수"))) sfScore += 2;
+                    else if (intel.SupplyBadge.Contains("외인") || intel.SupplyBadge.Contains("기관")) sfScore += 1;
+                    else if (intel.SupplyBadge.Contains("쌍끌이매도") || (intel.SupplyBadge.Contains("메이저") && intel.SupplyBadge.Contains("매도"))) sfScore -= 2;
+                    else if (intel.SupplyBadge.Contains("개미")) sfScore -= 1;
                 }
 
                 // 재무/지뢰 반영

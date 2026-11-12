@@ -116,6 +116,81 @@ namespace GateHelper.StockAdvisor.Models
         }
     }
 
+    /// <summary>
+    /// 수급(외인·기관) 컬럼 뱃지 & 컬러 헬퍼
+    /// - 메이저 매수 (외인+기관 쌍끌이 순매수): 🟢 연초록 (0, 230, 118)
+    /// - 외인/기관 매수 (외인연속매수, 외인매수, 기관연속매수, 기관매수): 🔵 하늘색 (100, 200, 255)
+    /// - 수급공방: 🟡 노란색 (240, 200, 80)
+    /// - 개미홀로매수: 🟠 주황색 (255, 160, 60)
+    /// - 메이저 매도 (외인+기관 쌍끌이 이탈): 🔴 빨간색 (255, 75, 75)
+    /// </summary>
+    public static class SupplyHelper
+    {
+        public static (string Text, Color Color, bool IsBold) GetSupplyInfo(string rawBadge)
+        {
+            string badge = TextCleanHelper.StripEmoji(rawBadge ?? string.Empty).Trim();
+            if (string.IsNullOrEmpty(badge) || badge == "수급대기")
+            {
+                return ("수급대기", Color.FromArgb(170, 185, 205), false);
+            }
+
+            // 1. 메이저 매수 (기존 메이저쌍끌이): 연초록 (0, 230, 118)
+            if (badge.Contains("쌍끌이") && !badge.Contains("매도") || badge.Contains("메이저") && badge.Contains("매수"))
+            {
+                return ("메이저 매수", Color.FromArgb(0, 230, 118), true);
+            }
+
+            // 2. 메이저 매도 (기존 메이저쌍끌이매도): 빨간색 (255, 75, 75)
+            if (badge.Contains("메이저") && badge.Contains("매도") || badge.Contains("쌍끌이매도"))
+            {
+                return ("메이저 매도", Color.FromArgb(255, 75, 75), true);
+            }
+
+            // 3. 개미홀로매수: 주황색 (255, 160, 60)
+            if (badge.Contains("개미"))
+            {
+                return ("개미홀로매수", Color.FromArgb(255, 160, 60), false);
+            }
+
+            // 4. 수급공방: 노란색 (240, 200, 80)
+            if (badge.Contains("공방"))
+            {
+                return ("수급공방", Color.FromArgb(240, 200, 80), false);
+            }
+
+            // 5. 외인/기관 매수 (외인연속매수, 외인매수, 기관연속매수, 기관매수): 하늘색 (100, 200, 255)
+            if (badge.Contains("외인") || badge.Contains("기관"))
+            {
+                return (badge, Color.FromArgb(100, 200, 255), false);
+            }
+
+            return (badge, Color.FromArgb(170, 185, 205), false);
+        }
+
+        public static (string Text, Color Color, bool IsBold) GetSupplyInfo(StockHoldingItem item)
+        {
+            return GetSupplyInfo(item?.MajorSupplyBadge);
+        }
+
+        public static int GetSupplyPriority(string rawBadge)
+        {
+            var info = GetSupplyInfo(rawBadge);
+            string text = info.Text;
+            if (text == "메이저 매수") return 6;
+            if (text.Contains("연속매수")) return 5;
+            if (text.Contains("외인매수") || text.Contains("기관매수")) return 4;
+            if (text == "수급공방") return 3;
+            if (text.Contains("개미")) return 2;
+            if (text == "메이저 매도") return 1;
+            return 0;
+        }
+
+        public static int GetSupplyPriority(StockHoldingItem item)
+        {
+            return GetSupplyPriority(item?.MajorSupplyBadge);
+        }
+    }
+
     public enum PositionGroup
     {
         GroupA, // 반등 시 손절 / 비중 축소 권고 (적색/주황)

@@ -273,8 +273,9 @@ namespace GateHelper.StockAdvisor
             _lblTimingGuide.ForeColor = verdict.ForeColor;
 
             // 카드 2 갱신
-            _lblSupplyBadge.Text = $"수급 주체: {intel.SupplyBadge}";
-            _lblSupplyBadge.ForeColor = intel.SupplyBadge.Contains("쌍끌이") ? Color.FromArgb(0, 240, 210) : Color.FromArgb(180, 210, 240);
+            var supInfo = SupplyHelper.GetSupplyInfo(intel.SupplyBadge);
+            _lblSupplyBadge.Text = $"수급 주체: {supInfo.Text}";
+            _lblSupplyBadge.ForeColor = supInfo.Color;
 
             _lblSupplyDetails.Text = $"• {intel.SupplyDetail}\n• 최근 순매수 : 외인 {intel.ForeignNetQuantity:+0;-0;0} | 기관 {intel.OrganNetQuantity:+0;-0;0}";
 

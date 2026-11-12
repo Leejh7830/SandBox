@@ -220,7 +220,7 @@ namespace GateHelper.StockAdvisor
             {
                 string rsiStr = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                 string scoreStr = item.FinalScore > 0 ? $"{item.FinalScore}점" : "-";
-                string supplyStr = !string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기";
+                var supplyInfo = SupplyHelper.GetSupplyInfo(item);
                 var landmineInfo = LandmineHelper.GetSimplifiedBadge(item);
                 string actionStr = item.LastDiagnosis?.RecommendedAction;
                 if (string.IsNullOrEmpty(actionStr))
@@ -237,7 +237,7 @@ namespace GateHelper.StockAdvisor
                     $"{item.CurrentPrice:N0}원",
                     rateStr,
                     item.Grade.ToString(),
-                    supplyStr,
+                    supplyInfo.Text,
                     landmineInfo.Text,
                     rsiStr,
                     scoreStr,
@@ -257,11 +257,8 @@ namespace GateHelper.StockAdvisor
                 lvi.SubItems[4].Font = BoldFont;
 
                 // 수급 (SubItem 5)
-                if (supplyStr.Contains("쌍끌이")) lvi.SubItems[5].ForeColor = Color.FromArgb(0, 240, 210);
-                else if (supplyStr.Contains("외인")) lvi.SubItems[5].ForeColor = Color.FromArgb(120, 210, 255);
-                else if (supplyStr.Contains("기관")) lvi.SubItems[5].ForeColor = Color.FromArgb(255, 215, 100);
-                else if (supplyStr.Contains("개미")) lvi.SubItems[5].ForeColor = Color.FromArgb(210, 170, 255);
-                else lvi.SubItems[5].ForeColor = Color.FromArgb(180, 195, 215);
+                lvi.SubItems[5].ForeColor = supplyInfo.Color;
+                if (supplyInfo.IsBold) lvi.SubItems[5].Font = BoldFont;
 
                 // 지뢰검증 (SubItem 6: 우수/안전 -> 연초록, 주의 -> 주황, 위험 -> 빨강)
                 lvi.SubItems[6].ForeColor = landmineInfo.Color;

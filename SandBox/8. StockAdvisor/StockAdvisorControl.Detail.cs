@@ -96,7 +96,7 @@ namespace GateHelper.StockAdvisor
                     StockVerdictInfo verdict = StockVerdictHelper.Evaluate(item);
 
                     string gradeText = item.Grade.ToString();
-                    string supplyText = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기");
+                    var supplyInfo = SupplyHelper.GetSupplyInfo(item);
                     var landmineInfo = LandmineHelper.GetSimplifiedBadge(item);
 
                     string priceDisplay = item.IsPriceScrapeSuccess ? $"{item.CurrentPrice:N0}" : $"{item.CurrentPrice:N0} [오류]";
@@ -117,7 +117,7 @@ namespace GateHelper.StockAdvisor
                         profitAmtDisplay,                                    // 5: 손익금(원)
                         profitRateDisplay,                                   // 6: 수익률
                         gradeText,                                           // 7: AI 등급
-                        supplyText,                                          // 8: 수급(외인·기관)
+                        supplyInfo.Text,                                     // 8: 수급(외인·기관)
                         landmineInfo.Text,                                   // 9: 지뢰검증 (우수/안전/주의/위험)
                         rsiText,                                             // 10: 14일 RSI
                         volText,                                             // 11: 5일 거래량
@@ -178,17 +178,9 @@ namespace GateHelper.StockAdvisor
                     lvi.SubItems[7].ForeColor = GradeHelper.GetGradeColor(item.Grade);
                     lvi.SubItems[7].Font = SubItemBoldFont;
 
-                    // 8: 수급 (외인·기관)
-                    if (supplyText.Contains("쌍끌이매수") || supplyText.Contains("메이저쌍끌이"))
-                    {
-                        lvi.SubItems[8].ForeColor = Color.FromArgb(0, 240, 210); // 청록 네온
-                        lvi.SubItems[8].Font = SubItemBoldFont;
-                    }
-                    else if (supplyText.Contains("외인")) lvi.SubItems[8].ForeColor = Color.FromArgb(120, 210, 255);
-                    else if (supplyText.Contains("기관")) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 215, 100);
-                    else if (supplyText.Contains("개미")) lvi.SubItems[8].ForeColor = Color.FromArgb(210, 170, 255);
-                    else if (supplyText.Contains("매도")) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 110, 110);
-                    else lvi.SubItems[8].ForeColor = Color.FromArgb(180, 195, 215);
+                    // 8: 수급 (외인·기관) - 메이저 매수(연초록), 외인/기관(하늘색), 수급공방(노란색), 개미홀로(주황색), 메이저 매도(빨간색)
+                    lvi.SubItems[8].ForeColor = supplyInfo.Color;
+                    if (supplyInfo.IsBold) lvi.SubItems[8].Font = SubItemBoldFont;
 
                     // 9: 지뢰검증 (간결 4단계: 우수/안전 -> 연초록, 주의 -> 주황, 위험 -> 빨강)
                     lvi.SubItems[9].ForeColor = landmineInfo.Color;
@@ -363,7 +355,8 @@ namespace GateHelper.StockAdvisor
                 $"• 목표가: {targetStr}   |   손절가: {stopStr}";
 
             // 4. 진단 스펙 & 수급 지뢰 요약 (권고 액션은 상단 결론 바가 전담하므로 중복 제거)
-            string supBadge = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.MajorSupplyBadge) ? item.MajorSupplyBadge : "수급대기");
+            var supplyInfo = SupplyHelper.GetSupplyInfo(item);
+            string supBadge = supplyInfo.Text;
             string rawMineBadge = TextCleanHelper.StripEmoji(!string.IsNullOrEmpty(item.LandmineBadge) ? item.LandmineBadge : "클린안전");
             var landmineInfo = LandmineHelper.GetSimplifiedBadge(item);
             string mineBadgeDisplay = $"[{landmineInfo.Text}] {rawMineBadge}";
@@ -601,8 +594,8 @@ namespace GateHelper.StockAdvisor
                 case 7: // AI 등급 (A, B, C, F)
                     result = itemX.Grade.CompareTo(itemY.Grade);
                     break;
-                case 8: // 수급(외인·기관) (문자열 정렬)
-                    result = string.Compare(itemX.MajorSupplyBadge, itemY.MajorSupplyBadge, StringComparison.CurrentCultureIgnoreCase);
+                case 8: // 수급(외인·기관) (우선순위 정렬: 메이저 매수 > 외인/기관 연속 > 외인/기관 일반 > 수급공방 > 개미홀로 > 메이저 매도)
+                    result = SupplyHelper.GetSupplyPriority(itemX).CompareTo(SupplyHelper.GetSupplyPriority(itemY));
                     break;
                 case 9: // 지뢰검증 (간결 4단계 우선순위 정렬: 우수 > 안전 > 주의 > 위험)
                     result = LandmineHelper.GetLandminePriority(itemX).CompareTo(LandmineHelper.GetLandminePriority(itemY));

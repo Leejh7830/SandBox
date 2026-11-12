@@ -326,7 +326,7 @@ namespace GateHelper.StockAdvisor
                     _lblFinalVerdict.BackColor = Color.FromArgb(24, 28, 38);
                     _lblFinalVerdict.ForeColor = Color.FromArgb(170, 185, 205);
                 }
-                _lblDetailPriceTargets.Text = "• 매수가: 1차 - 원   |   2차(추매): - 원\n• 목표가: - 원   |   손절가: - 원";
+                _lblDetailPriceTargets.Text = "• 매수가: - 원\n• 목표가: - 원   |   손절가: - 원";
                 _lblDetailSummary.Text = "• AI 등급: -   |   종합 점수: -점\n• 수급: -   |   지뢰: -";
                 _miniChart?.SetData(null);
                 RenderEmptyReport();

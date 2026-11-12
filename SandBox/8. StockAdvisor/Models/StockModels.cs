@@ -515,7 +515,7 @@ namespace GateHelper.StockAdvisor.Models
                     BadgeText = "[선택대기]",
                     TitleText = "[ AI 참모 최종 결론 : 좌측 종목을 선택하세요 ]",
                     GuideText = "종목을 선택하시면 단일화된 최종 행동 결론이 표시됩니다.",
-                    BuyPriceText = "• 매수가: 1차 - 원   |   2차(추매): - 원",
+                    BuyPriceText = "• 매수가: - 원",
                     BackColor = Color.FromArgb(24, 28, 38),
                     ForeColor = Color.FromArgb(170, 185, 205),
                     BorderColor = Color.FromArgb(60, 75, 100),
@@ -540,9 +540,13 @@ namespace GateHelper.StockAdvisor.Models
                 info.EmergencyReason = $"손절가({stopPrice:N0}원) 터치/이탈";
             }
 
-            // 매수가 기초 문자열 구성
+            // 단일 권고 매수가 기초 문자열 구성 (3단 구조 심플화: 불필요한 상시 2차 매수가 제거)
             string buy1Str = item.RecommendedBuyPrice > 0 ? $"{item.RecommendedBuyPrice:N0}원" : (item.CurrentPrice > 0 ? $"{item.CurrentPrice:N0}원" : "-");
-            string buy2Str = item.SecondaryBuyPrice > 0 ? $"{item.SecondaryBuyPrice:N0}원" : "-";
+
+            // [추매 이벤트 조건] 보유 중이고 현재가가 지지선에서 하락을 멈추고 지지 반등(수급 양호, 지뢰 없음, 당일 양봉/보합)할 때만 2차 추매 정보 활성화
+            bool isSecondaryBuyTriggered = item.Quantity > 0 && !item.HasCriticalLandmine && item.ChangeRate >= -0.5m &&
+                                           item.CurrentPrice <= item.BuyPrice * 0.96m && item.CurrentPrice > stopPrice;
+            string secBuyAppend = isSecondaryBuyTriggered ? $"   [★지지선 반등 확인! 2차추매 가능: {item.CurrentPrice:N0}원]" : "";
 
             // 2. 판정 로직 분기
             // [급락 경보 인터락] 당일 -4.0%를 초과하여 급락 중인 종목은 지지선 붕괴 위험이 크므로 매수 배제 및 급락주의 경보
@@ -604,7 +608,7 @@ namespace GateHelper.StockAdvisor.Models
                     {
                         info.GuideText = "하락 추세 지속. 추가 하락에 대비하여 기술적 반등 구간에서 단계적 비중 축소 권고";
                     }
-                    info.BuyPriceText = $"• 매수가: [매수 불가] (정량 1차선: {buy1Str} / 종합 {item.Grade}등급으로 추가 매수 불가)";
+                    info.BuyPriceText = $"• 매수가: [매수 불가] (종합 {item.Grade}등급으로 추가 매수 절대 금지)";
                 }
                 else
                 {
@@ -622,7 +626,7 @@ namespace GateHelper.StockAdvisor.Models
                     {
                         info.GuideText = "하락 추세 및 불확실성 지속. 신규 매수를 금지하며 안전한 지지선 형성 대기";
                     }
-                    info.BuyPriceText = $"• 매수가: [진입 금지] (정량 1차선: {buy1Str} / 종합 {item.Grade}등급으로 매수 불가)";
+                    info.BuyPriceText = $"• 매수가: [진입 금지] (종합 {item.Grade}등급으로 매수 불가)";
                 }
 
                 info.BackColor = Color.FromArgb(48, 18, 26);
@@ -662,16 +666,16 @@ namespace GateHelper.StockAdvisor.Models
                     if (isHeld)
                     {
                         info.BadgeText = "[과매도반등]";
-                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 분할 추매 유효 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 분할 추매 가능";
-                        info.BuyPriceText = $"• 추가매수가: 1차 {buy1Str}   |   2차: {buy2Str}";
+                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 추매 유효 ]";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 추매 가능";
+                        info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
                     }
                     else
                     {
                         info.BadgeText = "[과매도반등]";
                         info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 바닥 구간 분할 매수 유효 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 분할 진입 권장";
-                        info.BuyPriceText = $"• 매수가: 1차 {buy1Str}   |   2차(추매): {buy2Str}";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 진입 권장";
+                        info.BuyPriceText = $"• 매수가: {buy1Str}";
                     }
                     info.BackColor = Color.FromArgb(14, 38, 48);
                     info.ForeColor = Color.FromArgb(80, 230, 255);
@@ -686,15 +690,15 @@ namespace GateHelper.StockAdvisor.Models
                     {
                         info.BadgeText = "[보유/추매]";
                         info.TitleText = "[ AI 참모 최종 결론 : 추세 유지 홀딩 & 분할 추매 유효 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 1차 매수가 부근 분할 추매 유효";
-                        info.BuyPriceText = $"• 추가매수가: 1차 {buy1Str}   |   2차: {buy2Str}";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 매수가 부근 분할 추매 유효";
+                        info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
                     }
                     else
                     {
                         info.BadgeText = "[분할매수]";
                         info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 유효 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 1차 매수가 부근 분할 진입 권장";
-                        info.BuyPriceText = $"• 매수가: 1차 {buy1Str}   |   2차(추매): {buy2Str}";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 권고 매수가 부근 분할 진입 권장";
+                        info.BuyPriceText = $"• 매수가: {buy1Str}";
                     }
                     info.BackColor = Color.FromArgb(16, 44, 28);
                     info.ForeColor = Color.FromArgb(90, 255, 170);
@@ -711,14 +715,14 @@ namespace GateHelper.StockAdvisor.Models
                     info.BadgeText = "[보유관망]";
                     info.TitleText = "[ AI 참모 최종 결론 : 기존 물량 유지 및 지지선 관망 ]";
                     info.GuideText = "추세 방향성 탐색 중. 20일 지지선 안착 확인 시까지 섣부른 물타기를 자제하고 관망 권고";
-                    info.BuyPriceText = $"• 매수가: [관망 대기] (1차 지지선: {buy1Str}   |   2차: {buy2Str})";
+                    info.BuyPriceText = $"• 매수가: [관망 대기] (기준 지지선: {buy1Str})";
                 }
                 else
                 {
                     info.BadgeText = "[관망대기]";
                     info.TitleText = "[ AI 참모 최종 결론 : 관망 및 지지선 확인 대기 ]";
                     info.GuideText = "추세 방향성 탐색 중. 20일 지지선 안착 및 추가 거래량 수급 확인 전까지 신규 진입 보류";
-                    info.BuyPriceText = $"• 매수가: [관망 대기] (1차 지지선: {buy1Str}   |   2차: {buy2Str})";
+                    info.BuyPriceText = $"• 매수가: [관망 대기] (기준 지지선: {buy1Str})";
                 }
                 info.BackColor = Color.FromArgb(36, 32, 20);
                 info.ForeColor = Color.FromArgb(255, 220, 90);

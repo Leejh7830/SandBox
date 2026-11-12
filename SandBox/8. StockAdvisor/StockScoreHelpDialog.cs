@@ -5,7 +5,7 @@ using System.Windows.Forms;
 namespace GateHelper.StockAdvisor
 {
     /// <summary>
-    /// AI 주식 리스크 참모 - 4대 진단 점수(차트/뉴스/손익비/종합) 산출 가이드 다이얼로그
+    /// AI 주식 리스크 참모 - 종합 퀀트 점수 산출 기준 및 지표 사전 다이얼로그
     /// </summary>
     public class StockScoreHelpDialog : Form
     {
@@ -16,9 +16,9 @@ namespace GateHelper.StockAdvisor
 
         private void InitializeComponent()
         {
-            Text = "AI 주식 리스크 참모 - 4대 진단 점수 산출 가이드";
-            ClientSize = new Size(760, 800);
-            MinimumSize = new Size(760, 750);
+            Text = "AI 주식 리스크 참모 - 종합 퀀트 점수 산출 기준 및 지표 사전";
+            ClientSize = new Size(800, 850);
+            MinimumSize = new Size(800, 750);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -33,7 +33,7 @@ namespace GateHelper.StockAdvisor
             var pnlHeader = new Panel { Dock = DockStyle.Top, Height = 58 };
             var lblTitle = new Label
             {
-                Text = "4대 퀀트 진단 점수 산출 기준 & 포지션 가이드",
+                Text = "4대 퀀트 진단 점수 산출 기준 & 지표 사전",
                 Font = new Font("Malgun Gothic", 12f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 216, 255),
                 AutoSize = true,
@@ -41,7 +41,7 @@ namespace GateHelper.StockAdvisor
             };
             var lblSubtitle = new Label
             {
-                Text = "차트(30%) · 수급·재무(25%) · 뉴스·공시(25%) · 손익비(20%) 4대 정량 팩트 기반 종합 점수 및 대응 지침",
+                Text = "차트(30%) · 수급·재무(25%) · 뉴스·공시(25%) · 손익비(20%) 4대 팩터 공식 및 수급·지뢰·최종액션 용어 해설",
                 Font = new Font("Segoe UI", 9f),
                 ForeColor = Color.FromArgb(150, 165, 185),
                 Location = new Point(2, 30),
@@ -56,7 +56,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "확인 (닫기)",
                 Size = new Size(110, 36),
-                Location = new Point(610, 5),
+                Location = new Point(650, 5),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(25, 38, 55),
                 ForeColor = Color.FromArgb(0, 216, 255),
@@ -67,7 +67,7 @@ namespace GateHelper.StockAdvisor
             btnClose.Click += (s, e) => Close();
             pnlFooter.Controls.Add(btnClose);
 
-            // 3. 중앙 스크롤 본문 (4대 점수 카드 + 종합 체계 카드)
+            // 3. 중앙 스크롤 본문 (5대 상세 안내 카드)
             var pnlBody = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -77,94 +77,85 @@ namespace GateHelper.StockAdvisor
 
             int curY = 0;
 
-            // 카드 1: 차트 점수 (30%)
-            var cardChart = CreateScoreCard(
-                "■ [1. 차트 점수] (1~10점 / 가중치 30%)",
+            // 카드 1: 4대 퀀트 진단 점수 산출 공식 (10점 만점)
+            var cardScore = CreateScoreCard(
+                "■ [1. 4대 퀀트 진단 점수 산출 공식] (10점 만점 / 4대 정량 팩터)",
                 Color.FromArgb(0, 216, 255),
                 Color.FromArgb(18, 28, 42),
                 Color.FromArgb(0, 160, 220),
-                "• 20일 일봉 데이터를 기반으로 이평선 정배열, 거래량 수급, RSI 모멘텀을 분석합니다.\n" +
-                "  - 정배열 가산점: 현재가 > 5일선 (+1.5점) 및 5일선 > 20일선 (+1.5점)\n" +
-                "  - 거래량 수급 가산점: 직전 5영업일 평균 대비 당일 거래량 130% 이상 실린 양봉 (+1.5점)\n" +
-                "  - RSI 안정 가산점: 14일 RSI 45~65 구간의 안정적 상승 탄력 (+1.0점)\n" +
-                "  - 역배열 하락 감점: 주가가 5일선/20일선 아래로 무너진 역배열 하락 추세 (-2.5점)\n" +
-                "• 점수 판정: [8~10점] 강력 상승 추세 | [5~7점] 횡보/중립 | [1~4점] 역배열 하락 추세"
+                "• 최종 산출 공식: [차트 × 30%] + [수급·재무 × 25%] + [뉴스·공시 × 25%] + [손익비 × 20%]\n" +
+                "  ① 차트 점수 (30%): 20일 일봉 기준 이평선 정배열(+3.0점), 거래량 실린 양봉(+1.5점), RSI 45~65 안정 탄력(+1.0점), 역배열 하락 추세 감점(-2.5점)\n" +
+                "  ② 수급·재무 점수 (25%): 메이저 매수(+2.0점), 외인/기관 순매수(+1.0점), 주주환원 친화(+2.0점), 부채 100% 이하(+1.0점), 메이저 매도(-2.0점), 부채 250% 초과(-1.0점), 2년 연속 영업적자(-2.0점)\n" +
+                "  ③ 뉴스·공시 점수 (25%): DART 전자공시 및 Gemini AI 팩트 검증. 실적 서프라이즈/장기계약(10점) ~ 중립(5점) ~ 유증/CB/제재 악재(1~3점)\n" +
+                "  ④ 손익비 점수 (20%): 20일 최저가(지지선)까지의 거리. -3% 이내 최상(10점) ~ -4.5%(8~9점) ~ -11% 이상 위험(1~3점)\n" +
+                "  ※ 종합 등급: [A 등급 (초록)] 8~10점 (최우량 주도주) | [B 등급 (노랑)] 6~7점 (양호) | [C 등급 (주황)] 4~5점 (주의) | [F 등급 (빨강)] 1~3점 (위험)"
             );
-            cardChart.Location = new Point(0, curY);
-            pnlBody.Controls.Add(cardChart);
-            curY += cardChart.Height + 10;
+            cardScore.Location = new Point(0, curY);
+            pnlBody.Controls.Add(cardScore);
+            curY += cardScore.Height + 10;
 
-            // 카드 2: 수급·재무 점수 (25%)
+            // 카드 2: 수급(외인·기관) 5대 지표 및 용어 해설
             var cardSupply = CreateScoreCard(
-                "■ [2. 수급·재무 점수] (1~10점 / 가중치 25%)",
+                "■ [2. 수급(외인·기관) 5대 지표 및 용어 해설] (신호등 체계)",
                 Color.FromArgb(0, 240, 210),
                 Color.FromArgb(16, 32, 38),
                 Color.FromArgb(0, 190, 170),
-                "• 외인/기관 순매수 수급과 부채비율·적자 여부·주주환원 건전성을 결합 검증합니다.\n" +
-                "  - 메이저 쌍끌이 매수 가산점: 외인·기관 동시 순매수 유입 (+2.0점)\n" +
-                "  - 단독 매수 가산점: 외인 또는 기관 순매수 주도 (+1.0점)\n" +
-                "  - 주주 친화 공시 가산점: 자사주 취득/소각 또는 배당 확대 (+2.0점)\n" +
-                "  - 부채비율 건전 가산점: 부채비율 100% 이하 초우량 (+1.0점) / 250% 초과 (-1.0점)\n" +
-                "  - 쌍끌이 매도/적자 감점: 외인·기관 동시 매도 (-2.0점), 2년 연속 영업적자 (-2.0점)\n" +
-                "  ※ 치명적 지뢰(3년 연속 적자, 감사의견거절, 횡령배임 등) 감지 시 점수 1점 강제 처리"
+                "• 🟢 메이저 매수: 당일 외인과 기관이 동시에 순매수 유입 중이거나, 최근 3일 중 2일 이상 동시 매집한 최고 수급 호재 (+2점)\n" +
+                "• 🔵 외인매수 / 기관매수 (연속매수 포함): 외국인 또는 기관 한쪽 주체가 주도하여 순매수 유입 중인 양호한 수급 (+1점)\n" +
+                "• 🟡 수급공방: 외인과 기관의 매수/매도가 팽팽하게 맞서거나 뚜렷한 주체가 없는 방향성 탐색 중립 상태 (0점)\n" +
+                "• 🟠 개미홀로매수: 외인과 기관은 모두 팔고 개인만 홀로 매수 중인 상태 (상투 물림 or 역배열 리스크 경보, -1점)\n" +
+                "• 🔴 메이저 매도: 외국인과 기관이 동시에 대량 투매/이탈 중인 최악의 수급 악재 (-2점)"
             );
             cardSupply.Location = new Point(0, curY);
             pnlBody.Controls.Add(cardSupply);
             curY += cardSupply.Height + 10;
 
-            // 카드 3: 뉴스·공시 점수 (25%)
-            var cardNews = CreateScoreCard(
-                "■ [3. 뉴스·공시 점수] (1~10점 / 가중치 25%)",
+            // 카드 3: 지뢰검증 4단계 뱃지 해설
+            var cardLandmine = CreateScoreCard(
+                "■ [3. 지뢰검증 4단계 뱃지 해설] (재무 및 공시 리스크)",
                 Color.FromArgb(200, 130, 255),
                 Color.FromArgb(24, 20, 38),
                 Color.FromArgb(160, 90, 230),
-                "• DART 실시간 전자공시 및 Gemini AI(1.5 Pro) 기반 글로벌 팩트 검증을 수행합니다.\n" +
-                "  - 10점 (초대형 호재): 대규모 실적 서프라이즈, 수출규제 해제, 대형 장기 공급 계약\n" +
-                "  - 7~8점 (우호 환경): 실적 개선 모멘텀, 공시 호재, 업황 정책 수혜주 부각\n" +
-                "  - 5점 (중립 기본값): 뚜렷한 돌발 호악재가 없는 정상적인 시장 흐름\n" +
-                "  - 1~3점 (치명적 악재): 미국 수출통제 제재 직격탄, 대규모 어닝 쇼크, 유상증자/CB발행 등\n" +
-                "• 원칙: 포털의 자극적인 찌라시/소문을 배제하고 공식 DART 공시와 신뢰도 높은 팩트만 반영"
+                "• 🟢 우수: 자사주 취득/소각, 배당 확대 등 주주환원 친화 공시 발생 종목\n" +
+                "• 🟢 안전: 부채비율 250% 미만 건전 + 최근 CB/BW/유상증자/적자 등 악재 지뢰 0건 기본 클린 종목\n" +
+                "• 🟠 주의: 부채비율 250% 이상 과다 (재무 건전성 및 이자 부담 점검 필요)\n" +
+                "• 🔴 위험: 3년 연속 영업손실, 전환사채(CB)/신주인수권(BW) 발행, 대규모 유상증자, 감사의견거절, 횡령배임 등 치명적 지뢰 발생\n" +
+                "  ※ '위험' 지뢰 탐지 시 종합 점수 1점 강제 처리 및 신규 매수 금지 발동!"
             );
-            cardNews.Location = new Point(0, curY);
-            pnlBody.Controls.Add(cardNews);
-            curY += cardNews.Height + 10;
+            cardLandmine.Location = new Point(0, curY);
+            pnlBody.Controls.Add(cardLandmine);
+            curY += cardLandmine.Height + 10;
 
-            // 카드 4: 손익비 점수 (20%)
-            var cardRisk = CreateScoreCard(
-                "■ [4. 손익비 점수] (1~10점 / 가중치 20%)",
+            // 카드 4: 최종 액션 6대 실전 매매 지침
+            var cardAction = CreateScoreCard(
+                "■ [4. 최종 액션 6대 실전 매매 지침] (AI 참모 결론)",
                 Color.FromArgb(0, 230, 130),
                 Color.FromArgb(16, 30, 24),
                 Color.FromArgb(0, 180, 100),
-                "• 최근 20일 최저가(1차 지지선/손절선)까지의 거리(하방 위험률 %)를 정량 측정합니다.\n" +
-                "  - 10점 (최상): 지지선까지 하방 위험률 -3.0% 이내 (손절폭이 극도로 좁아 손익비 최상)\n" +
-                "  - 8~9점 (우수): 하방 위험률 -4.5% 이내 (지지선 근접, 눌림목 최적 매수 타점)\n" +
-                "  - 6~7점 (양호): 하방 위험률 -6.0% 이내 (일반적인 손익비 양호 구간)\n" +
-                "  - 4~5점 (보통): 하방 위험률 -8.0% 이내 (손절폭이 다소 넓으므로 분할 접근 필요)\n" +
-                "  - 1~3점 (위험): 하방 위험률 -11.0% 이상 (지지선이 너무 멀어 하락 시 손실 위험 극대화)\n" +
-                "• 원칙: 손익비 점수가 높을수록 손절 시 손실은 작고 반등 시 이익이 큰 안전한 구간입니다."
+                "• 🟢 매수추천: 20일 눌림목 안착 or 과매도 반등 지지선 매수/추매 적극 권고 (보유자/미보유자 공통)\n" +
+                "• 🟢 상승추세: 종합 우량주 주가 상승 랠리 구간 (수익 극대화 홀딩 유지, 추가 추매 자제)\n" +
+                "• 🔵 과열주의: 14일 RSI 68+ 단기 급등 (보유자는 30~50% 분할 익절, 미보유자는 추격 매수 금지)\n" +
+                "• 🟡 관망: B등급 중립 지지선 공방 중 (방향성 안착 확인 전까지 섣부른 매매 자제 및 관망 대기)\n" +
+                "• 🟠 급락주의: 당일 -4.0% 초과 급락 발생 (떨어지는 칼날 성급한 물타기 절대 금지)\n" +
+                "• 🔴 비중축소: [보유자 전용] C/F등급 또는 지뢰 종목 (반등 시 40~50% 손절 및 비중 축소 탈출)\n" +
+                "• 🔴 매수금지: [미보유자 전용] 리스크/지뢰 종목 신규 진입 절대 금지"
             );
-            cardRisk.Location = new Point(0, curY);
-            pnlBody.Controls.Add(cardRisk);
-            curY += cardRisk.Height + 10;
+            cardAction.Location = new Point(0, curY);
+            pnlBody.Controls.Add(cardAction);
+            curY += cardAction.Height + 10;
 
-            // 카드 5: 종합 점수 & AI 4대 등급 체계 (100%)
-            var cardTotal = CreateScoreCard(
-                "■ [5. 종합 점수 & AI 4대 등급 체계] (A, B, C, F)",
+            // 카드 5: 주요 보조지표 색상 변화 기준
+            var cardIndicators = CreateScoreCard(
+                "■ [5. 주요 보조지표 색상 변화 기준] (한눈에 보는 직관성)",
                 Color.FromArgb(255, 205, 70),
                 Color.FromArgb(32, 26, 18),
                 Color.FromArgb(210, 160, 40),
-                "• 최종 산출 공식: [차트 × 30%] + [수급·재무 × 25%] + [뉴스 × 25%] + [손익비 × 20%]\n\n" +
-                "  [A 등급 (안전/초록)] : 8, 9, 10점 (최우수 / 적극 보유 및 눌림목 분할 진입)\n" +
-                "  [B 등급 (주의/노랑)] : 6, 7점 (양호 / 홀딩 관망 및 지지선 확인)\n" +
-                "  [C 등급 (경고/주황)] : 3, 4, 5점 (모멘텀 약화 / 반등 시 비중 축소 고려)\n" +
-                "  [F 등급 (위험/빨강)] : 0, 1, 2점 (위험 극대화 / 기계적 손절 및 신규 매수 금지)\n\n" +
-                "• 참모 행동(Action) 분리 원칙:\n" +
-                "  - 보유자: 점수 및 손실 구간에 따라 [비중 축소] · [분할 익절] · [보유 관망] · [추매 유효]\n" +
-                "  - 미보유자: 시장 가치 점수에 따라 [매수 금지] · [추격매수 금지] · [분할 매수 진입] · [관망 대기]\n" +
-                "  ※ [과열 안전벨트]: 종합점수가 높아도 14일 RSI가 70 이상이면 '과열 주의: 추격매수 금지' 강제 발동!"
+                "• 14일 RSI: 🔴 빨간색(70 이상 단기 과열 슈팅) | 🟢 연초록(30~70 정상 추세) | 🔵 하늘색(30 이하 과매도 바닥 반등)\n" +
+                "• 5일 거래량: 🟢 청록 네온(140% 이상 최근 5일 평균 대비 거래량 급증/수급 유입) | ⚪ 연회색(140% 미만 평이한 거래량)\n" +
+                "• 종합점수: 🟡 황금색(8~10점 최우량 S/A급) | ⚪ 밝은 흰색(4~7점 일반 B/C급) | 🔴 빨간색(1~3점 부실/위험 F급)"
             );
-            cardTotal.Location = new Point(0, curY);
-            pnlBody.Controls.Add(cardTotal);
+            cardIndicators.Location = new Point(0, curY);
+            pnlBody.Controls.Add(cardIndicators);
 
             pnlMain.Controls.Add(pnlBody);
             pnlMain.Controls.Add(pnlHeader);
@@ -176,7 +167,7 @@ namespace GateHelper.StockAdvisor
         {
             var pnl = new Panel
             {
-                Width = 690,
+                Width = 730,
                 BackColor = bgColor,
                 Padding = new Padding(14, 10, 14, 10)
             };
@@ -193,7 +184,7 @@ namespace GateHelper.StockAdvisor
             var lblContent = new Label
             {
                 Text = content,
-                Font = new Font("Segoe UI", 9f),
+                Font = new Font("Segoe UI", 9.2f),
                 ForeColor = Color.FromArgb(220, 230, 245),
                 Dock = DockStyle.Fill,
                 AutoSize = false
@@ -202,9 +193,9 @@ namespace GateHelper.StockAdvisor
             pnl.Controls.Add(lblContent);
             pnl.Controls.Add(lblTitle);
 
-            // 줄 수에 따른 패널 높이 자동 계산
+            // 줄 수에 따른 패널 높이 자동 계산 (가독성을 위한 넉넉한 줄간격 확보)
             int lineCount = content.Split('\n').Length;
-            pnl.Height = 32 + (lineCount * 19) + 10;
+            pnl.Height = 34 + (lineCount * 22) + 12;
 
             // 커스텀 테두리 페인팅
             pnl.Paint += (s, e) =>

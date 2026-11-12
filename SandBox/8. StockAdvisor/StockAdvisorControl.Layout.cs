@@ -380,7 +380,7 @@ namespace GateHelper.StockAdvisor
                 {
                     mnuToggleOrder.Text = selItm.IsBrokerOrderSet
                         ? "✓ 증권앱 주문 설정됨 (체크 해제)"
-                        : (selItm.IsWatchlist ? "□ 증권앱 예약매수 걸림으로 체크" : "□ 증권앱 자동청산 걸림으로 체크");
+                        : (selItm.IsWatchlist ? "증권앱 예약매수 걸림으로 체크" : "증권앱 자동청산 걸림으로 체크");
                 }
                 else
                 {

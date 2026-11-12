@@ -214,13 +214,13 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else if (result.ChartScore >= 7 && result.RiskScore >= 7)
                 {
-                    result.TimingBadge = "골든진입";
-                    result.TimingWarning = $"[최적 진입] 손익비 우수(하방 {result.DownsideRiskPercent:F1}%), 지지선 확인된 골든 진입 구간";
+                    result.TimingBadge = "골든 눌림목";
+                    result.TimingWarning = $"[최적 진입] 손익비 우수(하방 {result.DownsideRiskPercent:F1}%), 20일선 지지선 안착된 골든 눌림목 매수 구간";
                 }
                 else if (result.ChartScore >= 6)
                 {
-                    result.TimingBadge = "눌림목대기";
-                    result.TimingWarning = $"[눌림목 대기] 추세 양호하나 지지선 이격 존재({result.DownsideRiskPercent:F1}%). 추격매수 지양";
+                    result.TimingBadge = "눌림목 대기";
+                    result.TimingWarning = $"[눌림목 대기] 우상향 추세이나 20일선 이격 존재({result.DownsideRiskPercent:F1}%). 20일선 눌림목까지 대기 권고";
                 }
                 else if (result.ChartScore <= 3)
                 {

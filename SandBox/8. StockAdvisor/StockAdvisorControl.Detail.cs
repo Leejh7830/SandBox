@@ -327,7 +327,7 @@ namespace GateHelper.StockAdvisor
             string chgSign = item.ChangeRate > 0 ? "+" : "";
             string orderBadge = item.IsBrokerOrderSet
                 ? (item.IsWatchlist ? "  [✓ 증권앱 예약매수 걸림]" : "  [✓ 증권앱 자동청산 걸림]")
-                : "  [□ 증권앱 주문미설정]";
+                : "  [증권앱 주문 미설정]";
             _lblDetailTitle.Text = $"{item.StockName} ({item.StockCode})  |  현재가: {item.CurrentPrice:N0}원 ({chgSign}{item.ChangeRate:F2}%){orderBadge}";
 
             // 2. AI 참모 최종 결론 바 (0.1초 직관 배지 + 1줄 행동 지침)

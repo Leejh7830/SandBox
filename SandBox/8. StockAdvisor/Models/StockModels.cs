@@ -168,7 +168,7 @@ namespace GateHelper.StockAdvisor.Models
         public decimal DownsideRiskPercent { get; set; } = 0m;
 
         /// <summary>
-        /// 타이밍 상태 뱃지 (🔴 과열(매수금지), 🟢 골든진입, 🟡 눌림목대기, 🔵 과매도반등, ⚪ 관망유지, ❌ 보유불필요)
+        /// 타이밍 상태 뱃지 (🔴 과열(매수금지), 🟢 골든 눌림목, 🟡 눌림목 대기, 🔵 과매도반등, ⚪ 관망유지, ❌ 보유불필요)
         /// </summary>
         public string TimingBadge { get; set; } = "관망유지";
 

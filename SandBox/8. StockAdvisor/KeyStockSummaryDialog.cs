@@ -56,10 +56,12 @@ namespace GateHelper.StockAdvisor
             int countB = _items.Count(x => x.Grade == PositionGrade.B);
             int countC = _items.Count(x => x.Grade == PositionGrade.C);
             int countF = _items.Count(x => x.Grade == PositionGrade.F);
+            int countHold = _items.Count(x => !x.IsWatchlist);
+            int countWatch = _items.Count(x => x.IsWatchlist);
 
             var lblSummary = new Label
             {
-                Text = $"• 보유: {_items.Count}개 종목  |  " +
+                Text = $"• 보유: {countHold}개 | 관심: {countWatch}개  |  " +
                        $"[초록:안전] A: {countA}개  |  " +
                        $"[노랑:주의] B: {countB}개  |  " +
                        $"[주황:경고] C: {countC}개  |  " +
@@ -145,8 +147,9 @@ namespace GateHelper.StockAdvisor
             tabLeader.Controls.Add(CreateListView(leaderItems, false));
             _tabControl.TabPages.Add(tabLeader);
 
-            // 탭 3: 포트폴리오 비중 Top 3 종목
+            // 탭 3: 포트폴리오 비중 Top 5 종목 (보유 종목 대상)
             var topItems = _items
+                .Where(x => !x.IsWatchlist)
                 .OrderByDescending(x => x.TotalEvalAmount)
                 .Take(5)
                 .ToList();
@@ -195,12 +198,14 @@ namespace GateHelper.StockAdvisor
                     actionStr = item.Rsi >= 70m ? "[과열주의] 추격매수 금지" : (item.FinalScore >= 8 ? "[골든] 보유 및 분할 진입" : "진단 대기");
                 }
 
+                string rateStr = item.IsWatchlist ? "[관심]" : $"{item.ProfitRate:+0.00;-0.00}%";
+
                 var lvi = new ListViewItem(new[]
                 {
                     item.StockName,
                     item.StockCode,
                     $"{item.CurrentPrice:N0}원",
-                    $"{item.ProfitRate:+0.00;-0.00}%",
+                    rateStr,
                     item.Grade.ToString(),
                     supplyStr,
                     landmineStr,
@@ -213,7 +218,8 @@ namespace GateHelper.StockAdvisor
                 lvi.Tag = item;
 
                 // 수익률 색상 (SubItem 3)
-                if (item.ProfitRate > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 95, 95);
+                if (item.IsWatchlist) lvi.SubItems[3].ForeColor = Color.FromArgb(0, 216, 255);
+                else if (item.ProfitRate > 0) lvi.SubItems[3].ForeColor = Color.FromArgb(255, 95, 95);
                 else if (item.ProfitRate < 0) lvi.SubItems[3].ForeColor = Color.FromArgb(85, 160, 255);
 
                 // AI 등급 (SubItem 4)

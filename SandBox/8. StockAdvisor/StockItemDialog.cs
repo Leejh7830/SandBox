@@ -32,7 +32,7 @@ namespace GateHelper.StockAdvisor
         public StockItemDialog(StockHoldingItem existingItem = null)
         {
             this.Text = existingItem == null ? "📌 보유 / 관심 종목 등록" : "✏️ 종목 정보 수정";
-            this.Size = new Size(520, 520);
+            this.Size = new Size(540, 560);
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -77,7 +77,7 @@ namespace GateHelper.StockAdvisor
                 Dock = DockStyle.Fill,
                 Padding = new Padding(22, 18, 22, 18),
                 ColumnCount = 2,
-                RowCount = 9,
+                RowCount = 10,
                 BackColor = Color.FromArgb(20, 24, 34)
             };
             pnlMain.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120));
@@ -91,7 +91,8 @@ namespace GateHelper.StockAdvisor
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 5: 매수가
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 28)); // 6: 안내 라벨
             pnlMain.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); // 7: 메모
-            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 8: 버튼 행
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 32)); // 8: 증권앱 주문 체크
+            pnlMain.RowStyles.Add(new RowStyle(SizeType.Absolute, 45)); // 9: 버튼 행
 
             Font lblFont = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
             Font inputFont = new Font("Segoe UI", 9.5f);
@@ -339,19 +340,40 @@ namespace GateHelper.StockAdvisor
             pnlBtns.Resize += (s, e) => LayoutActionButtons();
             LayoutActionButtons();
 
+            pnlBtns.Controls.Add(btnCancel);
+            pnlBtns.Controls.Add(btnSave);
+
+            // 8. 증권앱 주문 설정 체크박스 (단독 행 배치로 버튼과 겹침 0% 원천 방지)
+            var lblBroker = new Label
+            {
+                Text = "증권앱 관리:",
+                Font = lblFont,
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Anchor = AnchorStyles.Left,
+                AutoSize = true
+            };
+
             chkBrokerOrder = new CheckBox
             {
-                Text = "증권앱 주문(자동청산/예약매수) 걸어둠",
+                Text = "증권앱에 손절/익절 자동청산 주문 걸어둠 (보유종목)",
                 Font = new Font("Malgun Gothic", 9f),
-                ForeColor = Color.FromArgb(0, 216, 255),
+                ForeColor = Color.FromArgb(0, 225, 255),
                 AutoSize = true,
-                Location = new Point(0, 8),
+                Anchor = AnchorStyles.Left,
+                Margin = new Padding(0, 4, 0, 0),
                 Cursor = Cursors.Hand
             };
 
-            pnlBtns.Controls.Add(chkBrokerOrder);
-            pnlBtns.Controls.Add(btnCancel);
-            pnlBtns.Controls.Add(btnSave);
+            void UpdateBrokerOrderText()
+            {
+                if (chkBrokerOrder == null) return;
+                chkBrokerOrder.Text = rdoWatchlist.Checked
+                    ? "증권앱에 지정가 예약매수 주문 걸어둠 (관심종목)"
+                    : "증권앱에 손절/익절 자동청산 주문 걸어둠 (보유종목)";
+            }
+            rdoHolding.CheckedChanged += (s, e) => UpdateBrokerOrderText();
+            rdoWatchlist.CheckedChanged += (s, e) => UpdateBrokerOrderText();
+            UpdateBrokerOrderText();
 
             pnlMain.Controls.Add(lblSearch, 0, 0);
             pnlMain.Controls.Add(pnlCodeRow, 1, 0);
@@ -377,8 +399,11 @@ namespace GateHelper.StockAdvisor
             pnlMain.Controls.Add(lblMemo, 0, 7);
             pnlMain.Controls.Add(txtMemo, 1, 7);
 
-            pnlMain.Controls.Add(new Label(), 0, 8);
-            pnlMain.Controls.Add(pnlBtns, 1, 8);
+            pnlMain.Controls.Add(lblBroker, 0, 8);
+            pnlMain.Controls.Add(chkBrokerOrder, 1, 8);
+
+            pnlMain.SetColumnSpan(pnlBtns, 2);
+            pnlMain.Controls.Add(pnlBtns, 0, 9);
 
             this.Controls.Add(pnlMain);
             this.CancelButton = btnCancel;

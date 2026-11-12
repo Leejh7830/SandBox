@@ -62,7 +62,7 @@ namespace GateHelper.StockAdvisor
             {
                 _isRefreshingPrice = false;
                 _btnRefreshPrice.Enabled = true;
-                _btnRefreshPrice.Text = "↻ 시세 갱신";
+                _btnRefreshPrice.Text = "시세 갱신";
             }
         }
 
@@ -172,7 +172,7 @@ namespace GateHelper.StockAdvisor
 
             _isAiDiagnosing = true;
             _btnDiagnose.Enabled = false;
-            UpdateDiagnoseButtonText("⏳ 실시간 분석 중...");
+            UpdateDiagnoseButtonStatus(false, "⏳ 분석 중...");
 
             try
             {
@@ -213,16 +213,12 @@ namespace GateHelper.StockAdvisor
                         _lblLastUpdated.ForeColor = Color.FromArgb(100, 255, 180);
                     }
 
-                    // 2. 상단 버튼 텍스트에 2줄로 동기화 상태 및 시간 즉시 반영
-                    string timeStr = DateTime.Now.ToString("HH:mm:ss");
-                    string finishNote = !string.IsNullOrEmpty(diagResult.ErrorMessage)
-                        ? $"✓ {timeStr} 동기화"
-                        : $"✓ {timeStr} 동기화";
-                    UpdateDiagnoseButtonText(finishNote);
+                    // 2. 상단 버튼: 동기화 성공 시 밝은 색상으로 변경 및 동기화 시간 게시
+                    UpdateDiagnoseButtonStatus(true, syncTime: DateTime.Now);
                 }
                 else
                 {
-                    UpdateDiagnoseButtonText("[실패] 재시도");
+                    UpdateDiagnoseButtonStatus(false, "[실패] 재시도");
                     if (!isSilent)
                     {
                         MessageBox.Show(diagResult.ErrorMessage, "진단 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -231,7 +227,7 @@ namespace GateHelper.StockAdvisor
             }
             catch (Exception ex)
             {
-                UpdateDiagnoseButtonText("[오류] 통신 실패");
+                UpdateDiagnoseButtonStatus(false, "[오류] 통신 실패");
                 if (!isSilent)
                 {
                     MessageBox.Show($"진단 중 오류 발생: {ex.Message}", "오류", MessageBoxButtons.OK, MessageBoxIcon.Error);

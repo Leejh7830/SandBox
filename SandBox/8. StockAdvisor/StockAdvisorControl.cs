@@ -208,27 +208,42 @@ namespace GateHelper.StockAdvisor
                 _portfolio = new PortfolioData();
             }
 
-            UpdateDiagnoseButtonText();
+            UpdateDiagnoseButtonStatus(false);
         }
 
-        private void UpdateDiagnoseButtonText(string customStatus = null)
+        private void UpdateDiagnoseButtonStatus(bool isSyncSuccess, string customStatus = null, DateTime? syncTime = null)
         {
             if (_btnDiagnose == null) return;
 
             if (!string.IsNullOrEmpty(customStatus))
             {
                 _btnDiagnose.Text = $"AI 참모 진단\n{customStatus}";
+                _btnDiagnose.BackColor = Color.FromArgb(40, 36, 18);
+                _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(255, 190, 40);
+                _btnDiagnose.ForeColor = Color.FromArgb(255, 235, 160);
                 return;
             }
 
-            if (_portfolio?.LastBriefing != null && _portfolio.LastBriefing.GeneratedAt != default && _portfolio.LastBriefing.GeneratedAt.Year > 2000)
+            if (isSyncSuccess)
             {
-                _btnDiagnose.Text = $"AI 참모 진단\n✓ {_portfolio.LastBriefing.GeneratedAt:HH:mm:ss} 동기화";
+                DateTime time = syncTime ?? (_portfolio?.LastBriefing?.GeneratedAt ?? DateTime.Now);
+                _btnDiagnose.Text = $"AI 참모 진단\n✓ {time:HH:mm:ss} 동기화";
+                _btnDiagnose.BackColor = Color.FromArgb(14, 52, 74);
+                _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 255);
+                _btnDiagnose.ForeColor = Color.FromArgb(0, 245, 255);
             }
             else
             {
-                _btnDiagnose.Text = "AI 참모 진단\n(진단 대기)";
+                _btnDiagnose.Text = "AI 참모 진단";
+                _btnDiagnose.BackColor = Color.FromArgb(24, 28, 38);
+                _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(50, 60, 80);
+                _btnDiagnose.ForeColor = Color.FromArgb(140, 160, 185);
             }
+        }
+
+        private void UpdateDiagnoseButtonText(string customStatus = null)
+        {
+            UpdateDiagnoseButtonStatus(false, customStatus);
         }
 
         private void SavePortfolio()

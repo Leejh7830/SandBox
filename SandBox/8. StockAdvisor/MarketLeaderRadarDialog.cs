@@ -26,7 +26,6 @@ namespace GateHelper.StockAdvisor
         private Button _btnTabAll;
         private ListView _lvRadar;
         private Label _lblGuideBanner;
-        private Button _btnAddWatchlist;
         private Button _btnRefresh;
         private Button _btnClose;
 
@@ -51,13 +50,13 @@ namespace GateHelper.StockAdvisor
 
         private void InitializeCustomUi()
         {
-            // 1. 상단 타이틀 헤더 바 (68px)
+            // 1. 상단 타이틀 헤더 바 (84px, 서브타이틀 및 스캔 상태 겹침 100% 방지)
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 68,
+                Height = 84,
                 BackColor = Color.FromArgb(24, 28, 40),
-                Padding = new Padding(16, 10, 16, 8)
+                Padding = new Padding(16, 8, 16, 6)
             };
 
             var lblTitle = new Label
@@ -84,7 +83,7 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Malgun Gothic", 8.5f),
                 ForeColor = Color.FromArgb(0, 216, 255),
                 Dock = DockStyle.Bottom,
-                Height = 18
+                Height = 20
             };
 
             _pbScan = new ProgressBar
@@ -162,53 +161,68 @@ namespace GateHelper.StockAdvisor
                 null, _lvRadar, new object[] { true });
 
             _lvRadar.SelectedIndexChanged += LvRadar_SelectedIndexChanged;
-            _lvRadar.DoubleClick += (s, e) => AddSelectedToWatchlist();
 
-            // 4. 하단 액션 및 가이드 바 (78px)
+            // 행 더블클릭 시 관심종목 즉시 등록
+            _lvRadar.DoubleClick += (s, e) =>
+            {
+                if (_lvRadar.SelectedItems.Count > 0)
+                {
+                    AddLeaderItemToWatchlist(_lvRadar.SelectedItems[0]);
+                }
+            };
+
+            // 테이블 내 [관심 등록] 컬럼의 [+ 담기] 셀 클릭 시 즉시 등록
+            _lvRadar.MouseClick += (s, e) =>
+            {
+                var hit = _lvRadar.HitTest(e.Location);
+                if (hit.Item != null && hit.SubItem != null)
+                {
+                    int colIndex = hit.Item.SubItems.IndexOf(hit.SubItem);
+                    if (colIndex == 11 || hit.SubItem.Text == "+ 담기")
+                    {
+                        AddLeaderItemToWatchlist(hit.Item);
+                    }
+                }
+            };
+
+            // 마우스 호버 시 [+ 담기] 셀 위에서 손가락(Hand) 커서 피드백
+            _lvRadar.MouseMove += (s, e) =>
+            {
+                var hit = _lvRadar.HitTest(e.Location);
+                if (hit.Item != null && hit.SubItem != null && hit.SubItem.Text == "+ 담기")
+                {
+                    _lvRadar.Cursor = Cursors.Hand;
+                }
+                else
+                {
+                    _lvRadar.Cursor = Cursors.Default;
+                }
+            };
+
+            // 4. 하단 슬림 가이드 및 버튼 바 (46px, 좌측 안내문구 + 우측 새로고침/닫기 단정 배치)
             var pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 78,
+                Height = 46,
                 BackColor = Color.FromArgb(24, 28, 40),
-                Padding = new Padding(16, 8, 16, 8)
+                Padding = new Padding(16, 7, 16, 7)
             };
 
             _lblGuideBanner = new Label
             {
-                Text = "[안내] 상단에서 원하는 전략을 선택하고, 마음에 드는 종목을 [+ 관심종목 담기]로 내 포트폴리오에 즉시 등록하세요.",
+                Text = "[안내] 테이블 우측의 [+ 담기] 셀을 클릭하면 내 관심종목에 즉시 등록됩니다. (더블클릭 가능)",
                 Font = new Font("Malgun Gothic", 9f),
                 ForeColor = Color.FromArgb(215, 235, 255),
-                Dock = DockStyle.Top,
-                Height = 24,
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
                 AutoEllipsis = true
             };
-
-            var pnlActionButtons = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 36,
-                BackColor = Color.Transparent
-            };
-
-            _btnAddWatchlist = new Button
-            {
-                Text = "+ 선택 종목 관심종목 담기",
-                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
-                Size = new Size(190, 34),
-                Dock = DockStyle.Left,
-                FlatStyle = FlatStyle.Flat,
-                BackColor = Color.FromArgb(20, 80, 110),
-                ForeColor = Color.FromArgb(0, 230, 255),
-                Cursor = Cursors.Hand
-            };
-            _btnAddWatchlist.FlatAppearance.BorderColor = Color.FromArgb(0, 200, 240);
-            _btnAddWatchlist.Click += (s, e) => AddSelectedToWatchlist();
 
             _btnClose = new Button
             {
                 Text = "닫기",
                 Font = new Font("Malgun Gothic", 9f),
-                Size = new Size(80, 34),
+                Size = new Size(76, 32),
                 Dock = DockStyle.Right,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(32, 38, 52),
@@ -222,7 +236,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = "새로고침",
                 Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
-                Size = new Size(100, 34),
+                Size = new Size(88, 32),
                 Dock = DockStyle.Right,
                 FlatStyle = FlatStyle.Flat,
                 BackColor = Color.FromArgb(28, 42, 64),
@@ -233,12 +247,10 @@ namespace GateHelper.StockAdvisor
             _btnRefresh.FlatAppearance.BorderColor = Color.FromArgb(50, 130, 200);
             _btnRefresh.Click += async (s, e) => await ScanRadarAsync(true);
 
-            pnlActionButtons.Controls.Add(_btnAddWatchlist);
-            pnlActionButtons.Controls.Add(_btnRefresh);
-            pnlActionButtons.Controls.Add(_btnClose);
-
+            // WinForms 도킹 순서: Right 버튼들 먼저 추가 후 Fill 레이블 추가
             pnlFooter.Controls.Add(_lblGuideBanner);
-            pnlFooter.Controls.Add(pnlActionButtons);
+            pnlFooter.Controls.Add(_btnRefresh);
+            pnlFooter.Controls.Add(_btnClose);
 
             // 도킹 추가
             this.Controls.Add(_lvRadar);
@@ -442,17 +454,22 @@ namespace GateHelper.StockAdvisor
         {
             if (_lvRadar.SelectedItems.Count > 0 && _lvRadar.SelectedItems[0].Tag is MarketLeaderItem itm)
             {
-                _lblGuideBanner.Text = $"[{itm.StockName}] {itm.PrimaryStrategyGuide} (권고 매수가: {itm.RecommendedBuyPrice:N0}원)";
-                _btnAddWatchlist.Text = itm.IsAlreadyInPortfolio ? "★ 이미 등록된 종목" : $"+ [{itm.StockName}] 관심종목 담기";
-                _btnAddWatchlist.Enabled = !itm.IsAlreadyInPortfolio;
+                string statusTxt = itm.IsAlreadyInPortfolio ? "★ 이미 등록됨" : "우측 [+ 담기] 클릭 시 관심 등록";
+                _lblGuideBanner.Text = $"[{itm.StockName}] {itm.PrimaryStrategyGuide} | 권고 매수가: {itm.RecommendedBuyPrice:N0}원 ({statusTxt})";
             }
         }
 
-        private void AddSelectedToWatchlist()
+        private void AddLeaderItemToWatchlist(ListViewItem lvi)
         {
-            if (_lvRadar.SelectedItems.Count == 0) return;
-            var itm = _lvRadar.SelectedItems[0].Tag as MarketLeaderItem;
-            if (itm == null || itm.IsAlreadyInPortfolio) return;
+            if (lvi == null) return;
+            var itm = lvi.Tag as MarketLeaderItem;
+            if (itm == null) return;
+
+            if (itm.IsAlreadyInPortfolio)
+            {
+                ToastNotification.Show($"[{itm.StockName}] 종목은 이미 포트폴리오/관심종목에 등록되어 있습니다.", "알림", ToastIcon.Info);
+                return;
+            }
 
             try
             {
@@ -460,12 +477,12 @@ namespace GateHelper.StockAdvisor
                 itm.IsAlreadyInPortfolio = true;
                 _existingCodes.Add(itm.StockCode);
 
-                _lvRadar.SelectedItems[0].SubItems[11].Text = "★ 등록됨";
-                _lvRadar.SelectedItems[0].SubItems[11].ForeColor = Color.FromArgb(0, 216, 255);
-                _btnAddWatchlist.Text = "★ 이미 등록된 종목";
-                _btnAddWatchlist.Enabled = false;
+                lvi.SubItems[11].Text = "★ 등록됨";
+                lvi.SubItems[11].ForeColor = Color.FromArgb(0, 216, 255);
 
-                ToastNotification.Show($"[{itm.StockName}] 종목이 [★ 관심 종목]에 등록되었습니다.\nAI 매수가({itm.RecommendedBuyPrice:N0}원) 도달 시 실시간 알림이 발송됩니다.", "관심 종목 등록 완료", ToastIcon.Success);
+                _lblGuideBanner.Text = $"[완료] [{itm.StockName}] 관심종목 추가 완료! (AI 권고 매수가: {itm.RecommendedBuyPrice:N0}원)";
+
+                ToastNotification.Show($"[{itm.StockName}] 종목이 [★ 관심 종목]에 등록되었습니다.\nAI 권고 매수가({itm.RecommendedBuyPrice:N0}원) 도달 시 실시간 알림이 발송됩니다.", "관심 종목 등록 완료", ToastIcon.Success);
             }
             catch (Exception ex)
             {

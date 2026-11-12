@@ -95,9 +95,9 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(0)
             };
 
-            _btnDiagnose = CreateNeonButton("AI 참모 진단\n(진단 대기)", Color.FromArgb(14, 38, 56), Color.FromArgb(0, 216, 255), Color.FromArgb(210, 248, 255));
+            _btnDiagnose = CreateNeonButton("AI 참모 진단", Color.FromArgb(24, 28, 38), Color.FromArgb(50, 60, 80), Color.FromArgb(140, 160, 185));
             _btnDiagnose.Font = new Font("Malgun Gothic", 7.8f, FontStyle.Bold);
-            _btnDiagnose.Size = new Size(102, 34);
+            _btnDiagnose.Size = new Size(116, 34);
             _btnDiagnose.Margin = new Padding(2, 1, 2, 1);
             _btnDiagnose.Click += async (s, e) => await RunAiDiagnosisAsync();
 
@@ -114,14 +114,14 @@ namespace GateHelper.StockAdvisor
             _btnEvaluateStock.Click += (s, e) => ShowStockEvaluatorDialog();
 
             _btnRefreshPrice = CreateNeonButton("시세 갱신", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
-            _btnRefreshPrice.Font = new Font("Malgun Gothic", 8.8f);
-            _btnRefreshPrice.Size = new Size(74, 34);
+            _btnRefreshPrice.Font = new Font("Malgun Gothic", 8.5f);
+            _btnRefreshPrice.Size = new Size(86, 34);
             _btnRefreshPrice.Margin = new Padding(2, 1, 2, 1);
             _btnRefreshPrice.Click += async (s, e) => await RefreshPricesAsync();
 
             _btnEarningsRadar = CreateNeonButton("실적 D-Day", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
             _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
-            _btnEarningsRadar.Size = new Size(82, 34);
+            _btnEarningsRadar.Size = new Size(80, 34);
             _btnEarningsRadar.Margin = new Padding(2, 1, 2, 1);
             _btnEarningsRadar.Click += (s, e) => ShowEarningsRadarDialog();
 
@@ -154,7 +154,7 @@ namespace GateHelper.StockAdvisor
 
             var btnMoreTools = CreateNeonButton("부가 도구 ▾", Color.FromArgb(34, 28, 48), Color.FromArgb(180, 130, 250), Color.FromArgb(235, 220, 255));
             btnMoreTools.Font = new Font("Malgun Gothic", 8.5f);
-            btnMoreTools.Size = new Size(78, 34);
+            btnMoreTools.Size = new Size(76, 34);
             btnMoreTools.Margin = new Padding(2, 1, 2, 1);
             btnMoreTools.Click += (s, e) =>
             {

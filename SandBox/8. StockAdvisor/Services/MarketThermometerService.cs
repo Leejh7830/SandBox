@@ -44,6 +44,7 @@ namespace GateHelper.StockAdvisor.Services
         private static MarketTemperatureResult _cachedResult = null;
         private static DateTime _lastFetchTime = DateTime.MinValue;
         private static readonly TimeSpan CacheDuration = TimeSpan.FromSeconds(30);
+        private static readonly object _cacheLock = new object();
 
         static MarketThermometerService()
         {
@@ -58,9 +59,12 @@ namespace GateHelper.StockAdvisor.Services
 
         public static async Task<MarketTemperatureResult> GetMarketTemperatureAsync(bool forceRefresh = false)
         {
-            if (!forceRefresh && _cachedResult != null && (DateTime.Now - _lastFetchTime) < CacheDuration)
+            lock (_cacheLock)
             {
-                return _cachedResult;
+                if (!forceRefresh && _cachedResult != null && (DateTime.Now - _lastFetchTime) < CacheDuration)
+                {
+                    return _cachedResult;
+                }
             }
 
             var res = new MarketTemperatureResult();
@@ -197,8 +201,11 @@ namespace GateHelper.StockAdvisor.Services
                         res.ActionGuide = "뇌동매매 절대 금지! 손절선 철저히 준수하고, 시장 바닥 반등 지지 확인 전까지 관망.";
                     }
 
-                    _cachedResult = res;
-                    _lastFetchTime = DateTime.Now;
+                    lock (_cacheLock)
+                    {
+                        _cachedResult = res;
+                        _lastFetchTime = DateTime.Now;
+                    }
                     return res;
                 }
             }

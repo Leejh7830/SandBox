@@ -14,11 +14,14 @@ namespace GateHelper.StockAdvisor
     public class KeyStockSummaryDialog : Form
     {
         private readonly List<StockHoldingItem> _items;
+        private readonly Action<string> _onSelectStock;
         private TabControl _tabControl;
+        private static readonly Font BoldFont = new Font("Segoe UI", 9f, FontStyle.Bold);
 
-        public KeyStockSummaryDialog(List<StockHoldingItem> items)
+        public KeyStockSummaryDialog(List<StockHoldingItem> items, Action<string> onSelectStock = null)
         {
             _items = items ?? new List<StockHoldingItem>();
+            _onSelectStock = onSelectStock;
             InitializeCustomComponent();
             PopulateData();
         }
@@ -186,6 +189,19 @@ namespace GateHelper.StockAdvisor
             lv.Columns.Add("타이밍 안전벨트", 110, HorizontalAlignment.Center);
             lv.Columns.Add("권고 지침 및 핵심 사유", 260);
 
+            typeof(ListView).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
+                null, lv, new object[] { true });
+
+            lv.DoubleClick += (s, e) =>
+            {
+                if (lv.SelectedItems.Count > 0 && lv.SelectedItems[0].Tag is StockHoldingItem sel && !string.IsNullOrEmpty(sel.StockCode))
+                {
+                    this.Close();
+                    _onSelectStock?.Invoke(sel.StockCode);
+                }
+            };
+
             foreach (var item in list)
             {
                 string rsiStr = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
@@ -224,7 +240,7 @@ namespace GateHelper.StockAdvisor
 
                 // AI 등급 (SubItem 4)
                 lvi.SubItems[4].ForeColor = GradeHelper.GetGradeColor(item.Grade);
-                lvi.SubItems[4].Font = new Font(lv.Font, FontStyle.Bold);
+                lvi.SubItems[4].Font = BoldFont;
 
                 // 수급 (SubItem 5)
                 if (supplyStr.Contains("쌍끌이")) lvi.SubItems[5].ForeColor = Color.FromArgb(0, 240, 210);
@@ -237,7 +253,7 @@ namespace GateHelper.StockAdvisor
                 if (item.HasCriticalLandmine || landmineStr.Contains("적자") || landmineStr.Contains("CB") || landmineStr.Contains("유상"))
                 {
                     lvi.SubItems[6].ForeColor = Color.FromArgb(255, 75, 75);
-                    lvi.SubItems[6].Font = new Font(lv.Font, FontStyle.Bold);
+                    lvi.SubItems[6].Font = BoldFont;
                 }
                 else if (landmineStr.Contains("부채")) lvi.SubItems[6].ForeColor = Color.FromArgb(255, 180, 60);
                 else lvi.SubItems[6].ForeColor = Color.FromArgb(100, 240, 140);
@@ -255,6 +271,8 @@ namespace GateHelper.StockAdvisor
                 if (tb.Contains("과열")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 75, 95);
                 else if (tb.Contains("골든")) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
                 else if (tb.Contains("눌림목")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 210, 60);
+                else if (tb.Contains("과매도")) lvi.SubItems[9].ForeColor = Color.FromArgb(70, 180, 255);
+                else if (tb.Contains("보유불필요")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 90, 90);
 
                 lvi.UseItemStyleForSubItems = false;
                 lv.Items.Add(lvi);

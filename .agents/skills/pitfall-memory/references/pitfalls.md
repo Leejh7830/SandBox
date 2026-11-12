@@ -116,3 +116,14 @@
   1. 리스트뷰에 컬럼을 추가/삭제/변경할 때는 반드시 **(1) `Columns.Add`, (2) `OriginalColumnNames` 배열, (3) `ListViewItem` 서브아이템 생성 배열, (4) `IComparer` switch-case 인덱스, (5) `AutoFitLastColumn` 마지막 인덱스**의 5대 요소를 1:1 완벽 동기화할 것.
   2. 동률 발생 시 정렬 안정성을 위해 `IComparer` 내부에 `result == 0`일 때 2차 정렬 기준(예: 종합점수 내림차순 -> 종목명 가나다순)을 기본 탑재할 것.
   3. `UpdateUi()`에서 리스트뷰 대량 아이템 추가 전 `_lvStocks.ListViewItemSorter = null;`로 정렬기 간섭을 차단하여 속도와 정렬 무결성을 보장할 것.
+
+---
+
+### 14. 트레이 복원 시 `ShowWindow(hWnd, SW_RESTORE)` 호출 순서 오류로 인한 최대화(`Maximized`) 풀림 버그
+- **증상**:
+  - 창을 최대화(`FormWindowState.Maximized`) 상태로 사용하다가 시스템 트레이로 숨긴 후, 다시 트레이 아이콘을 더블클릭해 복원했을 때 `_previousNonMinimizedState`에 `Maximized`를 저장했음에도 창이 일반 크기(`Normal`)로 작아져서 복원됨.
+- **원인**:
+  - Win32 API `ShowWindow(hWnd, SW_RESTORE)`(`SW_RESTORE = 9`)는 창이 최소화(`Minimized`) 상태일 때뿐만 아니라 최대화(`Maximized`) 상태일 때도 원래의 `Normal` 크기로 되돌리는 명세를 가짐.
+  - 따라서 `this.WindowState = _previousNonMinimizedState;`로 `Maximized`를 먼저 적용한 뒤에 `ShowWindow(this.Handle, SW_RESTORE)`를 호출하면 방금 적용한 최대화 상태가 즉시 해제되어 `Normal`로 돌아감.
+- **해결 공식**:
+  - 트레이나 최소화 상태에서 창을 복원할 때는 반드시 `if (this.WindowState == FormWindowState.Minimized)` 블록 안에서 **`ShowWindow(this.Handle, SW_RESTORE)`를 먼저 호출하여 최소화를 해제한 직후**, 마지막에 `this.WindowState = _previousNonMinimizedState;`를 대입할 것.

@@ -13,6 +13,7 @@ namespace GateHelper.StockAdvisor
     {
         private readonly Action<string, string, decimal> _onAddWatchlist;
         private readonly HashSet<string> _existingCodes;
+        private readonly string _initialSelectCode;
 
         private List<MarketLeaderItem> _allLeaders = new List<MarketLeaderItem>();
         private RadarStrategyType _currentTab = RadarStrategyType.GoldenPullback;
@@ -31,10 +32,13 @@ namespace GateHelper.StockAdvisor
 
         private static readonly Font BoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
 
-        public MarketLeaderRadarDialog(HashSet<string> existingCodes, Action<string, string, decimal> onAddWatchlist)
+        public MarketLeaderRadarDialog(HashSet<string> existingCodes, Action<string, string, decimal> onAddWatchlist, string initialSelectCode = null)
         {
-            _existingCodes = existingCodes ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _existingCodes = existingCodes != null
+                ? new HashSet<string>(existingCodes.Select(x => x.TrimStart('0')), StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             _onAddWatchlist = onAddWatchlist;
+            _initialSelectCode = initialSelectCode;
 
             this.Text = "주도주 AI 매수 레이더 (코스피 100 + 코스닥 50)";
             this.Size = new Size(1100, 700);
@@ -324,7 +328,20 @@ namespace GateHelper.StockAdvisor
                 // 이미 포트폴리오에 존재하는지 체크
                 foreach (var item in _allLeaders)
                 {
-                    item.IsAlreadyInPortfolio = _existingCodes.Contains(item.StockCode);
+                    item.IsAlreadyInPortfolio = _existingCodes.Contains(item.StockCode.TrimStart('0'));
+                }
+
+                if (!string.IsNullOrEmpty(_initialSelectCode))
+                {
+                    var match = _allLeaders.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(_initialSelectCode.TrimStart('0'), StringComparison.OrdinalIgnoreCase));
+                    if (match != null)
+                    {
+                        if (match.IsGoldenPullback) _currentTab = RadarStrategyType.GoldenPullback;
+                        else if (match.IsOversoldBounce) _currentTab = RadarStrategyType.OversoldBounce;
+                        else if (match.IsVolumeBreakout) _currentTab = RadarStrategyType.VolumeBreakout;
+                        else _currentTab = RadarStrategyType.AllLeaders;
+                        UpdateTabButtonStyles();
+                    }
                 }
 
                 int goldenCount = _allLeaders.Count(x => x.IsGoldenPullback);
@@ -337,7 +354,7 @@ namespace GateHelper.StockAdvisor
                 _btnTabAll.Text = $"전체 주도주 ({_allLeaders.Count})";
 
                 _lblStatus.Text = $"스캔 완료: 총 {_allLeaders.Count}종목 | 골든 눌림목 {goldenCount}종목 | 과매도 바닥 {oversoldCount}종목 | 거래대금 폭발 {volumeCount}종목";
-                RenderCurrentTabItems();
+                RenderCurrentTabItems(_initialSelectCode);
             }
             catch (Exception ex)
             {
@@ -350,7 +367,7 @@ namespace GateHelper.StockAdvisor
             }
         }
 
-        private void RenderCurrentTabItems()
+        private void RenderCurrentTabItems(string selectCode = null)
         {
             _lvRadar.BeginUpdate();
             _lvRadar.Items.Clear();
@@ -442,7 +459,29 @@ namespace GateHelper.StockAdvisor
 
             if (_lvRadar.Items.Count > 0)
             {
-                _lvRadar.Items[0].Selected = true;
+                ListViewItem targetLvi = null;
+                if (!string.IsNullOrEmpty(selectCode))
+                {
+                    string norm = selectCode.TrimStart('0');
+                    foreach (ListViewItem lvi in _lvRadar.Items)
+                    {
+                        if (lvi.Tag is MarketLeaderItem m && m.StockCode.TrimStart('0').Equals(norm, StringComparison.OrdinalIgnoreCase))
+                        {
+                            targetLvi = lvi;
+                            break;
+                        }
+                    }
+                }
+                if (targetLvi != null)
+                {
+                    targetLvi.Selected = true;
+                    targetLvi.EnsureVisible();
+                    _lvRadar.Focus();
+                }
+                else
+                {
+                    _lvRadar.Items[0].Selected = true;
+                }
             }
             else
             {

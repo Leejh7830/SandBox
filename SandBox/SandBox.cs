@@ -156,21 +156,27 @@ namespace GateHelper
                 };
 
                 // 알림 발생 시 트레이 풍선 알림 연동
-                GateHelper.StockAdvisor.StockToastNotification.AlertLogged += (item) =>
-                {
-                    if (item == null || _trayIcon == null) return;
-                    if (this.WindowState == FormWindowState.Minimized || !this.Visible)
-                    {
-                        string title = item.Message;
-                        string body = $"현재가: {item.CurrentPrice:N0}원 ({item.ChangeRate:+0.00;-0.00}%) · 클릭 시 이동";
-                        _trayIcon.ShowBalloonTip(3000, title, body, ToolTipIcon.Info);
-                    }
-                };
+                GateHelper.StockAdvisor.StockToastNotification.AlertLogged += OnStockAlertLogged;
             }
             catch (Exception ex)
             {
                 LogManager.LogException(ex, LogManager.Level.Warning, "SandBox.InitializeSystemTray");
             }
+        }
+
+        private void OnStockAlertLogged(GateHelper.StockAdvisor.Models.StockAlertLogItem item)
+        {
+            if (item == null || _trayIcon == null) return;
+            try
+            {
+                if (this.WindowState == FormWindowState.Minimized || !this.Visible)
+                {
+                    string title = item.Message;
+                    string body = $"현재가: {item.CurrentPrice:N0}원 ({item.ChangeRate:+0.00;-0.00}%) · 클릭 시 이동";
+                    _trayIcon.ShowBalloonTip(3000, title, body, ToolTipIcon.Info);
+                }
+            }
+            catch { }
         }
 
         private void StartSingleInstanceWakeListener()
@@ -292,10 +298,11 @@ namespace GateHelper
                 if (!this.Visible) this.Show();
                 if (this.WindowState == FormWindowState.Minimized)
                 {
+                    ShowWindow(this.Handle, SW_RESTORE);
                     this.WindowState = _previousNonMinimizedState;
                 }
                 this.ShowInTaskbar = true;
-                ShowWindow(this.Handle, SW_RESTORE);
+                if (_trayIcon != null) _trayIcon.Visible = false;
                 this.BringToFront();
                 this.Activate();
                 SetForegroundWindow(this.Handle);
@@ -451,6 +458,7 @@ namespace GateHelper
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
+            GateHelper.StockAdvisor.StockToastNotification.AlertLogged -= OnStockAlertLogged;
             try
             {
                 _registeredWakeHandle?.Unregister(null);
@@ -477,6 +485,8 @@ namespace GateHelper
                     _trayIcon.Dispose();
                     _trayIcon = null;
                 }
+                _trayMenu?.Dispose();
+                _trayMenu = null;
             }
             catch { }
 
@@ -565,9 +575,9 @@ namespace GateHelper
             {
                 if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
                 {
-                    if (this.ClientSize.Width < 1000 || this.ClientSize.Height < 700)
+                    if (this.WindowState == FormWindowState.Normal && (this.ClientSize.Width < 1100 || this.ClientSize.Height < 720))
                     {
-                        this.ClientSize = new System.Drawing.Size(1000, 700);
+                        this.ClientSize = new System.Drawing.Size(1120, 740);
                     }
                     SB_tabControl1.SelectedTab = tpStockAdvisor;
                     _stockAdvisorControl?.OnTabVisibilityChanged(true);

@@ -80,8 +80,9 @@ namespace GateHelper.StockAdvisor
 
         private async Task RefreshPricesInternalAsync()
         {
+            var snapshot = _portfolio.Items.ToList();
             var tasks = new List<Task>();
-            foreach (var item in _portfolio.Items)
+            foreach (var item in snapshot)
             {
                 tasks.Add(Task.Run(async () =>
                 {
@@ -398,14 +399,15 @@ namespace GateHelper.StockAdvisor
                 }
             }
 
-            // 2. 실시간 시세 동기화 주기 체크
-            if (_portfolio.AutoPriceSyncEnabled && _portfolio.PriceSyncIntervalMinutes > 0)
+            // 2. 실시간 시세 동기화 및 가격 도달/주도주 레이더 감시 주기 체크
+            if ((_portfolio.AutoPriceSyncEnabled || anyAlertEnabled) && _portfolio.PriceSyncIntervalMinutes > 0)
             {
+                int intervalMin = Math.Max(1, _portfolio.PriceSyncIntervalMinutes);
                 if (_lastAutoPriceSyncTime == DateTime.MinValue)
                 {
                     _lastAutoPriceSyncTime = now;
                 }
-                else if (now - _lastAutoPriceSyncTime >= TimeSpan.FromMinutes(_portfolio.PriceSyncIntervalMinutes))
+                else if (now - _lastAutoPriceSyncTime >= TimeSpan.FromMinutes(intervalMin))
                 {
                     _lastAutoPriceSyncTime = now;
                     await RefreshPricesAsync();
@@ -424,6 +426,7 @@ namespace GateHelper.StockAdvisor
                 CheckAndDispatchPriceTouchAlerts();
                 await CheckAndDispatchLeaderRadarAlertsAsync();
                 SavePortfolio();
+                _lastPriceRefreshSuccessTime = DateTime.Now;
             }
             catch (Exception ex)
             {
@@ -473,8 +476,9 @@ namespace GateHelper.StockAdvisor
         {
             try
             {
-                var schedules = await EarningsRadarService.GetEarningsScheduleAsync(_portfolio.Items);
-                foreach (var item in _portfolio.Items)
+                var snapshot = _portfolio.Items.ToList();
+                var schedules = await EarningsRadarService.GetEarningsScheduleAsync(snapshot);
+                foreach (var item in snapshot)
                 {
                     var match = schedules.FirstOrDefault(x => x.StockCode.TrimStart('0') == item.StockCode.TrimStart('0'));
                     if (match != null)
@@ -484,7 +488,10 @@ namespace GateHelper.StockAdvisor
                         item.EarningsAnnouncementDate = match.EarningsDate;
                     }
                 }
-                UpdateEarningsRadarButtonBadge(schedules);
+                if (this.IsHandleCreated && !this.IsDisposed)
+                {
+                    this.BeginInvoke(new Action(() => UpdateEarningsRadarButtonBadge(schedules)));
+                }
             }
             catch { }
         }
@@ -540,7 +547,7 @@ namespace GateHelper.StockAdvisor
         {
             if (_portfolio == null || !_portfolio.EnablePriceTouchAlert || _portfolio.Items.Count == 0) return;
 
-            foreach (var item in _portfolio.Items)
+            foreach (var item in _portfolio.Items.ToList())
             {
                 if (item.CurrentPrice <= 0 || !item.IsPriceScrapeSuccess) continue;
 
@@ -680,10 +687,10 @@ namespace GateHelper.StockAdvisor
 
             try
             {
+                var portfolioCodes = new HashSet<string>(_portfolio.Items.ToList().Select(x => x.StockCode.TrimStart('0')), StringComparer.OrdinalIgnoreCase);
                 var leaders = await MarketLeaderRadarService.ScanMarketLeadersAsync(forceRefresh: false).ConfigureAwait(false);
                 if (leaders == null || leaders.Count == 0) return;
 
-                var portfolioCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode.TrimStart('0')), StringComparer.OrdinalIgnoreCase);
                 int newAlertCount = 0;
 
                 foreach (var leader in leaders)
@@ -696,11 +703,19 @@ namespace GateHelper.StockAdvisor
                     bool isBuyStrategy = leader.IsGoldenPullback || leader.IsOversoldBounce;
                     if (isBuyStrategy && leader.CurrentPrice <= leader.RecommendedBuyPrice)
                     {
-                        if (!_alertedRadarCodes.Contains(normCode))
+                        bool shouldAlert = false;
+                        lock (_alertedRadarCodes)
                         {
-                            _alertedRadarCodes.Add(normCode);
-                            newAlertCount++;
+                            if (!_alertedRadarCodes.Contains(normCode))
+                            {
+                                _alertedRadarCodes.Add(normCode);
+                                shouldAlert = true;
+                            }
+                        }
 
+                        if (shouldAlert)
+                        {
+                            newAlertCount++;
                             var target = leader;
                             if (this.IsHandleCreated && !this.IsDisposed)
                             {
@@ -711,7 +726,7 @@ namespace GateHelper.StockAdvisor
                                         onClickAction: () =>
                                         {
                                             if (this.FindForm() is SandBox sb) { sb.ShowSandBoxWindow(); sb.SwitchToGame("StockAdvisor"); }
-                                            ShowMarketLeaderRadarDialog();
+                                            ShowMarketLeaderRadarDialog(target.StockCode);
                                         });
                                 }));
                             }
@@ -720,7 +735,7 @@ namespace GateHelper.StockAdvisor
                     }
                     else if (leader.CurrentPrice > leader.RecommendedBuyPrice * 1.015m)
                     {
-                        _alertedRadarCodes.Remove(normCode);
+                        lock (_alertedRadarCodes) { _alertedRadarCodes.Remove(normCode); }
                     }
                 }
             }
@@ -752,10 +767,27 @@ namespace GateHelper.StockAdvisor
 
                 if (_lvStocks == null || _lvStocks.IsDisposed) return;
 
+                string normCode = code.TrimStart('0');
+                var matchedItem = _portfolio?.Items?.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase));
+
+                if (matchedItem == null)
+                {
+                    // 미등록 종목(★레이더 알림 등) 클릭 시 주도주 매수 레이더 다이얼로그 오픈 및 해당 종목 포커스
+                    ShowMarketLeaderRadarDialog(code);
+                    return;
+                }
+
+                // 현재 필터 모드(보유/관심)로 인해 목록에서 숨겨져 있다면 '전체' 필터로 자동 전환 (Pitfall #6 방어)
+                if ((_filterMode == StockFilterMode.HoldingOnly && matchedItem.IsWatchlist) ||
+                    (_filterMode == StockFilterMode.WatchlistOnly && !matchedItem.IsWatchlist))
+                {
+                    SetFilterMode(StockFilterMode.All);
+                }
+
                 foreach (ListViewItem lvi in _lvStocks.Items)
                 {
                     if (lvi.Tag is StockHoldingItem itm &&
-                        itm.StockCode.TrimStart('0').Equals(code.TrimStart('0'), StringComparison.OrdinalIgnoreCase))
+                        itm.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase))
                     {
                         _lvStocks.SelectedItems.Clear();
                         lvi.Selected = true;

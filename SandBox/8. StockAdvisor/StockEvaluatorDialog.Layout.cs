@@ -493,6 +493,7 @@ namespace GateHelper.StockAdvisor
             {
                 Text = text,
                 AutoSize = true,
+                Padding = new Padding(4, 0, 4, 0),
                 Height = 28,
                 BackColor = Color.FromArgb(24, 34, 48),
                 ForeColor = Color.FromArgb(170, 215, 255),

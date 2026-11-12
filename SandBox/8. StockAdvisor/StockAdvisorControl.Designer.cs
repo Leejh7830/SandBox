@@ -6,9 +6,17 @@ namespace GateHelper.StockAdvisor
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing)
             {
-                components.Dispose();
+                StockToastNotification.AlertLogged -= OnAlertLogged;
+                _autoSyncTimer?.Stop();
+                _autoSyncTimer?.Dispose();
+                _kbSyncTimer?.Stop();
+                _kbSyncTimer?.Dispose();
+                if (components != null)
+                {
+                    components.Dispose();
+                }
             }
             base.Dispose(disposing);
         }

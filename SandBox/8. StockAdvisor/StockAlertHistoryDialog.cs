@@ -153,7 +153,10 @@ namespace GateHelper.StockAdvisor
             _btnClear.FlatAppearance.BorderColor = Color.FromArgb(140, 50, 60);
             _btnClear.Click += (s, e) =>
             {
-                _history.Clear();
+                lock (_history)
+                {
+                    _history.Clear();
+                }
                 LoadHistoryItems();
             };
 
@@ -175,11 +178,17 @@ namespace GateHelper.StockAdvisor
             int stopCount = 0;
             int buyCount = 0;
 
-            // 최신 알림이 맨 위에 오도록 역순 나열
-            for (int i = _history.Count - 1; i >= 0; i--)
+            List<StockAlertLogItem> snapshot;
+            lock (_history)
             {
-                var item = _history[i];
-                item.IsRead = true;
+                snapshot = new List<StockAlertLogItem>(_history);
+                foreach (var item in snapshot) item.IsRead = true;
+            }
+
+            // 최신 알림이 맨 위에 오도록 역순 나열
+            for (int i = snapshot.Count - 1; i >= 0; i--)
+            {
+                var item = snapshot[i];
 
                 string typeStr = "목표가 달성";
                 Color typeColor = Color.FromArgb(0, 230, 118);
@@ -235,7 +244,7 @@ namespace GateHelper.StockAdvisor
 
             _lvHistory.EndUpdate();
 
-            _lblSummary.Text = $"총 {_history.Count}건의 알림 기록 (목표가 {targetCount}건 | 손절가 {stopCount}건 | 적정매수가 {buyCount}건)";
+            _lblSummary.Text = $"총 {snapshot.Count}건의 알림 기록 (목표가 {targetCount}건 | 손절가 {stopCount}건 | 적정매수가 {buyCount}건)";
             _btnNavigate.Enabled = _lvHistory.Items.Count > 0;
             _btnClear.Enabled = _lvHistory.Items.Count > 0;
 

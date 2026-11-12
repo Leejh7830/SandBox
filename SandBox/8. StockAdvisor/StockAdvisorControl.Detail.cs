@@ -279,16 +279,6 @@ namespace GateHelper.StockAdvisor
             btn.FlatAppearance.BorderColor = active ? Color.FromArgb(0, 216, 255) : Color.FromArgb(42, 54, 72);
         }
 
-        private string GetGroupDisplay(PositionGroup group)
-        {
-            switch (group)
-            {
-                case PositionGroup.GroupA: return "[A:손절권고]";
-                case PositionGroup.GroupC: return "[C:분할매수]";
-                default: return "[B:관망유지]";
-            }
-        }
-
         private void LvStocks_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (_lvStocks.SelectedItems.Count > 0)
@@ -326,9 +316,9 @@ namespace GateHelper.StockAdvisor
             // 1. 종목명 및 현재가 (전일대비 등락률 표시 및 증권앱 주문설정 뱃지 연동)
             string chgSign = item.ChangeRate > 0 ? "+" : "";
             string orderBadge = item.IsBrokerOrderSet
-                ? (item.IsWatchlist ? "  [✓ 증권앱 예약매수 걸림]" : "  [✓ 증권앱 자동청산 걸림]")
-                : "  [증권앱 주문 미설정]";
-            _lblDetailTitle.Text = $"{item.StockName} ({item.StockCode})  |  현재가: {item.CurrentPrice:N0}원 ({chgSign}{item.ChangeRate:F2}%){orderBadge}";
+                ? (item.IsWatchlist ? "  [✓예약매수]" : "  [✓자동청산]")
+                : "  [앱주문 미설정]";
+            _lblDetailTitle.Text = $"{item.StockName} ({item.StockCode}) | {item.CurrentPrice:N0}원 ({chgSign}{item.ChangeRate:F2}%){orderBadge}";
 
             // 2. AI 참모 최종 결론 바 (0.1초 직관 배지 + 1줄 행동 지침)
             if (_lblFinalVerdict != null)
@@ -383,7 +373,7 @@ namespace GateHelper.StockAdvisor
         {
             if (_rtbDetailReason == null) return;
             _rtbDetailReason.Clear();
-            AppendText("좌측 종목 목록에서 항목을 선택하시면 AI 참모 심층 진단 리포트가 열람됩니다.", new Font("Malgun Gothic", 9.5f), Color.FromArgb(170, 185, 205));
+            AppendText("좌측 종목 목록에서 항목을 선택하시면 AI 참모 심층 진단 리포트가 열람됩니다.", RtbBodyFont, Color.FromArgb(170, 185, 205));
         }
 
         private void RenderRichPreDiagnosisReport(StockHoldingItem item)
@@ -395,29 +385,29 @@ namespace GateHelper.StockAdvisor
             // 네이버 시세 수집 실패 경고 박스
             if (!item.IsPriceScrapeSuccess)
             {
-                AppendText("--------------------------------------------------------------------------------\n", new Font("Segoe UI", 8.5f), Color.FromArgb(255, 75, 75));
-                AppendText("  [네이버 시세 실시간 수집 실패 경고]\n", new Font("Malgun Gothic", 9.5f, FontStyle.Bold), Color.FromArgb(255, 95, 95));
-                AppendText($"  • 실패 사유 : {item.ScrapeErrorMessage}\n", new Font("Malgun Gothic", 8.8f), Color.FromArgb(255, 170, 170));
-                AppendText($"  • 주의 : 표시된 시세({item.CurrentPrice:N0}원)는 실시간이 아닌 이전 캐시 데이터입니다.\n", new Font("Malgun Gothic", 8.8f, FontStyle.Bold), Color.FromArgb(255, 215, 100));
-                AppendText("--------------------------------------------------------------------------------\n\n", new Font("Segoe UI", 8.5f), Color.FromArgb(255, 75, 75));
+                AppendText("--------------------------------------------------------------------------------\n", RtbDividerFont, Color.FromArgb(255, 75, 75));
+                AppendText("  [네이버 시세 실시간 수집 실패 경고]\n", RtbHeaderBoldFont, Color.FromArgb(255, 95, 95));
+                AppendText($"  • 실패 사유 : {item.ScrapeErrorMessage}\n", RtbSubFont, Color.FromArgb(255, 170, 170));
+                AppendText($"  • 주의 : 표시된 시세({item.CurrentPrice:N0}원)는 실시간이 아닌 이전 캐시 데이터입니다.\n", RtbSubBoldFont, Color.FromArgb(255, 215, 100));
+                AppendText("--------------------------------------------------------------------------------\n\n", RtbDividerFont, Color.FromArgb(255, 75, 75));
             }
 
-            AppendText("--------------------------------------------------------------------------------\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
-            AppendText($"  [정량 기술 지표 진단 완료]  {DateTime.Now:yyyy-MM-dd HH:mm}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(140, 190, 240));
-            AppendText("--------------------------------------------------------------------------------\n\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
+            AppendText("--------------------------------------------------------------------------------\n", RtbDividerFont, Color.FromArgb(60, 75, 100));
+            AppendText($"  [정량 기술 지표 진단 완료]  {DateTime.Now:yyyy-MM-dd HH:mm}\n", RtbHeaderBoldFont, Color.FromArgb(140, 190, 240));
+            AppendText("--------------------------------------------------------------------------------\n\n", RtbDividerFont, Color.FromArgb(60, 75, 100));
 
-            AppendText("【 정량 지표 분석 요약 】\n", new Font("Malgun Gothic", 10.2f, FontStyle.Bold), Color.FromArgb(100, 215, 255));
+            AppendText("【 정량 지표 분석 요약 】\n", RtbSectionFont, Color.FromArgb(100, 215, 255));
             string suppStr = item.SupportPrice > 0 ? $"{item.SupportPrice:N0}원" : "-";
             string resisStr = item.ResistancePrice > 0 ? $"{item.ResistancePrice:N0}원" : "-";
-            AppendText($"  • 14일 RSI {item.Rsi:F1}, 5일 거래량 {item.VolumeRatio:F0}%, 20일 지지선 {suppStr}, 저항선 {resisStr}을 분석하여 상단 목표가 및 손절가가 도출되었습니다.\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(220, 225, 240));
+            AppendText($"  • 14일 RSI {item.Rsi:F1}, 5일 거래량 {item.VolumeRatio:F0}%, 20일 지지선 {suppStr}, 저항선 {resisStr}을 분석하여 상단 목표가 및 손절가가 도출되었습니다.\n\n", RtbBodyFont, Color.FromArgb(220, 225, 240));
 
-            AppendText("【 안내 】\n", new Font("Malgun Gothic", 10.2f, FontStyle.Bold), Color.FromArgb(255, 215, 100));
-            AppendText("  • 상단의 [AI 참모 진단] 버튼을 클릭하시면 실시간 외신 뉴스 및 공시를 결합한 심층 대응 리포트가 완성됩니다.\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(200, 225, 255));
+            AppendText("【 안내 】\n", RtbSectionFont, Color.FromArgb(255, 215, 100));
+            AppendText("  • 상단의 [AI 참모 진단] 버튼을 클릭하시면 실시간 외신 뉴스 및 공시를 결합한 심층 대응 리포트가 완성됩니다.\n\n", RtbBodyFont, Color.FromArgb(200, 225, 255));
 
             if (!string.IsNullOrWhiteSpace(item.Memo))
             {
-                AppendText("【 사용자 투자 메모 】\n", new Font("Malgun Gothic", 10.2f, FontStyle.Bold), Color.FromArgb(240, 200, 140));
-                AppendText($"  • {item.Memo}\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(225, 230, 240));
+                AppendText("【 사용자 투자 메모 】\n", RtbSectionFont, Color.FromArgb(240, 200, 140));
+                AppendText($"  • {item.Memo}\n", RtbBodyFont, Color.FromArgb(225, 230, 240));
             }
 
             _rtbDetailReason.Select(0, 0);
@@ -434,24 +424,24 @@ namespace GateHelper.StockAdvisor
             // 네이버 시세 수집 실패 경고 박스
             if (!item.IsPriceScrapeSuccess)
             {
-                AppendText("--------------------------------------------------------------------------------\n", new Font("Segoe UI", 8.5f), Color.FromArgb(255, 75, 75));
-                AppendText("  [네이버 시세 실시간 수집 실패 경고]\n", new Font("Malgun Gothic", 9.5f, FontStyle.Bold), Color.FromArgb(255, 95, 95));
-                AppendText($"  • 실패 사유 : {item.ScrapeErrorMessage}\n", new Font("Malgun Gothic", 8.8f), Color.FromArgb(255, 170, 170));
-                AppendText($"  • 주의 : 표시된 시세({item.CurrentPrice:N0}원)는 실시간이 아닌 이전 캐시 데이터입니다.\n", new Font("Malgun Gothic", 8.8f, FontStyle.Bold), Color.FromArgb(255, 215, 100));
-                AppendText("--------------------------------------------------------------------------------\n\n", new Font("Segoe UI", 8.5f), Color.FromArgb(255, 75, 75));
+                AppendText("--------------------------------------------------------------------------------\n", RtbDividerFont, Color.FromArgb(255, 75, 75));
+                AppendText("  [네이버 시세 실시간 수집 실패 경고]\n", RtbHeaderBoldFont, Color.FromArgb(255, 95, 95));
+                AppendText($"  • 실패 사유 : {item.ScrapeErrorMessage}\n", RtbSubFont, Color.FromArgb(255, 170, 170));
+                AppendText($"  • 주의 : 표시된 시세({item.CurrentPrice:N0}원)는 실시간이 아닌 이전 캐시 데이터입니다.\n", RtbSubBoldFont, Color.FromArgb(255, 215, 100));
+                AppendText("--------------------------------------------------------------------------------\n\n", RtbDividerFont, Color.FromArgb(255, 75, 75));
             }
 
-            AppendText("--------------------------------------------------------------------------------\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
-            AppendText($"  [AI 주식 참모 심층 진단 리포트]  {diag.DiagnosedAt:yyyy-MM-dd HH:mm}\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(140, 190, 240));
-            AppendText("--------------------------------------------------------------------------------\n\n", new Font("Segoe UI", 8.5f), Color.FromArgb(60, 75, 100));
+            AppendText("--------------------------------------------------------------------------------\n", RtbDividerFont, Color.FromArgb(60, 75, 100));
+            AppendText($"  [AI 주식 참모 심층 진단 리포트]  {diag.DiagnosedAt:yyyy-MM-dd HH:mm}\n", RtbHeaderBoldFont, Color.FromArgb(140, 190, 240));
+            AppendText("--------------------------------------------------------------------------------\n\n", RtbDividerFont, Color.FromArgb(60, 75, 100));
 
             // 1. 거시 지표 및 정보 신뢰도 (1~2줄 압축 요약)
             string stars = new string('★', diag.SourceReliability) + new string('☆', 5 - diag.SourceReliability);
             string impactDesc = diag.PolicyImpact > 0 ? "호재성 정책/실적 수혜" : (diag.PolicyImpact < 0 ? "악재성 규제/비용 충격" : "중립 영향");
-            AppendText($"• 정보 신뢰도 : {stars} ({diag.SourceReliability} / 5점)  |  정책 영향 : {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactDesc})\n\n", new Font("Malgun Gothic", 9.2f, FontStyle.Bold), Color.FromArgb(180, 215, 245));
+            AppendText($"• 정보 신뢰도 : {stars} ({diag.SourceReliability} / 5점)  |  정책 영향 : {(diag.PolicyImpact > 0 ? "+" : "")}{diag.PolicyImpact}점 ({impactDesc})\n\n", RtbHeaderBoldFont, Color.FromArgb(180, 215, 245));
 
             // 2. 심층 대응 논리 및 판단 근거 (본문 중심)
-            AppendText("【 AI 참모 심층 대응 논리 및 판단 근거 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(0, 230, 255));
+            AppendText("【 AI 참모 심층 대응 논리 및 판단 근거 】\n", RtbSectionFont, Color.FromArgb(0, 230, 255));
             string reasonText = diag.ReasonSummary ?? string.Empty;
             if (!string.IsNullOrWhiteSpace(reasonText))
             {
@@ -461,20 +451,20 @@ namespace GateHelper.StockAdvisor
                     string trimmed = s.Trim().TrimEnd('.');
                     if (!string.IsNullOrWhiteSpace(trimmed))
                     {
-                        AppendText($"  • {trimmed}.\n\n", new Font("Malgun Gothic", 9.3f), Color.FromArgb(235, 240, 252));
+                        AppendText($"  • {trimmed}.\n\n", RtbBodyFont, Color.FromArgb(235, 240, 252));
                     }
                 }
             }
             else
             {
-                AppendText("  • 상세 대응 논리가 기록되지 않았습니다.\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(180, 190, 205));
+                AppendText("  • 상세 대응 논리가 기록되지 않았습니다.\n\n", RtbBodyFont, Color.FromArgb(180, 190, 205));
             }
 
             // 3. 사용자 투자 메모
             if (!string.IsNullOrWhiteSpace(item.Memo))
             {
-                AppendText("【 사용자 투자 메모 】\n", new Font("Malgun Gothic", 10.5f, FontStyle.Bold), Color.FromArgb(240, 200, 140));
-                AppendText($"  • {item.Memo}\n\n", new Font("Malgun Gothic", 9.2f), Color.FromArgb(225, 230, 240));
+                AppendText("【 사용자 투자 메모 】\n", RtbSectionFont, Color.FromArgb(240, 200, 140));
+                AppendText($"  • {item.Memo}\n\n", RtbBodyFont, Color.FromArgb(225, 230, 240));
             }
 
             _rtbDetailReason.Select(0, 0);
@@ -611,9 +601,9 @@ namespace GateHelper.StockAdvisor
                 case 13: // 타이밍 안전벨트
                     result = string.Compare(itemX.TimingBadge, itemY.TimingBadge, StringComparison.CurrentCultureIgnoreCase);
                     break;
-                case 14: // 권고 지침 / 최종 액션
-                    string actX = itemX.LastDiagnosis?.RecommendedAction ?? string.Empty;
-                    string actY = itemY.LastDiagnosis?.RecommendedAction ?? string.Empty;
+                case 14: // 권고 지침 / 최종 액션 (통합 판정 배지 텍스트 정렬)
+                    string actX = lviX.SubItems.Count > 14 ? lviX.SubItems[14].Text : string.Empty;
+                    string actY = lviY.SubItems.Count > 14 ? lviY.SubItems[14].Text : string.Empty;
                     result = string.Compare(actX, actY, StringComparison.CurrentCultureIgnoreCase);
                     break;
                 default:

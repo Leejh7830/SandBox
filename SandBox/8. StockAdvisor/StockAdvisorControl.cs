@@ -33,8 +33,6 @@ namespace GateHelper.StockAdvisor
         private static readonly List<StockAlertLogItem> _alertHistory = new List<StockAlertLogItem>();
         private Button _btnEarningsRadar; // 실적 발표 D-Day 레이더
         private Button _btnMarketCloseReport; // 장마감 결산 & 포트폴리오 리뷰
-        private Button _btnImportPortfolio;
-        private Button _btnEmergencyGuide;
 
         private Timer _autoSyncTimer;
         private DateTime _lastAutoPriceSyncTime = DateTime.MinValue;
@@ -65,6 +63,13 @@ namespace GateHelper.StockAdvisor
         internal static readonly Font DiagnoseTitleFont = new Font("Malgun Gothic", 8.2f, FontStyle.Bold);
         internal static readonly Font DiagnoseDefaultFont = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
         internal static readonly Font DiagnoseSubFont = new Font("Segoe UI", 7.2f, FontStyle.Regular);
+        internal static readonly Font RtbDividerFont = new Font("Segoe UI", 8.5f);
+        internal static readonly Font RtbHeaderBoldFont = new Font("Malgun Gothic", 9.2f, FontStyle.Bold);
+        internal static readonly Font RtbSectionFont = new Font("Malgun Gothic", 10.3f, FontStyle.Bold);
+        internal static readonly Font RtbBodyFont = new Font("Malgun Gothic", 9.3f);
+        internal static readonly Font RtbSubFont = new Font("Malgun Gothic", 8.8f);
+        internal static readonly Font RtbSubBoldFont = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
+        internal static readonly Pen HeaderBorderPen = new Pen(Color.FromArgb(42, 50, 70));
         internal static readonly SolidBrush BrushCyanBright = new SolidBrush(Color.FromArgb(0, 245, 255));
         internal static readonly SolidBrush BrushCyanSub = new SolidBrush(Color.FromArgb(160, 235, 255));
         internal static readonly SolidBrush BrushMutedTitle = new SolidBrush(Color.FromArgb(140, 160, 185));
@@ -101,7 +106,7 @@ namespace GateHelper.StockAdvisor
         private SortOrder _sortOrder = SortOrder.None;
         private static readonly string[] OriginalColumnNames = new[]
         {
-            "종목명", "현재가", "전일대비", "평단", "보유", "손익금(원)", "수익률", "AI 등급",
+            "종목명 (앱주문체크)", "현재가", "전일대비", "평단", "보유", "손익금(원)", "수익률", "AI 등급",
             "수급(외인·기관)", "지뢰검증", "14일 RSI", "5일 거래량", "종합점수", "타이밍 안전벨트", "최종 액션"
         };
         private GlobalMarketSnapshot _macroSnapshot;
@@ -523,8 +528,10 @@ namespace GateHelper.StockAdvisor
         {
             if (_btnAlertHistory == null || _btnAlertHistory.IsDisposed) return;
             int unreadCount = 0;
+            int totalCount = 0;
             lock (_alertHistory)
             {
+                totalCount = _alertHistory.Count;
                 unreadCount = _alertHistory.Count(x => !x.IsRead);
             }
             if (unreadCount > 0)
@@ -536,7 +543,7 @@ namespace GateHelper.StockAdvisor
             }
             else
             {
-                _btnAlertHistory.Text = _alertHistory.Count > 0 ? $"알림 기록 ({_alertHistory.Count})" : "알림 기록";
+                _btnAlertHistory.Text = totalCount > 0 ? $"알림 기록 ({totalCount})" : "알림 기록";
                 _btnAlertHistory.BackColor = Color.FromArgb(20, 28, 40);
                 _btnAlertHistory.FlatAppearance.BorderColor = Color.FromArgb(60, 85, 120);
                 _btnAlertHistory.ForeColor = Color.FromArgb(170, 195, 230);
@@ -592,7 +599,7 @@ namespace GateHelper.StockAdvisor
                 return;
             }
 
-            using (var dlg = new KeyStockSummaryDialog(_portfolio.Items))
+            using (var dlg = new KeyStockSummaryDialog(_portfolio.Items, code => SelectAndFocusStock(code)))
             {
                 dlg.ShowDialog(this);
             }
@@ -701,10 +708,10 @@ namespace GateHelper.StockAdvisor
             }
         }
 
-        private void ShowMarketLeaderRadarDialog()
+        private void ShowMarketLeaderRadarDialog(string initialSelectCode = null)
         {
-            var existingCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode), StringComparer.OrdinalIgnoreCase);
-            using (var dlg = new MarketLeaderRadarDialog(existingCodes, AddStockToWatchlist))
+            var existingCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode.TrimStart('0')), StringComparer.OrdinalIgnoreCase);
+            using (var dlg = new MarketLeaderRadarDialog(existingCodes, AddStockToWatchlist, initialSelectCode))
             {
                 dlg.ShowDialog(this);
             }
@@ -734,17 +741,28 @@ namespace GateHelper.StockAdvisor
                 IsPriceScrapeSuccess = price > 0
             };
 
+            if (_filterMode == StockFilterMode.HoldingOnly)
+            {
+                _filterMode = StockFilterMode.All;
+            }
+
             _portfolio.Items.Add(newItem);
             SavePortfolio();
             UpdateUi();
             SelectAndFocusStock(cleanCode);
 
-            // 비동기로 즉시 60일 일봉/수급 분석 실행하여 타점 보강
+            // 비동기로 즉시 60일 일봉/수급/지뢰 분석 실행하여 타점 보강 및 자동 저장
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    var ind = await TechnicalIndicatorService.AnalyzeIndicatorsAsync(newItem.StockCode, newItem.CurrentPrice);
+                    var indTask = TechnicalIndicatorService.AnalyzeIndicatorsAsync(newItem.StockCode, newItem.CurrentPrice);
+                    var intelTask = StockIntelligenceService.AnalyzeAsync(newItem.StockCode);
+                    await Task.WhenAll(indTask, intelTask);
+
+                    var ind = indTask.Result;
+                    var intel = intelTask.Result;
+
                     if (ind != null)
                     {
                         newItem.Rsi = ind.Rsi;
@@ -762,11 +780,31 @@ namespace GateHelper.StockAdvisor
                         newItem.TargetStopPrice = ind.TargetStopPrice;
                         newItem.RecommendedTargetPrice = ind.RecommendedTargetPrice;
                         newItem.SecondaryTargetPrice = ind.SecondaryTargetPrice;
+                    }
+                    if (intel != null)
+                    {
+                        newItem.MajorSupplyBadge = intel.SupplyBadge;
+                        newItem.MajorSupplyDetail = intel.SupplyDetail;
+                        newItem.LandmineBadge = intel.LandmineBadge;
+                        newItem.LandmineDetail = intel.LandmineDetail;
+                        newItem.HasCriticalLandmine = intel.HasCriticalLandmine;
+                        newItem.DebtRatio = intel.DebtRatio;
+                        newItem.ConsecutiveLossYears = intel.ConsecutiveLossYears;
+                    }
+                    if (ind != null && intel != null)
+                    {
+                        var unifiedScore = StockIntelligenceService.CalculateUnifiedScores(ind, intel, 0);
+                        newItem.ChartScore = unifiedScore.ChartScore;
+                        newItem.SupplyFinanceScore = unifiedScore.SupplyFinanceScore;
+                        newItem.NewsScore = unifiedScore.NewsScore;
+                        newItem.RiskScore = unifiedScore.RiskScore;
+                        newItem.FinalScore = unifiedScore.FinalScore;
+                    }
 
-                        if (this.IsHandleCreated && !this.IsDisposed)
-                        {
-                            this.BeginInvoke(new Action(UpdateUi));
-                        }
+                    SavePortfolio();
+                    if (this.IsHandleCreated && !this.IsDisposed)
+                    {
+                        this.BeginInvoke(new Action(UpdateUi));
                     }
                 }
                 catch { }

@@ -209,8 +209,8 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else if (result.Rsi <= 30.0m)
                 {
-                    result.TimingBadge = "과매도(반등대기)";
-                    result.TimingWarning = $"[과매도] RSI({result.Rsi:F1}) 침체권. 지지선 확인 후 분할 접근 유효";
+                    result.TimingBadge = "과매도 반등";
+                    result.TimingWarning = $"[과매도 반등] RSI({result.Rsi:F1}) 침체권. 지지선 확인 후 분할 접근 유효";
                 }
                 else if (result.ChartScore >= 7 && result.RiskScore >= 7)
                 {

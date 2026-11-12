@@ -15,6 +15,18 @@ namespace GateHelper.StockAdvisor
         private static readonly List<StockToastNotification> _openToasts = new List<StockToastNotification>();
         public static event Action<StockAlertLogItem> AlertLogged;
 
+        // 제로 리소스 정적 폰트 및 GDI+ 브러시/펜 캐시 (토스트 다중 생성 및 OnPaint 시 GC 0B, 핸들 누수 0)
+        private static readonly Font TitleFont = new Font("Malgun Gothic", 9.8f, FontStyle.Bold);
+        private static readonly Font BodyFont = new Font("Malgun Gothic", 8.4f);
+        private static readonly Font ConfirmFont = new Font("Malgun Gothic", 8.2f, FontStyle.Bold);
+        private static readonly Font CloseFont = new Font("Segoe UI", 8.5f, FontStyle.Bold);
+        private static readonly Pen PenTarget = new Pen(Color.FromArgb(0, 230, 118), 1.5f);
+        private static readonly Pen PenBuy = new Pen(Color.FromArgb(0, 216, 255), 1.5f);
+        private static readonly Pen PenStop = new Pen(Color.FromArgb(255, 75, 85), 1.5f);
+        private static readonly SolidBrush BrushTarget = new SolidBrush(Color.FromArgb(0, 230, 118));
+        private static readonly SolidBrush BrushBuy = new SolidBrush(Color.FromArgb(0, 216, 255));
+        private static readonly SolidBrush BrushStop = new SolidBrush(Color.FromArgb(255, 75, 85));
+
         private readonly Action _onClickAction;
         private readonly ToastAlertType _alertType;
 
@@ -57,7 +69,7 @@ namespace GateHelper.StockAdvisor
             var lblTitle = new Label
             {
                 Text = headline,
-                Font = new Font("Malgun Gothic", 9.8f, FontStyle.Bold),
+                Font = TitleFont,
                 ForeColor = accentColor,
                 Location = new Point(14, 12),
                 Size = new Size(344, 24),
@@ -70,7 +82,7 @@ namespace GateHelper.StockAdvisor
             var lblBody = new Label
             {
                 Text = $"현재가: {currentPrice:N0}원 ({changeRate:+0.00;-0.00}%) · 클릭 시 차트 이동",
-                Font = new Font("Malgun Gothic", 8.4f),
+                Font = BodyFont,
                 ForeColor = Color.FromArgb(170, 190, 215),
                 Location = new Point(14, 43),
                 Size = new Size(305, 20),
@@ -82,7 +94,7 @@ namespace GateHelper.StockAdvisor
             var btnConfirm = new Button
             {
                 Text = "확인",
-                Font = new Font("Malgun Gothic", 8.2f, FontStyle.Bold),
+                Font = ConfirmFont,
                 ForeColor = accentColor,
                 BackColor = Color.FromArgb(24, 32, 46),
                 FlatStyle = FlatStyle.Flat,
@@ -97,7 +109,7 @@ namespace GateHelper.StockAdvisor
             var btnClose = new Button
             {
                 Text = "✕",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font = CloseFont,
                 ForeColor = Color.FromArgb(140, 160, 185),
                 BackColor = Color.Transparent,
                 FlatStyle = FlatStyle.Flat,
@@ -152,23 +164,15 @@ namespace GateHelper.StockAdvisor
         {
             base.OnPaint(e);
 
-            Color accentColor = _alertType == ToastAlertType.TargetHit
-                ? Color.FromArgb(0, 230, 118)
-                : (_alertType == ToastAlertType.BuyHit
-                    ? Color.FromArgb(0, 216, 255)
-                    : Color.FromArgb(255, 75, 85));
+            Pen borderPen = _alertType == ToastAlertType.TargetHit
+                ? PenTarget
+                : (_alertType == ToastAlertType.BuyHit ? PenBuy : PenStop);
+            SolidBrush accentBrush = _alertType == ToastAlertType.TargetHit
+                ? BrushTarget
+                : (_alertType == ToastAlertType.BuyHit ? BrushBuy : BrushStop);
 
-            // 네온 테두리
-            using (var pen = new Pen(accentColor, 1.5f))
-            {
-                e.Graphics.DrawRectangle(pen, 0, 0, this.Width - 1, this.Height - 1);
-            }
-
-            // 좌측 인디케이터 바
-            using (var brush = new SolidBrush(accentColor))
-            {
-                e.Graphics.FillRectangle(brush, 0, 0, 4, this.Height);
-            }
+            e.Graphics.DrawRectangle(borderPen, 0, 0, this.Width - 1, this.Height - 1);
+            e.Graphics.FillRectangle(accentBrush, 0, 0, 4, this.Height);
         }
 
         protected override void Dispose(bool disposing)

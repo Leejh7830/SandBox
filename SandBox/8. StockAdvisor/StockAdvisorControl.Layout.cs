@@ -27,14 +27,14 @@ namespace GateHelper.StockAdvisor
             var pnlLeft = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 395,
+                Width = 374,
                 BackColor = Color.Transparent
             };
 
             var lblHeaderTitle = new Label
             {
                 Text = "AI 주식 리스크 참모",
-                Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 10.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 230, 255),
                 AutoSize = true,
                 Location = new Point(0, 8)
@@ -49,8 +49,8 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.FromArgb(70, 220, 140),
                 BackColor = Color.FromArgb(28, 36, 50),
                 BorderStyle = BorderStyle.FixedSingle,
-                Size = new Size(112, 34),
-                Location = new Point(150, 2),
+                Size = new Size(108, 34),
+                Location = new Point(140, 2),
                 Cursor = Cursors.Hand
             };
             _lblTrafficLight.MouseEnter += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(42, 54, 74);
@@ -69,8 +69,8 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.FromArgb(70, 230, 150),
                 BackColor = Color.FromArgb(22, 40, 36),
                 BorderStyle = BorderStyle.FixedSingle,
-                Size = new Size(122, 34),
-                Location = new Point(268, 2),
+                Size = new Size(118, 34),
+                Location = new Point(252, 2),
                 Cursor = Cursors.Hand
             };
             _lblMarketThermometer.MouseEnter += (s, e) => _lblMarketThermometer.BackColor = Color.FromArgb(32, 54, 48);
@@ -176,15 +176,14 @@ namespace GateHelper.StockAdvisor
             _btnMarketCloseReport.Margin = new Padding(2, 1, 2, 1);
             _btnMarketCloseReport.Click += (s, e) => ShowMarketCloseReportDialog();
 
-            _btnImportPortfolio = CreateNeonButton("계좌 가져오기", Color.FromArgb(36, 26, 54), Color.FromArgb(190, 130, 255), Color.FromArgb(240, 225, 255));
-            _btnEmergencyGuide = CreateNeonButton("중요 종목", Color.FromArgb(45, 36, 20), Color.FromArgb(255, 190, 40), Color.FromArgb(255, 245, 210));
-
             // 부가 도구 드롭다운 메뉴 (공간 절약 및 사용자 맞춤 메뉴화)
             var cmsMoreTools = new ContextMenuStrip();
             var mnuAlertHistory = new ToolStripMenuItem("★ 가격 도달 알림 기록 내역");
             mnuAlertHistory.Click += (s, e) => ShowAlertHistoryDialog();
             var mnuKeyStock = new ToolStripMenuItem("★ 중요 종목 요약 브리핑");
             mnuKeyStock.Click += (s, e) => ShowKeyStockSummaryDialog();
+            var mnuPanicExit = new ToolStripMenuItem("🚨 비상 탈출 (패닉셀 방어) 시뮬레이터");
+            mnuPanicExit.Click += (s, e) => ShowPanicExitDialog();
             var mnuImport = new ToolStripMenuItem("📁 증권사 계좌 잔고 가져오기 (엑셀/CSV)");
             mnuImport.Click += (s, e) => ShowImportPortfolioDialog();
             var mnuKbSec = new ToolStripMenuItem("KB증권 Open API 실시간 잔고 연동 설정");
@@ -195,6 +194,7 @@ namespace GateHelper.StockAdvisor
             cmsMoreTools.Items.Add(mnuAlertHistory);
             cmsMoreTools.Items.Add(new ToolStripSeparator());
             cmsMoreTools.Items.Add(mnuKeyStock);
+            cmsMoreTools.Items.Add(mnuPanicExit);
             cmsMoreTools.Items.Add(new ToolStripSeparator());
             cmsMoreTools.Items.Add(mnuImport);
             cmsMoreTools.Items.Add(mnuKbSec);
@@ -204,7 +204,7 @@ namespace GateHelper.StockAdvisor
             var btnMoreTools = CreateNeonButton("부가 도구 ▾", Color.FromArgb(34, 28, 48), Color.FromArgb(180, 130, 250), Color.FromArgb(235, 220, 255));
             btnMoreTools.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
             btnMoreTools.Padding = new Padding(0, 3, 0, 0); // ▾ 특수문자로 인한 텍스트 상단 치우침 보정
-            btnMoreTools.Size = new Size(78, 34);
+            btnMoreTools.Size = new Size(86, 34);
             btnMoreTools.Margin = new Padding(2, 1, 2, 1);
             btnMoreTools.Click += (s, e) =>
             {
@@ -224,10 +224,7 @@ namespace GateHelper.StockAdvisor
 
             pnlHeader.Paint += (s, e) =>
             {
-                using (var pen = new Pen(Color.FromArgb(42, 50, 70)))
-                {
-                    e.Graphics.DrawLine(pen, 0, pnlHeader.Height - 1, pnlHeader.Width, pnlHeader.Height - 1);
-                }
+                e.Graphics.DrawLine(HeaderBorderPen, 0, pnlHeader.Height - 1, pnlHeader.Width, pnlHeader.Height - 1);
             };
 
             _pnlHeader = pnlHeader;
@@ -476,10 +473,11 @@ namespace GateHelper.StockAdvisor
             _lblDetailTitle = new Label
             {
                 Text = "선택된 종목이 없습니다",
-                Font = new Font("Malgun Gothic", 11.5f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 10.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(140, 200, 255),
                 Dock = DockStyle.Top,
-                Height = 28
+                Height = 28,
+                AutoEllipsis = true
             };
 
             // 2. AI 참모 최종 결론 바 (0.1초 직관 배지 + 1줄 행동 지침)
@@ -695,12 +693,6 @@ namespace GateHelper.StockAdvisor
                 SetFilterMode(mode);
             };
             return btn;
-        }
-
-        private Button CreateHeaderButton(string text, Color bg, int width)
-        {
-            Color borderColor = Color.FromArgb(Math.Min(255, bg.R + 60), Math.Min(255, bg.G + 60), Math.Min(255, bg.B + 60));
-            return CreateNeonButton(text, bg, borderColor, Color.White, width);
         }
 
         #endregion

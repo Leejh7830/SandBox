@@ -21,6 +21,7 @@ namespace GateHelper.StockAdvisor
         private Button btnFetchPrice;
         private Button btnSave;
         private Button btnCancel;
+        private CheckBox chkBrokerOrder;
         private Label lblPreviewPrice;
         private StockSearchPopup _searchPopup;
 
@@ -50,6 +51,7 @@ namespace GateHelper.StockAdvisor
                 numQuantity.Value = Math.Max(0, existingItem.Quantity);
                 numBuyPrice.Value = Math.Max(0, existingItem.BuyPrice);
                 txtMemo.Text = existingItem.Memo;
+                chkBrokerOrder.Checked = existingItem.IsBrokerOrderSet;
                 lblPreviewPrice.Text = $"현재가: {existingItem.CurrentPrice:N0}원 ({existingItem.ChangeRate:+0.00;-0.00}%)";
                 _isPriceVerified = true;
 
@@ -337,6 +339,17 @@ namespace GateHelper.StockAdvisor
             pnlBtns.Resize += (s, e) => LayoutActionButtons();
             LayoutActionButtons();
 
+            chkBrokerOrder = new CheckBox
+            {
+                Text = "증권앱 주문(자동청산/예약매수) 걸어둠",
+                Font = new Font("Malgun Gothic", 9f),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                AutoSize = true,
+                Location = new Point(0, 8),
+                Cursor = Cursors.Hand
+            };
+
+            pnlBtns.Controls.Add(chkBrokerOrder);
             pnlBtns.Controls.Add(btnCancel);
             pnlBtns.Controls.Add(btnSave);
 
@@ -514,6 +527,7 @@ namespace GateHelper.StockAdvisor
             Item.Quantity = rdoWatchlist.Checked ? 0 : (int)numQuantity.Value;
             Item.BuyPrice = rdoWatchlist.Checked ? 0m : numBuyPrice.Value;
             Item.Memo = txtMemo.Text.Trim();
+            Item.IsBrokerOrderSet = chkBrokerOrder.Checked;
 
             this.DialogResult = DialogResult.OK;
             this.Close();

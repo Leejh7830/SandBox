@@ -111,6 +111,11 @@ namespace GateHelper.StockAdvisor.Models
         public decimal ChangePrice { get; set; } = 0m;
         public string Memo { get; set; } = string.Empty;
 
+        /// <summary>
+        /// 실제 증권사 앱(MTS/HTS)에 자동청산(보유종목) 또는 신규예약매수(관심종목) 주문이 설정되었는지 체크 여부
+        /// </summary>
+        public bool IsBrokerOrderSet { get; set; } = false;
+
         // --- 객관적 정량 지표 & 4대 점수 체계 ---
         /// <summary>
         /// 차트 점수 (1~10점): 20일 일봉 정배열, 거래량 수급, 추세 기반 (가중치 30%)

@@ -86,17 +86,19 @@ namespace GateHelper.StockAdvisor
         private Label _lblLastUpdated;
         private Timer _kbSyncTimer;
 
-        // 비동기 작업 상태 플래그 (멀티태스킹 분리)
+        // 비동기 작업 및 UI 이벤트 플래그
         private bool _isAiDiagnosing = false;
         private bool _isRefreshingPrice = false;
         private bool _hasInitialDiagnosed = false; // 최초 메인 화면 진입 시 1회 자동 진단 실행 가드
+        private bool _isUpdatingUi = false;        // 대량 리스트 갱신 중 ItemChecked 이벤트 중복 방지
+        private bool _isDoubleClick = false;       // 더블클릭 시 체크박스 오동작 방지
 
         // 리스트뷰 컬럼 정렬 상태
         private int _sortColumn = -1;
         private SortOrder _sortOrder = SortOrder.None;
         private static readonly string[] OriginalColumnNames = new[]
         {
-            "코드", "종목명", "현재가", "전일대비", "평단", "보유", "손익금(원)", "수익률", "AI 등급",
+            "종목명", "현재가", "전일대비", "평단", "보유", "손익금(원)", "수익률", "AI 등급",
             "수급(외인·기관)", "지뢰검증", "14일 RSI", "5일 거래량", "종합점수", "타이밍 안전벨트", "최종 액션"
         };
         private GlobalMarketSnapshot _macroSnapshot;

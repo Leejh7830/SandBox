@@ -1,5 +1,6 @@
 using System;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using GateHelper.StockAdvisor.Models;
 
@@ -179,8 +180,9 @@ namespace GateHelper.StockAdvisor
             cmsMoreTools.Items.Add(mnuHelpScore);
 
             var btnMoreTools = CreateNeonButton("부가 도구 ▾", Color.FromArgb(34, 28, 48), Color.FromArgb(180, 130, 250), Color.FromArgb(235, 220, 255));
-            btnMoreTools.Font = new Font("Malgun Gothic", 8.5f);
-            btnMoreTools.Size = new Size(76, 34);
+            btnMoreTools.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
+            btnMoreTools.Padding = new Padding(0, 3, 0, 0); // ▾ 특수문자로 인한 텍스트 상단 치우침 보정
+            btnMoreTools.Size = new Size(78, 34);
             btnMoreTools.Margin = new Padding(2, 1, 2, 1);
             btnMoreTools.Click += (s, e) =>
             {
@@ -249,12 +251,13 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(30, 34, 46)
             };
 
-            // 좌측: 종목 리스트뷰 (17대 컬럼 구성: 코드 맨앞, 평단/손익금/보유수량/전일대비 탑재)
+            // 좌측: 종목 리스트뷰 (15대 컬럼 구성: 종목명에 증권앱 주문 체크박스 탑재, 불필요한 코드 컬럼 삭제)
             _lvStocks = new ListView
             {
                 Dock = DockStyle.Fill,
                 View = View.Details,
                 FullRowSelect = true,
+                CheckBoxes = true,
                 GridLines = true,
                 BackColor = Color.FromArgb(18, 20, 26),
                 ForeColor = Color.White,
@@ -262,8 +265,7 @@ namespace GateHelper.StockAdvisor
                 BorderStyle = BorderStyle.None,
                 ShowItemToolTips = true
             };
-            _lvStocks.Columns.Add("코드", 62, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("종목명", 120);
+            _lvStocks.Columns.Add("종목명 (앱주문체크)", 140);
             _lvStocks.Columns.Add("현재가", 75, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("전일대비", 68, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("평단", 75, HorizontalAlignment.Right);
@@ -283,6 +285,38 @@ namespace GateHelper.StockAdvisor
             _lvStocks.SelectedIndexChanged += LvStocks_SelectedIndexChanged;
             _lvStocks.ColumnClick += LvStocks_ColumnClick;
             _lvStocks.DoubleClick += (s, e) => EditSelectedStock();
+            _lvStocks.MouseDown += (s, e) =>
+            {
+                if (e.Clicks > 1) _isDoubleClick = true;
+            };
+            _lvStocks.ItemCheck += (s, e) =>
+            {
+                if (_isDoubleClick)
+                {
+                    e.NewValue = e.CurrentValue; // 더블클릭 시 체크박스 토글 오동작 방지
+                    _isDoubleClick = false;
+                }
+            };
+            _lvStocks.ItemChecked += (s, e) =>
+            {
+                if (_isUpdatingUi) return;
+                if (e.Item?.Tag is StockHoldingItem itm)
+                {
+                    itm.IsBrokerOrderSet = e.Item.Checked;
+                    SavePortfolio();
+                    if (_lblFilterSummary != null)
+                    {
+                        int hCount = _portfolio.Items.Count(x => !x.IsWatchlist);
+                        int wCount = _portfolio.Items.Count(x => x.IsWatchlist);
+                        int oCount = _portfolio.Items.Count(x => x.IsBrokerOrderSet);
+                        _lblFilterSummary.Text = $"보유 {hCount}종목 | 관심 {wCount}종목 | 앱 주문설정 {oCount}건";
+                    }
+                    if (_lvStocks.SelectedItems.Count > 0 && _lvStocks.SelectedItems[0] == e.Item)
+                    {
+                        UpdateDetailPanel(itm);
+                    }
+                }
+            };
             _lvStocks.KeyDown += (s, e) =>
             {
                 if (e.KeyCode == Keys.Insert)
@@ -299,6 +333,15 @@ namespace GateHelper.StockAdvisor
 
             // 우클릭 컨텍스트 메뉴 설정
             var ctx = new ContextMenuStrip();
+            var mnuToggleOrder = new ToolStripMenuItem("증권앱 주문 설정 (체크박스 토글)");
+            mnuToggleOrder.Click += (s, e) =>
+            {
+                if (_lvStocks.SelectedItems.Count > 0)
+                {
+                    _lvStocks.SelectedItems[0].Checked = !_lvStocks.SelectedItems[0].Checked;
+                }
+            };
+
             var mnuAdd = new ToolStripMenuItem("새 종목 추가 (Insert)");
             mnuAdd.Click += (s, e) => ShowAddStockDialog();
             var mnuEdit = new ToolStripMenuItem("종목 정보 수정 ([수정])");
@@ -308,6 +351,8 @@ namespace GateHelper.StockAdvisor
             var mnuNaver = new ToolStripMenuItem("네이버 증권 웹페이지 열기");
             mnuNaver.Click += (s, e) => OpenNaverFinanceWeb();
 
+            ctx.Items.Add(mnuToggleOrder);
+            ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuAdd);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuEdit);
@@ -330,6 +375,18 @@ namespace GateHelper.StockAdvisor
                 }
 
                 bool hasSelection = _lvStocks.SelectedItems.Count > 0;
+                mnuToggleOrder.Enabled = hasSelection;
+                if (hasSelection && _lvStocks.SelectedItems[0].Tag is StockHoldingItem selItm)
+                {
+                    mnuToggleOrder.Text = selItm.IsBrokerOrderSet
+                        ? "✓ 증권앱 주문 설정됨 (체크 해제)"
+                        : (selItm.IsWatchlist ? "□ 증권앱 예약매수 걸림으로 체크" : "□ 증권앱 자동청산 걸림으로 체크");
+                }
+                else
+                {
+                    mnuToggleOrder.Text = "증권앱 주문 설정 (체크박스 토글)";
+                }
+
                 mnuEdit.Enabled = hasSelection;
                 mnuDelete.Enabled = hasSelection;
                 mnuNaver.Enabled = hasSelection;
@@ -489,6 +546,7 @@ namespace GateHelper.StockAdvisor
 
             _btnOption = CreateNeonButton("Option", Color.FromArgb(20, 32, 46), Color.FromArgb(0, 216, 255), Color.FromArgb(200, 240, 255), 84);
             _btnOption.Font = new Font("Malgun Gothic", 9f, FontStyle.Bold);
+            _btnOption.Margin = new Padding(0, 2, 6, 2);
             _btnOption.Cursor = Cursors.Hand;
             _btnOption.Click += (s, e) => ShowOptionDialog();
 
@@ -496,9 +554,10 @@ namespace GateHelper.StockAdvisor
             ttOpt.SetToolTip(_btnOption, "시세·AI 진단 자동 동기화 주기 설정 및 점수 산출 가이드 열기");
 
             _btnAlertHistory = CreateNeonButton("알림 기록", Color.FromArgb(20, 28, 40), Color.FromArgb(60, 85, 120), Color.FromArgb(170, 195, 230), 100);
-            _btnAlertHistory.Font = new Font("Malgun Gothic", 9f);
+            _btnAlertHistory.Font = new Font("Malgun Gothic", 9f, FontStyle.Bold);
+            _btnAlertHistory.Margin = new Padding(0, 2, 6, 2); // Option 및 우측 버튼과 동일한 Top/Bottom 마진 2px로 수평 완벽 정렬
+            _btnAlertHistory.Padding = new Padding(0, 1, 0, 0); // 텍스트 상하 수직 정렬 최적화
             _btnAlertHistory.Cursor = Cursors.Hand;
-            _btnAlertHistory.Margin = new Padding(6, 0, 0, 0);
             _btnAlertHistory.Click += (s, e) => ShowAlertHistoryDialog();
 
             var ttHist = new ToolTip();
@@ -550,7 +609,7 @@ namespace GateHelper.StockAdvisor
 
         private void AutoFitLastColumn()
         {
-            if (_lvStocks == null || _lvStocks.Columns.Count < 16) return;
+            if (_lvStocks == null || _lvStocks.Columns.Count < 15) return;
             try
             {
                 int fixedWidth = 0;

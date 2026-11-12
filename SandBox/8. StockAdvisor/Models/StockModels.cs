@@ -552,18 +552,21 @@ namespace GateHelper.StockAdvisor.Models
             // [급락 경보 인터락] 당일 -4.0%를 초과하여 급락 중인 종목은 지지선 붕괴 위험이 크므로 매수 배제 및 급락주의 경보
             bool isSharpDrop = item.ChangeRate <= -4.0m;
 
+            // [매수 승인 판정 우선 계산] 종합 6점 이상(B등급 이상)에 수급 양호하고 지뢰가 없으면 객관적 우량 매수 승인
+            bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7 ||
+                         (item.Grade == PositionGrade.B && item.FinalScore >= 6 && item.ChartScore >= 6 && item.SupplyFinanceScore >= 5))
+                         && !item.HasCriticalLandmine && item.Rsi < 65.0m && !isSharpDrop;
+
+            // [회피/비중축소 인터락] C/F등급, 종합 4점 이하, 또는 치명적 지뢰 발생 시.
+            // (과거 AI 진단 텍스트는 종합 6점 미만의 중립/열위 종목에서만 참고하며, 객관적 6~7점 우량 종목을 억울하게 비중축소로 왜곡하지 않음)
             bool isAvoid = item.Grade == PositionGrade.C || item.Grade == PositionGrade.F ||
                            item.FinalScore <= 4 || item.HasCriticalLandmine ||
-                           (item.LastDiagnosis != null && (item.LastDiagnosis.RecommendedAction.Contains("손절") || item.LastDiagnosis.RecommendedAction.Contains("축소") || item.LastDiagnosis.RecommendedAction.Contains("경보")));
+                           (!isBuy && item.LastDiagnosis != null && (item.LastDiagnosis.RecommendedAction.Contains("손절") || item.LastDiagnosis.RecommendedAction.Contains("축소") || item.LastDiagnosis.RecommendedAction.Contains("경보")));
 
             bool isOverheat = item.Rsi >= 68.0m || (item.TimingBadge != null && item.TimingBadge.Contains("과열"));
 
             // 과매도 반등: RSI 36.5 이하 침체권 + 손익비/안전 우수 + 악재/지뢰 없음 + 단기 급락(-4% 초과) 아님
             bool isOversold = item.Rsi <= 36.5m && item.Rsi > 0m && item.RiskScore >= 7 && !item.HasCriticalLandmine && !isSharpDrop;
-
-            bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7 ||
-                         (item.Grade == PositionGrade.B && item.FinalScore >= 6 && item.ChartScore >= 6 && item.SupplyFinanceScore >= 5))
-                         && !item.HasCriticalLandmine && item.Rsi < 65.0m && !isSharpDrop;
             bool isHeld = item.Quantity > 0;
 
             if (isSharpDrop)

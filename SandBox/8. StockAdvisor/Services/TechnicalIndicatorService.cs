@@ -217,21 +217,24 @@ namespace GateHelper.StockAdvisor.Services
                 else if (result.DownsideRiskPercent <= 11.0m) result.RiskScore = 3;
                 else result.RiskScore = 2;
 
-                // 7. 타이밍 안전벨트 뱃지 & 경고 판정
+                // 7. 타이밍 안전벨트 뱃지 & 경고 판정 (주도주 레이더와 100% 동일한 단일 기준 일치화)
+                decimal ma20Disp = result.Ma20 > 0 ? ((currentPrice - result.Ma20) / result.Ma20 * 100m) : 0m;
+
                 if (result.Rsi >= 70.0m)
                 {
                     result.TimingBadge = "과열(추격금지)";
                     result.TimingWarning = $"[단기 과열] RSI({result.Rsi:F1}) 과열 구간 진입! 신규 매수 금지, 20일선 눌림목까지 대기 권고";
                 }
-                else if (result.Rsi <= 30.0m)
+                else if (result.Rsi <= 36.5m && result.Rsi > 0m)
                 {
                     result.TimingBadge = "과매도 반등";
                     result.TimingWarning = $"[과매도 반등] RSI({result.Rsi:F1}) 침체권. 20일 지지선 확인 후 역발상 분할 매수 유효";
                 }
-                else if (result.ChartScore >= 7 && result.RiskScore >= 7)
+                else if (result.ChartScore >= 6 && ma20Disp >= -3.0m && ma20Disp <= 2.5m && result.Rsi >= 39m && result.Rsi <= 57m)
                 {
+                    // 주도주 레이더의 '골든 눌림목' 조건과 1:1 완벽 일치 (차트 6점 이상 + 20일선 이격 -3%~+2.5% 안착)
                     result.TimingBadge = "골든 눌림목";
-                    result.TimingWarning = $"[최적 진입] 손익비 우수(하방 {result.DownsideRiskPercent:F1}%), 20일선 지지선 안착된 골든 눌림목 매수 구간";
+                    result.TimingWarning = $"[최적 진입] 20일선({result.Ma20:N0}원, 이격 {ma20Disp:+0.0;-0.0}%) 지지선 안착된 골든 눌림목 매수 구간";
                 }
                 else if (result.ChartScore >= 6)
                 {

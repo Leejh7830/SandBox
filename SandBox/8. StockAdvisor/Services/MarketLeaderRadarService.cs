@@ -32,13 +32,20 @@ namespace GateHelper.StockAdvisor.Services
         public string TradingValueText { get; set; } = string.Empty;
         public string MarketType { get; set; } = "KOSPI";
 
-        // 정량 퀀트 지표
+        // 정량 퀀트 및 4대 팩터 통합 지표 (종목평가 StockEvaluatorDialog와 100% 동일 기준)
         public decimal Rsi { get; set; } = 50m;
         public decimal Ma20 { get; set; } = 0m;
         public decimal Ma20DisparityRate { get; set; } = 0m; // 20일선 이격도 (%)
         public decimal SupportPrice { get; set; } = 0m;
         public decimal RecommendedBuyPrice { get; set; } = 0m;
         public int ChartScore { get; set; } = 5;
+        public int SupplyFinanceScore { get; set; } = 5;
+        public int FinalScore { get; set; } = 5;
+        public PositionGrade Grade { get; set; } = PositionGrade.B;
+        public bool HasCriticalLandmine { get; set; } = false;
+        public bool CanBuy { get; set; } = false;
+        public string SupplyBadge { get; set; } = "수급대기";
+        public string LandmineBadge { get; set; } = "클린안전";
 
         // 적합 전략 플래그
         public bool IsGoldenPullback { get; set; } = false;
@@ -117,11 +124,11 @@ namespace GateHelper.StockAdvisor.Services
             // 거래대금 내림차순 정렬
             rawLeaders = rawLeaders.OrderByDescending(x => x.TradingValueRaw).ToList();
 
-            // 상위 40개 거래대금 최상위 종목에 대해 정밀 기술적 지표(RSI, 20일선, 타점) 병렬 스캔
-            int scanTargetCount = Math.Min(45, rawLeaders.Count);
+            // 상위 35개 거래대금 최상위 종목에 대해 정밀 기술적 지표 + 외인·기관 수급 + 재무·지뢰 4대 팩터(종목평가와 100% 동일 기준) 병렬 스캔
+            int scanTargetCount = Math.Min(35, rawLeaders.Count);
             var scanTargets = rawLeaders.Take(scanTargetCount).ToList();
 
-            using (var sem = new SemaphoreSlim(6))
+            using (var sem = new SemaphoreSlim(8))
             {
                 int completed = 0;
                 var tasks = scanTargets.Select(async item =>
@@ -129,47 +136,103 @@ namespace GateHelper.StockAdvisor.Services
                     await sem.WaitAsync().ConfigureAwait(false);
                     try
                     {
-                        var ind = await TechnicalIndicatorService.AnalyzeIndicatorsAsync(item.StockCode, item.CurrentPrice).ConfigureAwait(false);
-                        if (ind != null)
+                        var indTask = TechnicalIndicatorService.AnalyzeIndicatorsAsync(item.StockCode, item.CurrentPrice);
+                        var intelTask = StockIntelligenceService.AnalyzeAsync(item.StockCode);
+                        await Task.WhenAll(indTask, intelTask).ConfigureAwait(false);
+
+                        var ind = indTask.Result;
+                        var intel = intelTask.Result;
+
+                        if (ind != null && intel != null)
                         {
+                            var unified = StockIntelligenceService.CalculateUnifiedScores(ind, intel, 0);
+
+                            var tempItem = new StockHoldingItem
+                            {
+                                StockCode = item.StockCode,
+                                StockName = item.StockName,
+                                CurrentPrice = item.CurrentPrice,
+                                ChangeRate = item.ChangeRate,
+                                Quantity = 0,
+                                ChartScore = unified.ChartScore,
+                                SupplyFinanceScore = unified.SupplyFinanceScore,
+                                NewsScore = unified.NewsScore,
+                                RiskScore = unified.RiskScore,
+                                FinalScore = unified.FinalScore,
+                                Rsi = ind.Rsi,
+                                SupportPrice = ind.SupportPrice,
+                                TargetStopPrice = ind.TargetStopPrice,
+                                RecommendedBuyPrice = ind.RecommendedBuyPrice,
+                                SecondaryBuyPrice = ind.SecondaryBuyPrice,
+                                TimingBadge = ind.TimingBadge,
+                                HasCriticalLandmine = intel.HasCriticalLandmine
+                            };
+                            var verdict = StockVerdictHelper.Evaluate(tempItem);
+
                             item.Rsi = ind.Rsi;
                             item.Ma20 = ind.Ma20;
                             item.SupportPrice = ind.SupportPrice;
-                            item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
-                            item.ChartScore = ind.ChartScore;
+                            item.ChartScore = unified.ChartScore;
+                            item.SupplyFinanceScore = unified.SupplyFinanceScore;
+                            item.FinalScore = unified.FinalScore;
+                            item.Grade = unified.Grade;
+                            item.HasCriticalLandmine = intel.HasCriticalLandmine;
+                            item.CanBuy = verdict.CanBuy;
+                            item.SupplyBadge = intel.SupplyBadge;
+                            item.LandmineBadge = intel.LandmineBadge;
 
                             if (item.Ma20 > 0 && item.CurrentPrice > 0)
                             {
                                 item.Ma20DisparityRate = Math.Round((item.CurrentPrice - item.Ma20) / item.Ma20 * 100m, 1);
                             }
 
-                            // 전략 1: 🎯 골든 눌림목 (우상향 20일선 지지 + RSI 40~56 + 이격도 -2.5%~+2.0% + 거래대금 300억 이상)
-                            if (item.Rsi >= 39m && item.Rsi <= 57m &&
-                                item.Ma20DisparityRate >= -3.0m && item.Ma20DisparityRate <= 2.5m &&
-                                item.ChartScore >= 6)
+                            // [단일 기준 안전 인터락] 종목평가(StockEvaluatorDialog)에서 매수 승인(CanBuy == true, FinalScore >= 6, 지뢰 없음)을 받은 우량 종목만 전략 추천 및 매수가 부여
+                            if (!verdict.CanBuy || item.HasCriticalLandmine || item.FinalScore <= 5)
                             {
-                                item.IsGoldenPullback = true;
-                                item.PrimaryStrategyBadge = "골든 눌림목";
-                                item.PrimaryStrategyGuide = $"20일선({item.Ma20:N0}원) 지지 안착! RSI({item.Rsi:F1}) 과열 해소된 이상적 분할 진입존";
-                            }
-                            // 전략 2: 💎 과매도 바닥 (RSI 36 이하 침체 공포 투매 저가 매수존)
-                            else if (item.Rsi <= 36.5m && item.Rsi > 0m)
-                            {
-                                item.IsOversoldBounce = true;
-                                item.PrimaryStrategyBadge = "과매도 바닥";
-                                item.PrimaryStrategyGuide = $"14일 RSI({item.Rsi:F1}) 극단적 침체 구간! 지지선({item.SupportPrice:N0}원) 확인 후 역발상 분할 매수";
-                            }
-                            // 전략 3: 🚀 거래대금 폭발 (당일 거래대금 1,000억 이상 + 양봉 + RSI < 68)
-                            else if (item.TradingValueRaw >= 100000000000L && item.ChangeRate >= 1.5m && item.ChangeRate <= 7.5m && item.Rsi < 68m)
-                            {
-                                item.IsVolumeBreakout = true;
-                                item.PrimaryStrategyBadge = "거래대금 폭발";
-                                item.PrimaryStrategyGuide = $"거래대금({item.TradingValueText}) 대량 유입 돌파! 저항 돌파 상승 모멘텀 유효";
+                                item.RecommendedBuyPrice = 0m;
+                                if (item.HasCriticalLandmine || item.Grade == PositionGrade.C || item.Grade == PositionGrade.F)
+                                {
+                                    item.PrimaryStrategyBadge = $"매수금지({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · {item.SupplyBadge}/{item.LandmineBadge} — 수급·재무 기준 미달로 매수 제외";
+                                }
+                                else
+                                {
+                                    item.PrimaryStrategyBadge = $"관망대기({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · {verdict.GuideText}";
+                                }
                             }
                             else
                             {
-                                item.PrimaryStrategyBadge = "추세 관망";
-                                item.PrimaryStrategyGuide = $"현재가 {item.CurrentPrice:N0}원, 20일선 이격도 {item.Ma20DisparityRate:+0.0;-0.0}%. 추가 방향성 확인 필요";
+                                item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
+
+                                // 전략 1: 골든 눌림목 (종목평가 매수 승인 + 20일선 지지 + RSI 39~57 + 이격도 -3.0%~+2.5%)
+                                if (item.Rsi >= 39m && item.Rsi <= 57m &&
+                                    item.Ma20DisparityRate >= -3.0m && item.Ma20DisparityRate <= 2.5m &&
+                                    item.ChartScore >= 6)
+                                {
+                                    item.IsGoldenPullback = true;
+                                    item.PrimaryStrategyBadge = $"골든 눌림목({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 20일선({item.Ma20:N0}원) 지지 안착! 이상적 분할 진입존";
+                                }
+                                // 전략 2: 과매도 바닥 (종목평가 매수 승인 + RSI 36.5 이하 + 20일 지지선 근접 안착)
+                                else if (item.Rsi <= 36.5m && item.Rsi > 0m && item.ChartScore >= 6)
+                                {
+                                    item.IsOversoldBounce = true;
+                                    item.PrimaryStrategyBadge = $"과매도 바닥({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · RSI({item.Rsi:F1}) 침체 및 지지선({item.SupportPrice:N0}원) 안착 확인된 분할 매수존";
+                                }
+                                // 전략 3: 거래대금 폭발 (종목평가 매수 승인 + 당일 거래대금 1,000억 이상 + 양봉 + RSI < 65)
+                                else if (item.TradingValueRaw >= 100000000000L && item.ChangeRate >= 1.5m && item.ChangeRate <= 7.5m && item.Rsi < 65m)
+                                {
+                                    item.IsVolumeBreakout = true;
+                                    item.PrimaryStrategyBadge = $"거래대금 폭발({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 거래대금({item.TradingValueText}) 대량 유입 돌파! 상승 모멘텀 유효";
+                                }
+                                else
+                                {
+                                    item.PrimaryStrategyBadge = $"분할매수({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) 우량 · 1차 매수가({item.RecommendedBuyPrice:N0}원) 부근 분할 진입 유효";
+                                }
                             }
                         }
                     }

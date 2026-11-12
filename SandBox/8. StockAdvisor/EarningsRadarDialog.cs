@@ -254,6 +254,10 @@ namespace GateHelper.StockAdvisor
 
             _lvHeld.EndUpdate();
             _lvBellwether.EndUpdate();
+            _lvHeld.SelectedItems.Clear();
+            if (_lvHeld.FocusedItem != null) _lvHeld.FocusedItem.Focused = false;
+            _lvBellwether.SelectedItems.Clear();
+            if (_lvBellwether.FocusedItem != null) _lvBellwether.FocusedItem.Focused = false;
         }
 
         private void PopulateListItems(ListView lv, List<EarningsScheduleItem> list)

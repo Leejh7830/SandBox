@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using GateHelper.StockAdvisor.Models;
 
@@ -8,32 +9,54 @@ namespace GateHelper.StockAdvisor
 {
     /// <summary>
     /// 목표가 도달, 손절선 터치, AI 적정 매수가 진입 알림 기록을 한눈에 조회하고
-    /// 선택 종목으로 바로 이동할 수 있는 알림 기록 다이얼로그 (Zero-Resource, 0B 디스크 I/O)
+    /// 더블클릭 시 종목 평가로 이동하거나 관심 종목으로 즉시 담을 수 있는 다이얼로그 (Zero-Resource, 0B 디스크 I/O)
     /// </summary>
     public class StockAlertHistoryDialog : Form
     {
         private readonly List<StockAlertLogItem> _history;
+        private readonly HashSet<string> _existingCodes;
+        private readonly Action<string, string, decimal> _onAddWatchlist;
+        private readonly Func<string, Form, bool> _onEvaluateStock;
+
         private ListView _lvHistory;
         private Label _lblSummary;
+        private Label _lblFooterGuide;
         private Button _btnClear;
         private Button _btnClose;
 
         private static readonly Font BoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
 
-        public StockAlertHistoryDialog(List<StockAlertLogItem> history, Action<string> onSelectStock = null)
+        public StockAlertHistoryDialog(
+            List<StockAlertLogItem> history,
+            Action<string> onSelectStock = null,
+            HashSet<string> existingCodes = null,
+            Action<string, string, decimal> onAddWatchlist = null,
+            Func<string, Form, bool> onEvaluateStock = null)
         {
             _history = history ?? new List<StockAlertLogItem>();
+            _existingCodes = existingCodes != null
+                ? new HashSet<string>(existingCodes.Select(x => x.TrimStart('0')), StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _onAddWatchlist = onAddWatchlist;
+            _onEvaluateStock = onEvaluateStock;
 
             this.Text = "가격 도달 알림 기록 내역 (Price Alert History)";
-            this.Size = new Size(860, 520);
+            this.Size = new Size(950, 520);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Color.FromArgb(18, 22, 32);
             this.ForeColor = Color.White;
             this.Font = new Font("Malgun Gothic", 9f);
-            this.MinimumSize = new Size(750, 420);
+            this.MinimumSize = new Size(820, 420);
 
             InitializeCustomUi();
             LoadHistoryItems();
+
+            this.Shown += (s, e) =>
+            {
+                _lvHistory.SelectedItems.Clear();
+                if (_lvHistory.FocusedItem != null) _lvHistory.FocusedItem.Focused = false;
+                this.ActiveControl = _btnClose;
+            };
         }
 
         private void InitializeCustomUi()
@@ -74,6 +97,7 @@ namespace GateHelper.StockAdvisor
                 Dock = DockStyle.Fill,
                 View = View.Details,
                 FullRowSelect = true,
+                HideSelection = true,
                 GridLines = true,
                 BackColor = Color.FromArgb(18, 20, 26),
                 ForeColor = Color.White,
@@ -89,12 +113,72 @@ namespace GateHelper.StockAdvisor
             _lvHistory.Columns.Add("현재가", 85, HorizontalAlignment.Right);
             _lvHistory.Columns.Add("감지가격", 85, HorizontalAlignment.Right);
             _lvHistory.Columns.Add("등락률", 75, HorizontalAlignment.Right);
-            _lvHistory.Columns.Add("AI 대응 권고 및 메시지", 200);
+            _lvHistory.Columns.Add("관심 등록", 80, HorizontalAlignment.Center);
+            _lvHistory.Columns.Add("AI 대응 권고 및 메시지", 210);
 
             // 더블 버퍼링
             typeof(ListView).InvokeMember("DoubleBuffered",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
                 null, _lvHistory, new object[] { true });
+
+            // [+ 담기] 셀 클릭 시 관심종목 즉시 등록
+            _lvHistory.MouseClick += (s, e) =>
+            {
+                var hit = _lvHistory.HitTest(e.Location);
+                if (hit.Item != null && hit.SubItem != null)
+                {
+                    int colIndex = hit.Item.SubItems.IndexOf(hit.SubItem);
+                    if (colIndex == 7 || hit.SubItem.Text == "+ 담기")
+                    {
+                        AddAlertItemToWatchlist(hit.Item);
+                    }
+                }
+            };
+
+            // 마우스 호버 시 [+ 담기] 셀 위에서 손가락(Hand) 커서 표시
+            _lvHistory.MouseMove += (s, e) =>
+            {
+                var hit = _lvHistory.HitTest(e.Location);
+                if (hit.Item != null && hit.SubItem != null && hit.SubItem.Text == "+ 담기")
+                {
+                    _lvHistory.Cursor = Cursors.Hand;
+                }
+                else
+                {
+                    _lvHistory.Cursor = Cursors.Default;
+                }
+            };
+
+            // 행 더블클릭 시 해당 종목의 [종목 평가] 다이얼로그로 이동
+            _lvHistory.MouseDoubleClick += (s, e) =>
+            {
+                var hit = _lvHistory.HitTest(e.Location);
+                if (hit.Item == null) return;
+                if (hit.SubItem != null && hit.Item.SubItems.IndexOf(hit.SubItem) == 7) return;
+
+                var alertItem = hit.Item.Tag as StockAlertLogItem;
+                string code = alertItem != null ? alertItem.StockCode : (hit.Item.Tag as string);
+                if (string.IsNullOrWhiteSpace(code)) return;
+
+                if (_onEvaluateStock != null)
+                {
+                    bool added = _onEvaluateStock(code, this);
+                    if (added)
+                    {
+                        MarkStockAsRegistered(code);
+                    }
+                }
+                else
+                {
+                    using (var dlg = new StockEvaluatorDialog(code))
+                    {
+                        if (dlg.ShowDialog(this) == DialogResult.OK && dlg.AddedStockItem != null)
+                        {
+                            MarkStockAsRegistered(code);
+                        }
+                    }
+                }
+            };
 
             // 3. 하단 푸터 바
             var pnlFooter = new Panel
@@ -103,6 +187,16 @@ namespace GateHelper.StockAdvisor
                 Height = 46,
                 BackColor = Color.FromArgb(24, 28, 40),
                 Padding = new Padding(16, 7, 16, 7)
+            };
+
+            _lblFooterGuide = new Label
+            {
+                Text = "[안내] 항목을 더블클릭하면 [종목 평가] 창으로 이동하며, [+ 담기] 클릭 시 관심종목에 등록됩니다.",
+                Font = new Font("Malgun Gothic", 8.8f),
+                ForeColor = Color.FromArgb(190, 215, 245),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true
             };
 
             _btnClose = new Button
@@ -141,12 +235,51 @@ namespace GateHelper.StockAdvisor
                 LoadHistoryItems();
             };
 
+            pnlFooter.Controls.Add(_lblFooterGuide);
             pnlFooter.Controls.Add(_btnClear);
             pnlFooter.Controls.Add(_btnClose);
 
             this.Controls.Add(_lvHistory);
             this.Controls.Add(pnlHeader);
             this.Controls.Add(pnlFooter);
+        }
+
+        private void AddAlertItemToWatchlist(ListViewItem lvi)
+        {
+            var alertItem = lvi?.Tag as StockAlertLogItem;
+            if (alertItem == null || string.IsNullOrWhiteSpace(alertItem.StockCode)) return;
+
+            string normCode = alertItem.StockCode.TrimStart('0');
+            string cleanName = (alertItem.StockName ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
+
+            if (_existingCodes.Contains(normCode))
+            {
+                ToastNotification.Show($"[{cleanName}] 종목은 이미 포트폴리오/관심종목에 등록되어 있습니다.", "알림", ToastIcon.Info);
+                return;
+            }
+
+            _onAddWatchlist?.Invoke(alertItem.StockCode, cleanName, alertItem.CurrentPrice);
+            MarkStockAsRegistered(alertItem.StockCode);
+            ToastNotification.Show($"[{cleanName}] 종목이 [관심 종목]에 등록되었습니다.", "관심 종목 등록 완료", ToastIcon.Success);
+        }
+
+        private void MarkStockAsRegistered(string stockCode)
+        {
+            if (string.IsNullOrWhiteSpace(stockCode)) return;
+            string normCode = stockCode.TrimStart('0');
+            _existingCodes.Add(normCode);
+
+            foreach (ListViewItem row in _lvHistory.Items)
+            {
+                if (row.Tag is StockAlertLogItem itm &&
+                    itm.StockCode != null &&
+                    itm.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase) &&
+                    row.SubItems.Count > 7)
+                {
+                    row.SubItems[7].Text = "등록됨";
+                    row.SubItems[7].ForeColor = Color.FromArgb(0, 216, 255);
+                }
+            }
         }
 
         private void LoadHistoryItems()
@@ -194,6 +327,8 @@ namespace GateHelper.StockAdvisor
 
                 string cleanName = (item.StockName ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
                 string cleanMsg = (item.Message ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
+                bool isRegistered = !string.IsNullOrEmpty(item.StockCode) && _existingCodes.Contains(item.StockCode.TrimStart('0'));
+                string regStr = isRegistered ? "등록됨" : "+ 담기";
 
                 var lvi = new ListViewItem(new[]
                 {
@@ -204,10 +339,11 @@ namespace GateHelper.StockAdvisor
                     $"{item.CurrentPrice:N0}원",
                     $"{item.TriggerPrice:N0}원",
                     $"{item.ChangeRate:+0.00;-0.00;0.00}%",
+                    regStr,
                     cleanMsg
                 });
 
-                lvi.Tag = item.StockCode;
+                lvi.Tag = item;
                 lvi.SubItems[0].ForeColor = Color.FromArgb(140, 160, 190);
                 lvi.SubItems[1].ForeColor = typeColor;
                 lvi.SubItems[1].Font = BoldFont;
@@ -219,7 +355,10 @@ namespace GateHelper.StockAdvisor
                 else if (item.ChangeRate < 0) lvi.SubItems[6].ForeColor = Color.FromArgb(85, 160, 255);
                 else lvi.SubItems[6].ForeColor = Color.FromArgb(180, 190, 205);
 
-                lvi.SubItems[7].ForeColor = Color.FromArgb(200, 220, 240);
+                lvi.SubItems[7].ForeColor = isRegistered ? Color.FromArgb(0, 216, 255) : Color.FromArgb(255, 140, 210);
+                lvi.SubItems[7].Font = BoldFont;
+
+                lvi.SubItems[8].ForeColor = Color.FromArgb(200, 220, 240);
 
                 lvi.UseItemStyleForSubItems = false;
                 _lvHistory.Items.Add(lvi);
@@ -230,10 +369,8 @@ namespace GateHelper.StockAdvisor
             _lblSummary.Text = $"총 {snapshot.Count}건의 알림 기록 (목표가 {targetCount}건 | 손절가 {stopCount}건 | 적정매수가 {buyCount}건)";
             _btnClear.Enabled = _lvHistory.Items.Count > 0;
 
-            if (_lvHistory.Items.Count > 0)
-            {
-                _lvHistory.Items[0].Selected = true;
-            }
+            _lvHistory.SelectedItems.Clear();
+            if (_lvHistory.FocusedItem != null) _lvHistory.FocusedItem.Focused = false;
         }
     }
 }

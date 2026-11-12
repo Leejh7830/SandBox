@@ -187,8 +187,18 @@ namespace GateHelper.StockAdvisor.Services
                 // 건강한 RSI (45~65)
                 if (result.Rsi >= 45m && result.Rsi <= 65m) cScore += 1.0;
 
-                // 역배열 하락 추세 감점
-                if (currentPrice < result.Ma5 && result.Ma5 < result.Ma20) cScore -= 2.5;
+                // 역배열 하락 추세 감점 (단, 20일 지지선 근접 과매도 반등 구간은 지지 테스트로 인정하여 과도한 감점 방지)
+                if (currentPrice < result.Ma5 && result.Ma5 < result.Ma20)
+                {
+                    if (result.Rsi > 0m && result.Rsi <= 36.5m && result.DownsideRiskPercent <= 4.5m)
+                        cScore = Math.Max(cScore, 6.0);
+                    else
+                        cScore -= 2.5;
+                }
+                else if (result.Rsi > 0m && result.Rsi <= 36.5m && result.DownsideRiskPercent <= 4.5m)
+                {
+                    cScore = Math.Max(cScore, 6.0);
+                }
 
                 result.ChartScore = (int)Math.Max(1, Math.Min(10, Math.Round(cScore)));
 
@@ -244,11 +254,11 @@ namespace GateHelper.StockAdvisor.Services
                     result.EntryTimingBadge = "추격매수 금지 (대기)";
                     result.EntryTimingGuide = $"현재가 과열권! 지금 사지 말고 20일선({result.RecommendedBuyPrice:N0}원)까지 눌림목 도달 시 진입 권고";
                 }
-                else if (result.Rsi <= 35.0m && result.Rsi > 0m)
+                else if (result.Rsi <= 35.0m && result.Rsi > 0m && result.DownsideRiskPercent <= 4.5m && result.ChartScore >= 6)
                 {
                     result.RecommendedBuyPrice = currentPrice;
                     result.EntryTimingBadge = "바닥 분할매수존";
-                    result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 공포 구간! 현재가({currentPrice:N0}원) 분할 매수 유효 (방어선: {result.TargetStopPrice:N0}원)";
+                    result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 및 지지선 안착 구간! 현재가({currentPrice:N0}원) 분할 매수 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
                 else
                 {

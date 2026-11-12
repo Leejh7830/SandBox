@@ -296,6 +296,10 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("타이밍 안전벨트", 115, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("최종 액션", 140, HorizontalAlignment.Center);
 
+            // 표시 순서만 변경: 타이밍 안전벨트(데이터 인덱스 13)를 AI 등급 뒤·수급 앞(표시 위치 8)으로 이동
+            // (데이터 인덱스는 유지되므로 정렬/색상 로직 영향 없음)
+            _lvStocks.Columns[13].DisplayIndex = 8;
+
             _lvStocks.Resize += (s, e) => AutoFitLastColumn();
             _lvStocks.SelectedIndexChanged += LvStocks_SelectedIndexChanged;
             _lvStocks.ColumnClick += LvStocks_ColumnClick;

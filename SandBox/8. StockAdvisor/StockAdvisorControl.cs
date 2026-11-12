@@ -497,7 +497,13 @@ namespace GateHelper.StockAdvisor
         {
             try
             {
-                using (var dlg = new StockAlertHistoryDialog(_alertHistory, code => SelectAndFocusStock(code)))
+                var existingCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode.TrimStart('0')), StringComparer.OrdinalIgnoreCase);
+                using (var dlg = new StockAlertHistoryDialog(
+                    _alertHistory,
+                    code => SelectAndFocusStock(code),
+                    existingCodes,
+                    AddStockToWatchlist,
+                    (code, owner) => ShowStockEvaluatorDialog(code, owner)))
                 {
                     Form parent = this.FindForm();
                     if (parent != null) dlg.ShowDialog(parent);
@@ -625,10 +631,10 @@ namespace GateHelper.StockAdvisor
             }
         }
 
-        private void ShowStockEvaluatorDialog()
+        private bool ShowStockEvaluatorDialog(string customQuery = null, IWin32Window owner = null)
         {
-            string initQuery = "";
-            if (_lvStocks.SelectedItems.Count > 0)
+            string initQuery = customQuery ?? "";
+            if (string.IsNullOrEmpty(initQuery) && _lvStocks.SelectedItems.Count > 0)
             {
                 var sel = _lvStocks.SelectedItems[0].Tag as StockHoldingItem;
                 if (sel != null) initQuery = sel.StockName;
@@ -636,85 +642,57 @@ namespace GateHelper.StockAdvisor
 
             using (var dlg = new StockEvaluatorDialog(initQuery))
             {
-                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.AddedStockItem != null)
+                if (dlg.ShowDialog(owner ?? this) == DialogResult.OK && dlg.AddedStockItem != null)
                 {
                     var newItem = dlg.AddedStockItem;
-                    var existing = _portfolio.Items.FirstOrDefault(x => x.StockCode == newItem.StockCode);
+                    var existing = _portfolio.Items.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(newItem.StockCode.TrimStart('0'), StringComparison.OrdinalIgnoreCase));
                     if (existing != null)
                     {
-                        // 기존 종목 업데이트
-                        existing.BuyPrice = newItem.BuyPrice;
-                        existing.Quantity += newItem.Quantity;
+                        if (newItem.Quantity > 0)
+                        {
+                            existing.BuyPrice = newItem.BuyPrice;
+                            existing.Quantity += newItem.Quantity;
+                        }
                         existing.CurrentPrice = newItem.CurrentPrice;
                         existing.ChangeRate = newItem.ChangeRate;
                     }
                     else
                     {
+                        if (newItem.IsWatchlist && _filterMode == StockFilterMode.HoldingOnly) _filterMode = StockFilterMode.All;
+                        else if (!newItem.IsWatchlist && _filterMode == StockFilterMode.WatchlistOnly) _filterMode = StockFilterMode.All;
                         _portfolio.Items.Add(newItem);
                     }
 
                     SavePortfolio();
                     UpdateUi();
-                    ToastNotification.Show($"[{newItem.StockName}] 종목이 포트폴리오에 성공적으로 추가되었습니다.", "종목 추가 완료", ToastIcon.Success);
+                    string modeStr = newItem.IsWatchlist ? "관심 종목" : "보유 종목";
+                    ToastNotification.Show($"[{newItem.StockName}] 종목이 [{modeStr}]에 성공적으로 추가되었습니다.", "종목 추가 완료", ToastIcon.Success);
+                    return true;
                 }
             }
+            return false;
         }
 
         private void ShowPanicExitDialog()
         {
-            if (_portfolio.Items.Count == 0)
-            {
-                MessageBox.Show("현재 포트폴리오에 보유 종목이 없습니다.", "비상 탈출", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            using (var dlg = new PanicExitDialog(_portfolio.Items))
-            {
-                if (dlg.ShowDialog(this) == DialogResult.OK && dlg.ExecutionCompleted)
-                {
-                    SavePortfolio();
-                    UpdateUi();
-                }
-            }
+            if (_portfolio.Items.Count == 0) { MessageBox.Show("현재 포트폴리오에 보유 종목이 없습니다.", "비상 탈출", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            using (var dlg = new PanicExitDialog(_portfolio.Items)) { if (dlg.ShowDialog(this) == DialogResult.OK && dlg.ExecutionCompleted) { SavePortfolio(); UpdateUi(); } }
         }
 
-        private void ShowScoreHelpDialog()
-        {
-            using (var dlg = new StockScoreHelpDialog())
-            {
-                dlg.ShowDialog(this);
-            }
-        }
+        private void ShowScoreHelpDialog() { using (var dlg = new StockScoreHelpDialog()) dlg.ShowDialog(this); }
 
-        private void ShowEarningsRadarDialog()
-        {
-            using (var dlg = new EarningsRadarDialog(_portfolio.Items))
-            {
-                dlg.ShowDialog(this);
-            }
-        }
+        private void ShowEarningsRadarDialog() { using (var dlg = new EarningsRadarDialog(_portfolio.Items)) dlg.ShowDialog(this); }
 
         private void ShowMarketCloseReportDialog()
         {
-            if (_portfolio == null || _portfolio.Items.Count == 0)
-            {
-                MessageBox.Show("현재 포트폴리오에 등록된 종목이 없습니다.", "장마감 결산", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            using (var dlg = new MarketCloseReportDialog(_portfolio.Items, _macroSnapshot))
-            {
-                dlg.ShowDialog(this);
-            }
+            if (_portfolio == null || _portfolio.Items.Count == 0) { MessageBox.Show("현재 포트폴리오에 등록된 종목이 없습니다.", "장마감 결산", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            using (var dlg = new MarketCloseReportDialog(_portfolio.Items, _macroSnapshot)) dlg.ShowDialog(this);
         }
 
         private void ShowMarketLeaderRadarDialog(string initialSelectCode = null)
         {
             var existingCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode.TrimStart('0')), StringComparer.OrdinalIgnoreCase);
-            using (var dlg = new MarketLeaderRadarDialog(existingCodes, AddStockToWatchlist, initialSelectCode))
-            {
-                dlg.ShowDialog(this);
-            }
+            using (var dlg = new MarketLeaderRadarDialog(existingCodes, AddStockToWatchlist, initialSelectCode)) dlg.ShowDialog(this);
         }
 
         public void AddStockToWatchlist(string code, string name, decimal price)

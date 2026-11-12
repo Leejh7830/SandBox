@@ -549,7 +549,9 @@ namespace GateHelper.StockAdvisor.Models
 
             bool isOverheat = item.Rsi >= 68.0m || (item.TimingBadge != null && item.TimingBadge.Contains("과열"));
 
-            bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7) && !item.HasCriticalLandmine && item.Rsi < 65.0m;
+            bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7 ||
+                         (item.Grade == PositionGrade.B && item.FinalScore >= 6 && item.ChartScore >= 6 && item.SupplyFinanceScore >= 5))
+                         && !item.HasCriticalLandmine && item.Rsi < 65.0m;
             bool isHeld = item.Quantity > 0;
 
             if (isAvoid)

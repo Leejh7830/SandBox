@@ -24,6 +24,20 @@ namespace GateHelper.StockAdvisor
             _onSelectStock = onSelectStock;
             InitializeCustomComponent();
             PopulateData();
+            this.Shown += (s, e) =>
+            {
+                foreach (TabPage tp in _tabControl.TabPages)
+                {
+                    foreach (Control c in tp.Controls)
+                    {
+                        if (c is ListView lv)
+                        {
+                            lv.SelectedItems.Clear();
+                            if (lv.FocusedItem != null) lv.FocusedItem.Focused = false;
+                        }
+                    }
+                }
+            };
         }
 
         private void InitializeCustomComponent()

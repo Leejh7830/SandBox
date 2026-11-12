@@ -696,6 +696,8 @@ namespace GateHelper.StockAdvisor
                 foreach (var leader in leaders)
                 {
                     if (string.IsNullOrEmpty(leader.StockCode) || leader.CurrentPrice <= 0 || leader.RecommendedBuyPrice <= 0) continue;
+                    // [종목평가 단일 기준 인터락] 종합 6점 미만(C/F등급), 지뢰 탐지, 또는 종목평가 매수 불가(CanBuy == false) 종목은 매수가 알림 원천 차단
+                    if (!leader.CanBuy || leader.FinalScore < 6 || leader.HasCriticalLandmine) continue;
 
                     string normCode = leader.StockCode.TrimStart('0');
                     if (portfolioCodes.Contains(normCode)) continue;
@@ -706,11 +708,7 @@ namespace GateHelper.StockAdvisor
                         bool shouldAlert = false;
                         lock (_alertedRadarCodes)
                         {
-                            if (!_alertedRadarCodes.Contains(normCode))
-                            {
-                                _alertedRadarCodes.Add(normCode);
-                                shouldAlert = true;
-                            }
+                            if (!_alertedRadarCodes.Contains(normCode)) { _alertedRadarCodes.Add(normCode); shouldAlert = true; }
                         }
 
                         if (shouldAlert)
@@ -750,44 +748,24 @@ namespace GateHelper.StockAdvisor
             if (string.IsNullOrEmpty(code)) return;
             try
             {
-                // 1. 부모 SandBox 폼이 최소화 또는 트레이 숨김 상태일 경우 복원 및 주식 탭 전환
                 Form form = this.FindForm();
-                if (form is SandBox sb)
-                {
-                    sb.ShowSandBoxWindow();
-                    sb.SwitchToGame("StockAdvisor");
-                }
-                else if (form != null)
-                {
-                    if (!form.Visible) form.Show();
-                    form.WindowState = FormWindowState.Normal;
-                    form.BringToFront();
-                    form.Activate();
-                }
+                if (form is SandBox sb) { sb.ShowSandBoxWindow(); sb.SwitchToGame("StockAdvisor"); }
+                else if (form != null) { if (!form.Visible) form.Show(); form.WindowState = FormWindowState.Normal; form.BringToFront(); form.Activate(); }
 
                 if (_lvStocks == null || _lvStocks.IsDisposed) return;
 
                 string normCode = code.TrimStart('0');
                 var matchedItem = _portfolio?.Items?.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase));
+                if (matchedItem == null) { ShowMarketLeaderRadarDialog(code); return; }
 
-                if (matchedItem == null)
-                {
-                    // 미등록 종목(★레이더 알림 등) 클릭 시 주도주 매수 레이더 다이얼로그 오픈 및 해당 종목 포커스
-                    ShowMarketLeaderRadarDialog(code);
-                    return;
-                }
-
-                // 현재 필터 모드(보유/관심)로 인해 목록에서 숨겨져 있다면 '전체' 필터로 자동 전환 (Pitfall #6 방어)
-                if ((_filterMode == StockFilterMode.HoldingOnly && matchedItem.IsWatchlist) ||
-                    (_filterMode == StockFilterMode.WatchlistOnly && !matchedItem.IsWatchlist))
+                if ((_filterMode == StockFilterMode.HoldingOnly && matchedItem.IsWatchlist) || (_filterMode == StockFilterMode.WatchlistOnly && !matchedItem.IsWatchlist))
                 {
                     SetFilterMode(StockFilterMode.All);
                 }
 
                 foreach (ListViewItem lvi in _lvStocks.Items)
                 {
-                    if (lvi.Tag is StockHoldingItem itm &&
-                        itm.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase))
+                    if (lvi.Tag is StockHoldingItem itm && itm.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase))
                     {
                         _lvStocks.SelectedItems.Clear();
                         lvi.Selected = true;
@@ -798,10 +776,7 @@ namespace GateHelper.StockAdvisor
                     }
                 }
             }
-            catch (Exception ex)
-            {
-                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.SelectAndFocusStock");
-            }
+            catch (Exception ex) { LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.SelectAndFocusStock"); }
         }
 
         #endregion

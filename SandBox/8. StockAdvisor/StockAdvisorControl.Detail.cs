@@ -68,7 +68,13 @@ namespace GateHelper.StockAdvisor
             if (_lblFilterSummary != null) _lblFilterSummary.Text = $"보유 {holdingCount}종목 | 관심 {watchlistCount}종목 | 앱 주문설정 {orderSetCount}건";
             UpdateFilterButtonStyles();
 
-            // 3. 리스트뷰 갱신
+            // 3. 리스트뷰 갱신 (기존 사용자가 직접 선택한 종목이 있을 때만 선택 복원, 최초 열림 시에는 미선택 상태 유지)
+            string prevSelectedCode = null;
+            if (_lvStocks.SelectedItems.Count > 0 && _lvStocks.SelectedItems[0].Tag is StockHoldingItem prevItem)
+            {
+                prevSelectedCode = prevItem.StockCode;
+            }
+
             _isUpdatingUi = true;
             try
             {
@@ -245,13 +251,30 @@ namespace GateHelper.StockAdvisor
             _lblAccountSummary.Text = $"총 매수: {totalBuy:N0}원  |  총 평가: {totalEval:N0}원  |  손익: {totalProfit:+0,0;-0,0;0}원 ({totalRate:+0.00;-0.00}%)";
             _lblAccountSummary.ForeColor = totalProfit >= 0 ? Color.FromArgb(255, 110, 110) : Color.FromArgb(100, 175, 255);
 
-            // 첫 번째 종목 자동 선택
-            if (_lvStocks.Items.Count > 0 && _lvStocks.SelectedItems.Count == 0)
+            // 사용자가 기존에 선택했던 종목이 있으면 선택 유지, 없으면 첫 행 자동 클릭/포커스 없이 깔끔한 미선택 상태 유지
+            ListViewItem restoredLvi = null;
+            if (!string.IsNullOrEmpty(prevSelectedCode))
             {
-                _lvStocks.Items[0].Selected = true;
+                string normPrev = prevSelectedCode.TrimStart('0');
+                foreach (ListViewItem lvi in _lvStocks.Items)
+                {
+                    if (lvi.Tag is StockHoldingItem itm && itm.StockCode.TrimStart('0').Equals(normPrev, StringComparison.OrdinalIgnoreCase))
+                    {
+                        restoredLvi = lvi;
+                        break;
+                    }
+                }
+            }
+
+            if (restoredLvi != null)
+            {
+                restoredLvi.Selected = true;
+                UpdateDetailPanel(restoredLvi.Tag as StockHoldingItem);
             }
             else
             {
+                _lvStocks.SelectedItems.Clear();
+                if (_lvStocks.FocusedItem != null) _lvStocks.FocusedItem.Focused = false;
                 UpdateDetailPanel(null);
             }
         }

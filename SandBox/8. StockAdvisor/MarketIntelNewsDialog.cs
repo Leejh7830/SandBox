@@ -460,12 +460,10 @@ namespace GateHelper.StockAdvisor
             }
 
             _lvNews.EndUpdate();
+            _lvNews.SelectedItems.Clear();
+            if (_lvNews.FocusedItem != null) _lvNews.FocusedItem.Focused = false;
 
-            if (_lvNews.Items.Count > 0)
-            {
-                _lvNews.Items[0].Selected = true;
-            }
-            else
+            if (_lvNews.Items.Count == 0)
             {
                 _lblDetailTitle.Text = "선택한 조건의 실시간 뉴스가 없습니다.";
                 _txtDetailPreview.Text = "";

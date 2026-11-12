@@ -147,6 +147,11 @@ namespace GateHelper.StockAdvisor
                 decimal currentPrice = priceInfo.CurrentPrice;
                 decimal changeRate = priceInfo.ChangeRate;
 
+                if (!string.IsNullOrWhiteSpace(stockName))
+                {
+                    _txtSearch.Text = stockName;
+                }
+
                 // 2. 기술적 지표, 수급·지뢰 인텔, 정통 퀀트 병렬 비동기 수집
                 var techTask = TechnicalIndicatorService.AnalyzeIndicatorsAsync(stockCode, currentPrice);
                 var intelTask = StockIntelligenceService.AnalyzeAsync(stockCode);
@@ -304,17 +309,19 @@ namespace GateHelper.StockAdvisor
                 lvi.SubItems[3].ForeColor = itm.IsPassed ? Color.FromArgb(100, 255, 160) : Color.FromArgb(255, 95, 95);
                 _lvQuantFilters.Items.Add(lvi);
             }
+            _lvQuantFilters.SelectedItems.Clear();
+            if (_lvQuantFilters.FocusedItem != null) _lvQuantFilters.FocusedItem.Focused = false;
         }
 
         private void AddCurrentStockToPortfolio()
         {
             if (_currentEvaluatedItem == null) return;
 
-            // 평단가와 수량을 입력받는 간단한 입력 다이얼로그
+            // 보유종목 또는 관심종목을 선택하여 추가할 수 있는 입력 다이얼로그
             using (var prompt = new Form())
             {
-                prompt.Width = 360;
-                prompt.Height = 220;
+                prompt.Width = 400;
+                prompt.Height = 265;
                 prompt.FormBorderStyle = FormBorderStyle.FixedDialog;
                 prompt.Text = $"내 포트폴리오에 추가: {_currentEvaluatedItem.StockName}";
                 prompt.StartPosition = FormStartPosition.CenterParent;
@@ -324,42 +331,103 @@ namespace GateHelper.StockAdvisor
                 prompt.MaximizeBox = false;
                 prompt.MinimizeBox = false;
 
-                var lbl1 = new Label { Left = 20, Top = 20, Text = "매수 평단가(원):", AutoSize = true, ForeColor = Color.FromArgb(200, 220, 245) };
-                var txtBuyPrice = new TextBox { Left = 150, Top = 16, Width = 160, BackColor = Color.FromArgb(14, 18, 26), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Text = _currentEvaluatedItem.CurrentPrice.ToString("N0") };
+                var lblType = new Label { Left = 20, Top = 20, Text = "등록 구분:", AutoSize = true, Font = new Font("Malgun Gothic", 9f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255) };
+                var rdoHolding = new RadioButton { Left = 130, Top = 18, Text = "보유 종목", AutoSize = true, Checked = true, ForeColor = Color.White, Cursor = Cursors.Hand };
+                var rdoWatchlist = new RadioButton { Left = 225, Top = 18, Text = "관심 종목 (0주)", AutoSize = true, Checked = false, ForeColor = Color.FromArgb(0, 220, 255), Cursor = Cursors.Hand };
 
-                var lbl2 = new Label { Left = 20, Top = 60, Text = "보유 수량(주):", AutoSize = true, ForeColor = Color.FromArgb(200, 220, 245) };
-                var txtQty = new TextBox { Left = 150, Top = 56, Width = 160, BackColor = Color.FromArgb(14, 18, 26), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Text = "1" };
+                var lbl1 = new Label { Left = 20, Top = 60, Text = "매수 평단가(원):", AutoSize = true, ForeColor = Color.FromArgb(200, 220, 245) };
+                var txtBuyPrice = new TextBox { Left = 150, Top = 56, Width = 200, BackColor = Color.FromArgb(14, 18, 26), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Text = _currentEvaluatedItem.CurrentPrice.ToString("N0") };
+
+                var lbl2 = new Label { Left = 20, Top = 98, Text = "보유 수량(주):", AutoSize = true, ForeColor = Color.FromArgb(200, 220, 245) };
+                var txtQty = new TextBox { Left = 150, Top = 94, Width = 200, BackColor = Color.FromArgb(14, 18, 26), ForeColor = Color.White, BorderStyle = BorderStyle.FixedSingle, Text = "1" };
+
+                var lblGuide = new Label { Left = 20, Top = 132, Width = 345, Height = 22, Text = "※ 보유 종목으로 등록되어 실시간 수익률 및 목표/손절가가 추적됩니다.", Font = new Font("Malgun Gothic", 8.2f), ForeColor = Color.FromArgb(160, 195, 230) };
 
                 var btnConfirm = CreateNeonButton("포트폴리오에 추가", Color.FromArgb(16, 48, 36), Color.FromArgb(0, 230, 118), Color.FromArgb(215, 255, 230));
-                btnConfirm.Left = 80;
-                btnConfirm.Top = 110;
-                btnConfirm.Width = 180;
+                btnConfirm.Left = 65;
+                btnConfirm.Top = 166;
+                btnConfirm.Width = 165;
                 btnConfirm.Height = 36;
-                btnConfirm.Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
+                btnConfirm.Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold);
+
+                var btnCancel = CreateNeonButton("취소", Color.FromArgb(32, 38, 52), Color.FromArgb(90, 110, 140), Color.FromArgb(200, 215, 230));
+                btnCancel.Left = 240;
+                btnCancel.Top = 166;
+                btnCancel.Width = 90;
+                btnCancel.Height = 36;
+                btnCancel.Click += (s, e) => { prompt.DialogResult = DialogResult.Cancel; prompt.Close(); };
+
+                EventHandler updateMode = (s, e) =>
+                {
+                    if (rdoWatchlist.Checked)
+                    {
+                        txtBuyPrice.Text = "0";
+                        txtBuyPrice.Enabled = false;
+                        txtQty.Text = "0";
+                        txtQty.Enabled = false;
+                        lblGuide.Text = "※ 관심 종목(0주)으로 등록되어 AI 적정 매수가 도달 시 알림이 울립니다.";
+                        lblGuide.ForeColor = Color.FromArgb(0, 220, 255);
+                    }
+                    else
+                    {
+                        txtBuyPrice.Enabled = true;
+                        txtQty.Enabled = true;
+                        if (txtBuyPrice.Text == "0") txtBuyPrice.Text = _currentEvaluatedItem.CurrentPrice.ToString("N0");
+                        if (txtQty.Text == "0") txtQty.Text = "1";
+                        lblGuide.Text = "※ 보유 종목으로 등록되어 실시간 수익률 및 목표/손절가가 추적됩니다.";
+                        lblGuide.ForeColor = Color.FromArgb(160, 195, 230);
+                    }
+                };
+                rdoHolding.CheckedChanged += updateMode;
+                rdoWatchlist.CheckedChanged += updateMode;
 
                 btnConfirm.Click += (s, e) =>
                 {
-                    string pRaw = txtBuyPrice.Text.Replace(",", "").Trim();
-                    string qRaw = txtQty.Text.Replace(",", "").Trim();
-                    decimal.TryParse(pRaw, out decimal buyPrice);
-                    int.TryParse(qRaw, out int qty);
+                    if (rdoWatchlist.Checked)
+                    {
+                        _currentEvaluatedItem.BuyPrice = 0m;
+                        _currentEvaluatedItem.Quantity = 0;
+                        if (string.IsNullOrEmpty(_currentEvaluatedItem.Memo))
+                            _currentEvaluatedItem.Memo = "종목 평가에서 관심 종목으로 등록";
+                    }
+                    else
+                    {
+                        string pRaw = txtBuyPrice.Text.Replace(",", "").Trim();
+                        string qRaw = txtQty.Text.Replace(",", "").Trim();
+                        decimal.TryParse(pRaw, out decimal buyPrice);
+                        int.TryParse(qRaw, out int qty);
 
-                    if (buyPrice <= 0) buyPrice = _currentEvaluatedItem.CurrentPrice;
-                    if (qty <= 0) qty = 1;
-
-                    _currentEvaluatedItem.BuyPrice = buyPrice;
-                    _currentEvaluatedItem.Quantity = qty;
+                        if (qty <= 0)
+                        {
+                            // 수량에 0을 입력한 경우에도 관심 종목으로 자연스럽게 처리
+                            _currentEvaluatedItem.BuyPrice = 0m;
+                            _currentEvaluatedItem.Quantity = 0;
+                            if (string.IsNullOrEmpty(_currentEvaluatedItem.Memo))
+                                _currentEvaluatedItem.Memo = "종목 평가에서 관심 종목으로 등록";
+                        }
+                        else
+                        {
+                            if (buyPrice <= 0) buyPrice = _currentEvaluatedItem.CurrentPrice;
+                            _currentEvaluatedItem.BuyPrice = buyPrice;
+                            _currentEvaluatedItem.Quantity = qty;
+                        }
+                    }
 
                     this.AddedStockItem = _currentEvaluatedItem;
                     prompt.DialogResult = DialogResult.OK;
                     prompt.Close();
                 };
 
+                prompt.Controls.Add(lblType);
+                prompt.Controls.Add(rdoHolding);
+                prompt.Controls.Add(rdoWatchlist);
                 prompt.Controls.Add(lbl1);
                 prompt.Controls.Add(txtBuyPrice);
                 prompt.Controls.Add(lbl2);
                 prompt.Controls.Add(txtQty);
+                prompt.Controls.Add(lblGuide);
                 prompt.Controls.Add(btnConfirm);
+                prompt.Controls.Add(btnCancel);
 
                 if (prompt.ShowDialog(this) == DialogResult.OK)
                 {

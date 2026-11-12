@@ -15,7 +15,7 @@ namespace GateHelper.StockAdvisor.Services
     public enum RadarStrategyType
     {
         GoldenPullback, // 🎯 골든 눌림목 (우상향 추세 속 20일선 완만 눌림목 안착)
-        OversoldBounce, // 💎 과매도 반등 (RSI 36.5 이하 지지선 안착 역발상 분할 매수존)
+        OversoldBounce, // 🟢 과매도 반등 (RSI 36.5 이하 지지선 안착 역발상 분할 매수존)
         VolumeBreakout, // 🚀 거래대금 폭발 (당일 스마트머니 대량 유입 돌파)
         AllLeaders      // 전체 주도주 (거래대금 순 정렬)
     }

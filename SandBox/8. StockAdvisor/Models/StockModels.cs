@@ -477,7 +477,7 @@ namespace GateHelper.StockAdvisor.Models
         SharpDropAlert,  // 🟠 급락 주의 (당일 -4% 초과 급락, 떨어지는 칼날 진입 보류)
         TakeProfit,      // 🔵 추격매수 금지 / 분할 익절 (RSI 68+ 과열 슈팅)
         HoldOrWatch,     // 🟡 관망 대기 / 지지선 확인 대기 (중립 B등급, 방향성 탐색)
-        OversoldBounce,  // 💎 과매도 반등 (RSI 36.5 이하 + 20일 지지선 안착 역발상 분할 매수)
+        OversoldBounce,  // 🟢 과매도 반등 (RSI 36.5 이하 + 20일 지지선 안착 역발상 분할 매수)
         BuyEntry         // 🟢 적극 분할 매수 진입 유효 (A등급/우량 B등급, 20일선 눌림목 안착)
     }
 
@@ -680,10 +680,11 @@ namespace GateHelper.StockAdvisor.Models
                         info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 진입 권장";
                         info.BuyPriceText = $"• 매수가: {buy1Str}";
                     }
-                    info.BackColor = Color.FromArgb(14, 38, 48);
-                    info.ForeColor = Color.FromArgb(80, 230, 255);
-                    info.BorderColor = Color.FromArgb(30, 150, 180);
-                    info.ListBadgeColor = Color.FromArgb(0, 216, 255);
+                    // 과매도반등도 매수 승인 신호이므로 통일된 안전 초록색 테마 적용
+                    info.BackColor = Color.FromArgb(16, 44, 28);
+                    info.ForeColor = Color.FromArgb(90, 255, 170);
+                    info.BorderColor = Color.FromArgb(40, 170, 90);
+                    info.ListBadgeColor = Color.FromArgb(0, 230, 118);
                     info.CanBuy = true;
                 }
                 else
@@ -691,10 +692,21 @@ namespace GateHelper.StockAdvisor.Models
                     info.Type = ActionVerdictType.BuyEntry;
                     if (isHeld)
                     {
-                        info.BadgeText = "[보유/추매]";
-                        info.TitleText = "[ AI 참모 최종 결론 : 추세 유지 홀딩 & 분할 추매 유효 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 매수가 부근 분할 추매 유효";
-                        info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
+                        // [RSI 58 이상 과열 진입 구간 인터락] 주가가 올라선 상태이므로 추가 매수는 금지하고 기존 물량만 안전 홀딩
+                        if (item.Rsi >= 58.0m)
+                        {
+                            info.BadgeText = "[보유홀딩]";
+                            info.TitleText = "[ AI 참모 최종 결론 : 추세 상승 홀딩 & 추격 추매 금지 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 상승 추세 유지. 기존 물량은 수익 극대화 홀딩하되, RSI({item.Rsi:F1}) 상승권으로 추가 매수는 자제 권고";
+                            info.BuyPriceText = $"• 매수가: [추매 보류] (상승 추세 홀딩 중 / 추가 매수는 20일선 눌림목까지 대기)";
+                        }
+                        else
+                        {
+                            info.BadgeText = "[보유/추매]";
+                            info.TitleText = "[ AI 참모 최종 결론 : 추세 유지 홀딩 & 분할 추매 유효 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 매수가 부근 분할 추매 유효";
+                            info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
+                        }
                     }
                     else
                     {

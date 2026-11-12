@@ -484,7 +484,7 @@ namespace GateHelper.StockAdvisor
 
                 // 전략 타점 뱃지
                 if (itm.IsGoldenPullback) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
-                else if (itm.IsOversoldBounce) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 220, 255);
+                else if (itm.IsOversoldBounce) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
                 else if (itm.IsVolumeBreakout) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 190, 40);
                 else if (itm.PrimaryStrategyBadge != null && itm.PrimaryStrategyBadge.Contains("급락주의")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 160, 60);
                 else if (itm.PrimaryStrategyBadge != null && itm.PrimaryStrategyBadge.Contains("매수금지")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 95, 110);

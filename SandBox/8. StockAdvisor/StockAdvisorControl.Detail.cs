@@ -219,7 +219,7 @@ namespace GateHelper.StockAdvisor
                     if (tb.Contains("과열")) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 75, 95);
                     else if (tb.Contains("골든")) lvi.SubItems[13].ForeColor = Color.FromArgb(0, 230, 118);
                     else if (tb.Contains("눌림목")) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 210, 60);
-                    else if (tb.Contains("과매도")) lvi.SubItems[13].ForeColor = Color.FromArgb(70, 180, 255);
+                    else if (tb.Contains("과매도")) lvi.SubItems[13].ForeColor = Color.FromArgb(0, 230, 118);
                     else if (tb.Contains("보유불필요")) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 90, 90);
                     else lvi.SubItems[13].ForeColor = Color.FromArgb(190, 200, 215);
 

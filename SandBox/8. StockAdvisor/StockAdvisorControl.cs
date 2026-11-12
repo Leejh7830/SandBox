@@ -79,6 +79,8 @@ namespace GateHelper.StockAdvisor
 
         private DateTime? _lastDiagnoseSuccessTime = null;
         private string _diagnoseCustomStatus = null;
+        private DateTime? _lastPriceRefreshSuccessTime = null;
+        private string _priceRefreshCustomStatus = null;
 
         // 하단 상태바
         private Panel _pnlFooter;
@@ -239,6 +241,47 @@ namespace GateHelper.StockAdvisor
             }
 
             UpdateDiagnoseButtonStatus(false);
+            UpdatePriceRefreshButtonStatus(false);
+        }
+
+        private void UpdatePriceRefreshButtonStatus(bool isSyncSuccess, string customStatus = null, DateTime? syncTime = null)
+        {
+            if (_btnRefreshPrice == null) return;
+
+            _priceRefreshCustomStatus = customStatus;
+            _btnRefreshPrice.Text = ""; // 텍스트를 비워 Paint 이벤트에서 상단 타이틀 + 하단 작은 동기화시간을 선명하게 직접 렌더링
+
+            if (isSyncSuccess)
+            {
+                _lastPriceRefreshSuccessTime = syncTime ?? DateTime.Now;
+                _btnRefreshPrice.BackColor = Color.FromArgb(14, 52, 74);
+                _btnRefreshPrice.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 255);
+                _btnRefreshPrice.ForeColor = Color.FromArgb(0, 245, 255);
+            }
+            else if (!string.IsNullOrEmpty(customStatus))
+            {
+                _btnRefreshPrice.BackColor = Color.FromArgb(40, 36, 18);
+                _btnRefreshPrice.FlatAppearance.BorderColor = Color.FromArgb(255, 190, 40);
+                _btnRefreshPrice.ForeColor = Color.FromArgb(255, 235, 160);
+            }
+            else
+            {
+                if (_lastPriceRefreshSuccessTime.HasValue)
+                {
+                    _btnRefreshPrice.BackColor = Color.FromArgb(14, 52, 74);
+                    _btnRefreshPrice.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 255);
+                    _btnRefreshPrice.ForeColor = Color.FromArgb(0, 245, 255);
+                }
+                else
+                {
+                    _lastPriceRefreshSuccessTime = null;
+                    _btnRefreshPrice.BackColor = Color.FromArgb(20, 34, 56);
+                    _btnRefreshPrice.FlatAppearance.BorderColor = Color.FromArgb(64, 150, 255);
+                    _btnRefreshPrice.ForeColor = Color.FromArgb(215, 235, 255);
+                }
+            }
+
+            _btnRefreshPrice.Invalidate();
         }
 
         private void UpdateDiagnoseButtonStatus(bool isSyncSuccess, string customStatus = null, DateTime? syncTime = null)

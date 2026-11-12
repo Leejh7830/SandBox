@@ -26,6 +26,16 @@ namespace GateHelper
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
 
+        private System.Threading.EventWaitHandle _wakeEvent;
+        private System.Threading.RegisteredWaitHandle _registeredWakeHandle;
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+        private const int SW_RESTORE = 9;
+
         public SandBox() : this(null)
         {
         }
@@ -57,6 +67,7 @@ namespace GateHelper
             {
                 InitializeCustomControls();
                 InitializeSystemTray();
+                StartSingleInstanceWakeListener();
                 if (!string.IsNullOrEmpty(initialGame))
                 {
                     SwitchToGame(initialGame);
@@ -158,12 +169,49 @@ namespace GateHelper
             }
         }
 
+        private void StartSingleInstanceWakeListener()
+        {
+            try
+            {
+                _wakeEvent = new System.Threading.EventWaitHandle(false, System.Threading.EventResetMode.AutoReset, Program.SingleInstanceWakeEventName);
+                _registeredWakeHandle = System.Threading.ThreadPool.RegisterWaitForSingleObject(
+                    _wakeEvent,
+                    (state, timedOut) =>
+                    {
+                        if (this.IsDisposed) return;
+                        try
+                        {
+                            this.BeginInvoke(new Action(() => ShowSandBoxWindow()));
+                        }
+                        catch { }
+                    },
+                    null,
+                    -1,
+                    false
+                );
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "SandBox.StartSingleInstanceWakeListener");
+            }
+        }
+
         public void ShowSandBoxWindow()
         {
-            this.Show();
-            this.WindowState = FormWindowState.Normal;
-            this.BringToFront();
-            this.Activate();
+            try
+            {
+                if (!this.Visible) this.Show();
+                if (this.WindowState == FormWindowState.Minimized)
+                {
+                    this.WindowState = FormWindowState.Normal;
+                }
+                this.ShowInTaskbar = true;
+                ShowWindow(this.Handle, SW_RESTORE);
+                this.BringToFront();
+                this.Activate();
+                SetForegroundWindow(this.Handle);
+            }
+            catch { }
         }
 
         protected override void OnResize(EventArgs e)
@@ -305,6 +353,14 @@ namespace GateHelper
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
+            try
+            {
+                _registeredWakeHandle?.Unregister(null);
+                _wakeEvent?.Dispose();
+                _wakeEvent = null;
+            }
+            catch { }
+
             try
             {
                 if (_trayIcon != null)

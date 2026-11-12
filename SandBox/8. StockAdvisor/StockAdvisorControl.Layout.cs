@@ -136,11 +136,33 @@ namespace GateHelper.StockAdvisor
             _btnEvaluateStock.Margin = new Padding(2, 1, 2, 1);
             _btnEvaluateStock.Click += (s, e) => ShowStockEvaluatorDialog();
 
-            _btnRefreshPrice = CreateNeonButton("시세 갱신", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
-            _btnRefreshPrice.Font = new Font("Malgun Gothic", 8.5f);
-            _btnRefreshPrice.Size = new Size(86, 34);
+            _btnRefreshPrice = CreateNeonButton("", Color.FromArgb(20, 34, 56), Color.FromArgb(64, 150, 255), Color.FromArgb(215, 235, 255));
+            _btnRefreshPrice.Size = new Size(95, 34);
             _btnRefreshPrice.Margin = new Padding(2, 1, 2, 1);
             _btnRefreshPrice.Click += async (s, e) => await RefreshPricesAsync();
+
+            // 사용자 요청: 시세 갱신도 버튼 안 텍스트 아래에 동기화 시간을 작게 표시
+            _btnRefreshPrice.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                if (!string.IsNullOrEmpty(_priceRefreshCustomStatus))
+                {
+                    g.DrawString("시세 갱신", DiagnoseTitleFont, BrushGoldTitle, new RectangleF(0, 2, _btnRefreshPrice.Width, 15), CenterStringFormat);
+                    g.DrawString(_priceRefreshCustomStatus, DiagnoseSubFont, BrushGoldSub, new RectangleF(0, 17, _btnRefreshPrice.Width, 14), CenterStringFormat);
+                }
+                else if (_lastPriceRefreshSuccessTime.HasValue)
+                {
+                    g.DrawString("시세 갱신", DiagnoseTitleFont, BrushCyanBright, new RectangleF(0, 2, _btnRefreshPrice.Width, 15), CenterStringFormat);
+                    string timeText = $"{_lastPriceRefreshSuccessTime.Value:HH:mm:ss} 동기화";
+                    g.DrawString(timeText, DiagnoseSubFont, BrushCyanSub, new RectangleF(0, 17, _btnRefreshPrice.Width, 14), CenterStringFormat);
+                }
+                else
+                {
+                    g.DrawString("시세 갱신", DiagnoseDefaultFont, BrushMutedTitle, new RectangleF(0, 0, _btnRefreshPrice.Width, _btnRefreshPrice.Height), CenterStringFormat);
+                }
+            };
 
             _btnEarningsRadar = CreateNeonButton("실적 D-Day", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
             _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);

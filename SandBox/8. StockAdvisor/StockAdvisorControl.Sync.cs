@@ -19,7 +19,7 @@ namespace GateHelper.StockAdvisor
             if (_isRefreshingPrice) return;
             _isRefreshingPrice = true;
             _btnRefreshPrice.Enabled = false;
-            _btnRefreshPrice.Text = "조회 중...";
+            UpdatePriceRefreshButtonStatus(false, "조회 중...");
 
             try
             {
@@ -53,16 +53,27 @@ namespace GateHelper.StockAdvisor
                 UpdateUi();
                 _ = RefreshMarketThermometerAsync();
                 CheckAndDispatchPriceTouchAlerts();
+
+                // 상단 버튼: 시세 갱신 성공 시 밝은 색상 및 동기화 시간 게시
+                UpdatePriceRefreshButtonStatus(true, syncTime: DateTime.Now);
             }
             catch (Exception ex)
             {
                 LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.RefreshPricesAsync");
+                UpdatePriceRefreshButtonStatus(false, "[실패] 재시도");
             }
             finally
             {
                 _isRefreshingPrice = false;
                 _btnRefreshPrice.Enabled = true;
-                _btnRefreshPrice.Text = "시세 갱신";
+                if (_lastPriceRefreshSuccessTime.HasValue)
+                {
+                    UpdatePriceRefreshButtonStatus(true, syncTime: _lastPriceRefreshSuccessTime.Value);
+                }
+                else
+                {
+                    UpdatePriceRefreshButtonStatus(false);
+                }
             }
         }
 
@@ -215,6 +226,7 @@ namespace GateHelper.StockAdvisor
 
                     // 2. 상단 버튼: 동기화 성공 시 밝은 색상으로 변경 및 동기화 시간 게시
                     UpdateDiagnoseButtonStatus(true, syncTime: DateTime.Now);
+                    UpdatePriceRefreshButtonStatus(true, syncTime: DateTime.Now);
                 }
                 else
                 {

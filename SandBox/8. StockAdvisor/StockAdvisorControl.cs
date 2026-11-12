@@ -666,7 +666,7 @@ namespace GateHelper.StockAdvisor
                     SavePortfolio();
                     UpdateUi();
                     string modeStr = newItem.IsWatchlist ? "관심 종목" : "보유 종목";
-                    ToastNotification.Show($"[{newItem.StockName}] 종목이 [{modeStr}]에 성공적으로 추가되었습니다.", "종목 추가 완료", ToastIcon.Success);
+                    ToastNotification.Show($"[{newItem.StockName}]\n{modeStr}에 성공적으로 추가되었습니다.", "종목 추가 완료", ToastIcon.Success);
                     return true;
                 }
             }

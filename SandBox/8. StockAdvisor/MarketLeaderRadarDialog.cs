@@ -555,7 +555,12 @@ namespace GateHelper.StockAdvisor
 
                 _lblGuideBanner.Text = $"[완료] [{itm.StockName}] 관심종목 추가 완료! (AI 권고 매수가: {itm.RecommendedBuyPrice:N0}원)";
 
-                ToastNotification.Show($"[{itm.StockName}] 종목이 [★ 관심 종목]에 등록되었습니다.\nAI 권고 매수가({itm.RecommendedBuyPrice:N0}원) 도달 시 실시간 알림이 발송됩니다.", "관심 종목 등록 완료", ToastIcon.Success);
+                string toastMsg = string.Format("[{0}]\n관심 종목에 등록되었습니다.", itm.StockName);
+                if (itm.RecommendedBuyPrice > 0)
+                {
+                    toastMsg += string.Format(" (매수가: {0:N0}원)", itm.RecommendedBuyPrice);
+                }
+                ToastNotification.Show(toastMsg, "관심 종목 등록 완료", ToastIcon.Success);
             }
             catch (Exception ex)
             {

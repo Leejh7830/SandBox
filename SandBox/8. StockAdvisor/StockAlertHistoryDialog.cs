@@ -260,7 +260,7 @@ namespace GateHelper.StockAdvisor
 
             _onAddWatchlist?.Invoke(alertItem.StockCode, cleanName, alertItem.CurrentPrice);
             MarkStockAsRegistered(alertItem.StockCode);
-            ToastNotification.Show($"[{cleanName}] 종목이 [관심 종목]에 등록되었습니다.", "관심 종목 등록 완료", ToastIcon.Success);
+            ToastNotification.Show($"[{cleanName}]\n관심 종목에 등록되었습니다.", "관심 종목 등록 완료", ToastIcon.Success);
         }
 
         private void MarkStockAsRegistered(string stockCode)

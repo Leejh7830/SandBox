@@ -26,7 +26,7 @@ namespace GateHelper
             this.StartPosition = FormStartPosition.Manual;
             this.BackColor = Color.FromArgb(40, 40, 40); // Dark Gray
             this.ForeColor = Color.White;
-            this.Size = new Size(380, 90);
+            this.Size = new Size(400, 96);
             this.Opacity = 0.0;
             this.Padding = new Padding(15);
             
@@ -69,7 +69,7 @@ namespace GateHelper
             lblMessage.Text = message;
             lblMessage.Font = new Font("Malgun Gothic", 9, FontStyle.Regular);
             lblMessage.Location = new Point(60, 38);
-            lblMessage.Size = new Size(300, 45);
+            lblMessage.Size = new Size(325, 48);
             lblMessage.ForeColor = Color.FromArgb(220, 220, 220);
             
             // Close Hint

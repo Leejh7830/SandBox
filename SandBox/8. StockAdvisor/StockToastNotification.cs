@@ -34,74 +34,60 @@ namespace GateHelper.StockAdvisor
             this.ShowInTaskbar = false;
             this.TopMost = true;
             this.StartPosition = FormStartPosition.Manual;
-            this.Size = new Size(370, 96);
-            this.BackColor = Color.FromArgb(18, 22, 32);
+            this.Size = new Size(390, 78);
+            this.BackColor = Color.FromArgb(16, 20, 30);
             this.ForeColor = Color.White;
             this.DoubleBuffered = true;
             this.Cursor = Cursors.Hand;
 
             Color accentColor = alertType == ToastAlertType.TargetHit
-                ? Color.FromArgb(0, 230, 118) // 에메랄드 그린
+                ? Color.FromArgb(0, 230, 118) // 에메랄드 그린 (목표가 매도)
                 : (alertType == ToastAlertType.BuyHit
-                    ? Color.FromArgb(0, 216, 255) // 네온 사이언
-                    : Color.FromArgb(255, 75, 85));  // 네온 레드
+                    ? Color.FromArgb(0, 216, 255) // 네온 사이언 (매수 진입)
+                    : Color.FromArgb(255, 75, 85));  // 네온 레드 (손절 방어)
 
-            string icon = alertType == ToastAlertType.TargetHit ? "★" : (alertType == ToastAlertType.BuyHit ? "★" : "▲");
-            string typeTitle = alertType == ToastAlertType.TargetHit
-                ? "목표가 달성 (분할 익절 검토)"
-                : (alertType == ToastAlertType.BuyHit ? "AI 적정 매수가 도달 (진입 검토)" : "손절 방어선 터치 (리스크 관리)");
+            string actionStatus = alertType == ToastAlertType.BuyHit
+                ? "매수가 도달"
+                : (alertType == ToastAlertType.TargetHit ? "매도가 도달" : "손절가 도달");
 
-            // 1. 헤더 (아이콘 + 종목명 + 타이틀)
+            // 사용자 맞춤 포맷: [종목명 + 매수(매도)가격 + 도달 여부] 만 심플하게 노출하여 긴 종목명도 글자 잘림 원천 차단
+            string headline = $"[{stockName} {triggerPrice:N0}원 {actionStatus}]";
+
+            // 1. 헤더 (종목명 + 가격 + 도달여부)
             var lblTitle = new Label
             {
-                Text = $"{icon} [{typeTitle}]\n{stockName} ({stockCode})",
-                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                Text = headline,
+                Font = new Font("Malgun Gothic", 9.8f, FontStyle.Bold),
                 ForeColor = accentColor,
-                Location = new Point(14, 10),
-                Size = new Size(310, 38),
-                BackColor = Color.Transparent
+                Location = new Point(14, 12),
+                Size = new Size(344, 24),
+                BackColor = Color.Transparent,
+                AutoEllipsis = true
             };
             lblTitle.Click += (s, e) => HandleClick();
 
-            // 2. 가격 및 권고 안내 문구
-            string priceDetail = alertType == ToastAlertType.TargetHit
-                ? $"현재가 {currentPrice:N0}원 | 목표가 {triggerPrice:N0}원 도달 ({changeRate:+0.00;-0.00}%)"
-                : (alertType == ToastAlertType.BuyHit
-                    ? $"현재가 {currentPrice:N0}원 | AI 매수가 {triggerPrice:N0}원 진입존 ({changeRate:+0.00;-0.00}%)"
-                    : $"현재가 {currentPrice:N0}원 | 손절선 {triggerPrice:N0}원 이탈 ({changeRate:+0.00;-0.00}%)");
-
+            // 2. 서브 안내: 현재가 및 클릭 차트 이동 가이드
             var lblBody = new Label
             {
-                Text = priceDetail,
-                Font = new Font("Malgun Gothic", 8.8f),
-                ForeColor = Color.FromArgb(220, 230, 245),
-                Location = new Point(14, 50),
-                Size = new Size(340, 20),
+                Text = $"현재가: {currentPrice:N0}원 ({changeRate:+0.00;-0.00}%) · 클릭 시 차트 이동",
+                Font = new Font("Malgun Gothic", 8.4f),
+                ForeColor = Color.FromArgb(170, 190, 215),
+                Location = new Point(14, 43),
+                Size = new Size(305, 20),
                 BackColor = Color.Transparent
             };
             lblBody.Click += (s, e) => HandleClick();
 
-            // 3. 하단 안내 텍스트 & 확인 버튼
-            var lblHint = new Label
-            {
-                Text = "클릭 시 해당 종목 차트로 즉시 이동",
-                Font = new Font("Malgun Gothic", 7.8f),
-                ForeColor = Color.FromArgb(130, 150, 180),
-                Location = new Point(14, 72),
-                Size = new Size(240, 18),
-                BackColor = Color.Transparent
-            };
-            lblHint.Click += (s, e) => HandleClick();
-
+            // 3. 확인 버튼 (영구 대기 확인 후 닫기)
             var btnConfirm = new Button
             {
                 Text = "확인",
-                Font = new Font("Malgun Gothic", 8f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 8.2f, FontStyle.Bold),
                 ForeColor = accentColor,
-                BackColor = Color.FromArgb(28, 36, 50),
+                BackColor = Color.FromArgb(24, 32, 46),
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(48, 22),
-                Location = new Point(this.Width - 62, 68),
+                Size = new Size(50, 24),
+                Location = new Point(this.Width - 60, 42),
                 Cursor = Cursors.Hand
             };
             btnConfirm.FlatAppearance.BorderColor = accentColor;
@@ -115,8 +101,8 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.FromArgb(140, 160, 185),
                 BackColor = Color.Transparent,
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(24, 24),
-                Location = new Point(this.Width - 28, 6),
+                Size = new Size(22, 22),
+                Location = new Point(this.Width - 26, 6),
                 Cursor = Cursors.Hand
             };
             btnClose.FlatAppearance.BorderSize = 0;
@@ -127,7 +113,6 @@ namespace GateHelper.StockAdvisor
             this.Controls.Add(btnClose);
             this.Controls.Add(lblTitle);
             this.Controls.Add(lblBody);
-            this.Controls.Add(lblHint);
             this.Click += (s, e) => HandleClick();
 
             // 5. 우측 하단 작업표시줄 위 배치 (동시 알림 시 위로 차곡차곡 스택, 확인 전까지 유지)
@@ -226,7 +211,11 @@ namespace GateHelper.StockAdvisor
                     CurrentPrice = currentPrice,
                     TriggerPrice = triggerPrice,
                     ChangeRate = changeRate,
-                    Message = message ?? (alertType == ToastAlertType.TargetHit ? "목표가 달성 분할 익절 검토" : (alertType == ToastAlertType.BuyHit ? "AI 권고 매수가 도달 진입 검토" : "손절선 이탈 방어")),
+                    Message = message ?? (alertType == ToastAlertType.BuyHit
+                        ? $"[{stockName} {triggerPrice:N0}원 매수가 도달]"
+                        : (alertType == ToastAlertType.TargetHit
+                            ? $"[{stockName} {triggerPrice:N0}원 매도가 도달]"
+                            : $"[{stockName} {triggerPrice:N0}원 손절가 도달]")),
                     IsRead = false
                 });
             }

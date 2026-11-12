@@ -95,11 +95,33 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(0)
             };
 
-            _btnDiagnose = CreateNeonButton("AI 참모 진단", Color.FromArgb(24, 28, 38), Color.FromArgb(50, 60, 80), Color.FromArgb(140, 160, 185));
-            _btnDiagnose.Font = new Font("Malgun Gothic", 7.8f, FontStyle.Bold);
+            _btnDiagnose = CreateNeonButton("", Color.FromArgb(24, 28, 38), Color.FromArgb(50, 60, 80), Color.FromArgb(140, 160, 185));
             _btnDiagnose.Size = new Size(116, 34);
             _btnDiagnose.Margin = new Padding(2, 1, 2, 1);
             _btnDiagnose.Click += async (s, e) => await RunAiDiagnosisAsync();
+
+            // 사용자 요청: AI 참모진단 성공 시 버튼 안 텍스트 아래에 동기화 시간을 작게 표시
+            _btnDiagnose.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+
+                if (!string.IsNullOrEmpty(_diagnoseCustomStatus))
+                {
+                    g.DrawString("AI 참모 진단", DiagnoseTitleFont, BrushGoldTitle, new RectangleF(0, 2, _btnDiagnose.Width, 15), CenterStringFormat);
+                    g.DrawString(_diagnoseCustomStatus, DiagnoseSubFont, BrushGoldSub, new RectangleF(0, 17, _btnDiagnose.Width, 14), CenterStringFormat);
+                }
+                else if (_lastDiagnoseSuccessTime.HasValue)
+                {
+                    g.DrawString("AI 참모 진단", DiagnoseTitleFont, BrushCyanBright, new RectangleF(0, 2, _btnDiagnose.Width, 15), CenterStringFormat);
+                    string timeText = $"{_lastDiagnoseSuccessTime.Value:HH:mm:ss} 동기화";
+                    g.DrawString(timeText, DiagnoseSubFont, BrushCyanSub, new RectangleF(0, 17, _btnDiagnose.Width, 14), CenterStringFormat);
+                }
+                else
+                {
+                    g.DrawString("AI 참모 진단", DiagnoseDefaultFont, BrushMutedTitle, new RectangleF(0, 0, _btnDiagnose.Width, _btnDiagnose.Height), CenterStringFormat);
+                }
+            };
 
             _btnLeaderRadar = CreateNeonButton("주도주 레이더", Color.FromArgb(52, 20, 50), Color.FromArgb(255, 90, 215), Color.FromArgb(255, 220, 248));
             _btnLeaderRadar.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);

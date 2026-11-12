@@ -146,8 +146,8 @@ namespace GateHelper
                     if (item == null || _trayIcon == null) return;
                     if (this.WindowState == FormWindowState.Minimized || !this.Visible)
                     {
-                        string title = $"[{item.StockName}] {item.Message}";
-                        string body = $"현재가: {item.CurrentPrice:N0}원 | 감지가격: {item.TriggerPrice:N0}원 ({item.ChangeRate:+0.00;-0.00}%)";
+                        string title = item.Message;
+                        string body = $"현재가: {item.CurrentPrice:N0}원 ({item.ChangeRate:+0.00;-0.00}%) · 클릭 시 이동";
                         _trayIcon.ShowBalloonTip(3000, title, body, ToolTipIcon.Info);
                     }
                 };

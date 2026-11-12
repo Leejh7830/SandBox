@@ -60,8 +60,25 @@ namespace GateHelper.StockAdvisor
         private Button _btnEditItem;
         private Button _btnDeleteItem;
 
-        // 제로 리소스 폰트 캐시 (루프 내 new Font 방지, GC 0B)
+        // 제로 리소스 폰트 및 브러시 캐시 (루프 및 Paint 내 new 방지, GC 0B)
         internal static readonly Font SubItemBoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
+        internal static readonly Font DiagnoseTitleFont = new Font("Malgun Gothic", 8.2f, FontStyle.Bold);
+        internal static readonly Font DiagnoseDefaultFont = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
+        internal static readonly Font DiagnoseSubFont = new Font("Segoe UI", 7.2f, FontStyle.Regular);
+        internal static readonly SolidBrush BrushCyanBright = new SolidBrush(Color.FromArgb(0, 245, 255));
+        internal static readonly SolidBrush BrushCyanSub = new SolidBrush(Color.FromArgb(160, 235, 255));
+        internal static readonly SolidBrush BrushMutedTitle = new SolidBrush(Color.FromArgb(140, 160, 185));
+        internal static readonly SolidBrush BrushGoldTitle = new SolidBrush(Color.FromArgb(255, 235, 160));
+        internal static readonly SolidBrush BrushGoldSub = new SolidBrush(Color.FromArgb(255, 210, 110));
+        internal static readonly StringFormat CenterStringFormat = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center,
+            FormatFlags = StringFormatFlags.NoWrap
+        };
+
+        private DateTime? _lastDiagnoseSuccessTime = null;
+        private string _diagnoseCustomStatus = null;
 
         // 하단 상태바
         private Panel _pnlFooter;
@@ -226,30 +243,41 @@ namespace GateHelper.StockAdvisor
         {
             if (_btnDiagnose == null) return;
 
-            if (!string.IsNullOrEmpty(customStatus))
-            {
-                _btnDiagnose.Text = $"AI 참모 진단\n{customStatus}";
-                _btnDiagnose.BackColor = Color.FromArgb(40, 36, 18);
-                _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(255, 190, 40);
-                _btnDiagnose.ForeColor = Color.FromArgb(255, 235, 160);
-                return;
-            }
+            _diagnoseCustomStatus = customStatus;
+            _btnDiagnose.Text = ""; // 텍스트를 비워 Paint 이벤트에서 상단 타이틀 + 하단 작은 동기화시간을 선명하게 직접 렌더링
 
             if (isSyncSuccess)
             {
-                DateTime time = syncTime ?? (_portfolio?.LastBriefing?.GeneratedAt ?? DateTime.Now);
-                _btnDiagnose.Text = $"AI 참모 진단\n✓ {time:HH:mm:ss} 동기화";
+                _lastDiagnoseSuccessTime = syncTime ?? (_portfolio?.LastBriefing?.GeneratedAt ?? DateTime.Now);
                 _btnDiagnose.BackColor = Color.FromArgb(14, 52, 74);
                 _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 255);
                 _btnDiagnose.ForeColor = Color.FromArgb(0, 245, 255);
             }
+            else if (!string.IsNullOrEmpty(customStatus))
+            {
+                _btnDiagnose.BackColor = Color.FromArgb(40, 36, 18);
+                _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(255, 190, 40);
+                _btnDiagnose.ForeColor = Color.FromArgb(255, 235, 160);
+            }
             else
             {
-                _btnDiagnose.Text = "AI 참모 진단";
-                _btnDiagnose.BackColor = Color.FromArgb(24, 28, 38);
-                _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(50, 60, 80);
-                _btnDiagnose.ForeColor = Color.FromArgb(140, 160, 185);
+                if (_portfolio?.LastBriefing != null && _portfolio.LastBriefing.GeneratedAt > DateTime.MinValue)
+                {
+                    _lastDiagnoseSuccessTime = _portfolio.LastBriefing.GeneratedAt;
+                    _btnDiagnose.BackColor = Color.FromArgb(14, 52, 74);
+                    _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 255);
+                    _btnDiagnose.ForeColor = Color.FromArgb(0, 245, 255);
+                }
+                else
+                {
+                    _lastDiagnoseSuccessTime = null;
+                    _btnDiagnose.BackColor = Color.FromArgb(24, 28, 38);
+                    _btnDiagnose.FlatAppearance.BorderColor = Color.FromArgb(50, 60, 80);
+                    _btnDiagnose.ForeColor = Color.FromArgb(140, 160, 185);
+                }
             }
+
+            _btnDiagnose.Invalidate();
         }
 
         private void UpdateDiagnoseButtonText(string customStatus = null)

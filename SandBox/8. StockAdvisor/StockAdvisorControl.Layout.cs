@@ -466,8 +466,16 @@ namespace GateHelper.StockAdvisor
             _pnlListFilter.Controls.Add(_lblFilterSummary);
             _pnlListFilter.Controls.Add(flpFilter);
 
+            InitTopPickBanner();
+
             _splitMain.Panel1.Controls.Add(_lvStocks);
             _splitMain.Panel1.Controls.Add(_pnlListFilter);
+            _splitMain.Panel1.Controls.Add(_pnlTopPickBanner);
+
+            // WinForms DockStyle.Top 인터락: SendToBack()이 가장 바깥쪽(화면 최상단)에 배치됨
+            _pnlTopPickBanner.SendToBack();
+            _pnlListFilter.BringToFront();
+            _lvStocks.BringToFront();
 
             // 우측: 선택 종목 AI 상세 진단 카드 (440px 와이드 레이아웃)
             _pnlDetail = new Panel

@@ -263,6 +263,9 @@ namespace GateHelper.StockAdvisor
                 if (_lvStocks.FocusedItem != null) _lvStocks.FocusedItem.Focused = false;
                 UpdateDetailPanel(null);
             }
+
+            // 5. 오늘의 AI 알짜 추천주 (0~3개) 배너 실시간 갱신
+            UpdateTopPickBanner();
         }
 
         public void SetFilterMode(StockFilterMode mode)

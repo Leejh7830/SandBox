@@ -295,6 +295,10 @@
       <DependentUpon>StockAdvisorControl.cs</DependentUpon>
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.TopPickBanner.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="SandBox\OptionForm.cs">
       <SubType>Form</SubType>
     </Compile>

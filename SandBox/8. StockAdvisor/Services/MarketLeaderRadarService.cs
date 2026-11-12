@@ -14,8 +14,8 @@ namespace GateHelper.StockAdvisor.Services
 {
     public enum RadarStrategyType
     {
-        GoldenPullback, // 🎯 골든 눌림목 (우상향 추세 속 20일선 눌림목 안착)
-        OversoldBounce, // 💎 과매도 바닥 (RSI 36 이하 공포 투매 저가 매수존)
+        GoldenPullback, // 🎯 골든 눌림목 (우상향 추세 속 20일선 완만 눌림목 안착)
+        OversoldBounce, // 💎 과매도 반등 (RSI 36.5 이하 지지선 안착 역발상 분할 매수존)
         VolumeBreakout, // 🚀 거래대금 폭발 (당일 스마트머니 대량 유입 돌파)
         AllLeaders      // 전체 주도주 (거래대금 순 정렬)
     }
@@ -55,6 +55,11 @@ namespace GateHelper.StockAdvisor.Services
         public string PrimaryStrategyGuide { get; set; } = string.Empty;
 
         public bool IsAlreadyInPortfolio { get; set; } = false;
+
+        /// <summary>
+        /// ETF/ETN 여부 (종목명 기준 KODEX, TIGER, ACE, SOL, RISE, HANARO, KBSTAR, KOSEF, PLUS 등)
+        /// </summary>
+        public bool IsEtf { get; set; } = false;
     }
 
     /// <summary>
@@ -186,8 +191,17 @@ namespace GateHelper.StockAdvisor.Services
                                 item.Ma20DisparityRate = Math.Round((item.CurrentPrice - item.Ma20) / item.Ma20 * 100m, 1);
                             }
 
-                            // [단일 기준 안전 인터락] 종목평가(StockEvaluatorDialog)에서 매수 승인(CanBuy == true, FinalScore >= 6, 지뢰 없음)을 받은 우량 종목만 전략 추천 및 매수가 부여
-                            if (!verdict.CanBuy || item.HasCriticalLandmine || item.FinalScore <= 5)
+                            // [단일 기준 안전 인터락]
+                            // 1. 당일 급락(-4.0% 초과) 종목은 지지선 붕괴 위험(떨어지는 칼날)으로 레이더 추천 제외 및 급락주의 경보
+                            if (item.ChangeRate <= -4.0m)
+                            {
+                                item.RecommendedBuyPrice = 0m;
+                                item.PrimaryStrategyBadge = $"급락주의({item.FinalScore}점)";
+                                item.PrimaryStrategyGuide = $"당일 급락({item.ChangeRate:+0.00;-0.00}%) 발생! 떨어지는 칼날 진입 금지 및 지지선 안착 확인 대기";
+                                item.CanBuy = false;
+                            }
+                            // 2. 종목평가(StockEvaluatorDialog)에서 매수 승인(CanBuy == true, FinalScore >= 6, 지뢰 없음)을 받은 우량 종목만 전략 추천 및 매수가 부여
+                            else if (!verdict.CanBuy || item.HasCriticalLandmine || item.FinalScore <= 5)
                             {
                                 item.RecommendedBuyPrice = 0m;
                                 if (item.HasCriticalLandmine || item.Grade == PositionGrade.C || item.Grade == PositionGrade.F)
@@ -205,8 +219,9 @@ namespace GateHelper.StockAdvisor.Services
                             {
                                 item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
 
-                                // 전략 1: 골든 눌림목 (종목평가 매수 승인 + 20일선 지지 + RSI 39~57 + 이격도 -3.0%~+2.5%)
-                                if (item.Rsi >= 39m && item.Rsi <= 57m &&
+                                // 전략 1: 골든 눌림목 (종목평가 매수 승인 + 당일 등락률 -2.5% 이내 완만 조정 + 20일선 지지 + RSI 39~57 + 이격도 -3.0%~+2.5%)
+                                if (item.ChangeRate >= -2.5m &&
+                                    item.Rsi >= 39m && item.Rsi <= 57m &&
                                     item.Ma20DisparityRate >= -3.0m && item.Ma20DisparityRate <= 2.5m &&
                                     item.ChartScore >= 6)
                                 {
@@ -214,12 +229,12 @@ namespace GateHelper.StockAdvisor.Services
                                     item.PrimaryStrategyBadge = $"골든 눌림목({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 20일선({item.Ma20:N0}원) 지지 안착! 이상적 분할 진입존";
                                 }
-                                // 전략 2: 과매도 바닥 (종목평가 매수 승인 + RSI 36.5 이하 + 20일 지지선 근접 안착)
-                                else if (item.Rsi <= 36.5m && item.Rsi > 0m && item.ChartScore >= 6)
+                                // 전략 2: 과매도 반등 (종목평가 매수 승인 + RSI 36.5 이하 + 당일 등락률 -4.0% 이내 + 20일 지지선 근접 안착)
+                                else if (item.Rsi <= 36.5m && item.Rsi > 0m && item.ChartScore >= 6 && item.ChangeRate > -4.0m)
                                 {
                                     item.IsOversoldBounce = true;
-                                    item.PrimaryStrategyBadge = $"과매도 바닥({item.FinalScore}점)";
-                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · RSI({item.Rsi:F1}) 침체 및 지지선({item.SupportPrice:N0}원) 안착 확인된 분할 매수존";
+                                    item.PrimaryStrategyBadge = $"과매도 반등({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · RSI({item.Rsi:F1}) 침체 및 지지선({item.SupportPrice:N0}원) 안착 확인된 역발상 분할 매수존";
                                 }
                                 // 전략 3: 거래대금 폭발 (종목평가 매수 승인 + 당일 거래대금 1,000억 이상 + 양봉 + RSI < 65)
                                 else if (item.TradingValueRaw >= 100000000000L && item.ChangeRate >= 1.5m && item.ChangeRate <= 7.5m && item.Rsi < 65m)
@@ -304,6 +319,8 @@ namespace GateHelper.StockAdvisor.Services
                         valHangeul = FormatKrw(tval);
                     }
 
+                    bool isEtf = IsEtfStock(name);
+
                     list.Add(new MarketLeaderItem
                     {
                         StockCode = code,
@@ -313,13 +330,35 @@ namespace GateHelper.StockAdvisor.Services
                         Volume = vol,
                         TradingValueRaw = tval,
                         TradingValueText = valHangeul,
-                        MarketType = category
+                        MarketType = category,
+                        IsEtf = isEtf
                     });
                 }
                 catch { }
             }
 
             return list;
+        }
+
+        public static bool IsEtfStock(string stockName)
+        {
+            if (string.IsNullOrWhiteSpace(stockName)) return false;
+            string upper = stockName.ToUpperInvariant();
+            return upper.Contains("KODEX") ||
+                   upper.Contains("TIGER") ||
+                   upper.Contains("ACE") ||
+                   upper.Contains("SOL") ||
+                   upper.Contains("RISE") ||
+                   upper.Contains("HANARO") ||
+                   upper.Contains("KBSTAR") ||
+                   upper.Contains("KOSEF") ||
+                   upper.Contains("PLUS") ||
+                   upper.Contains("TIMEFOLIO") ||
+                   upper.Contains("ARIRANG") ||
+                   upper.Contains("WOORI") ||
+                   upper.Contains("UNICORN") ||
+                   upper.EndsWith(" ETF") ||
+                   upper.EndsWith(" ETN");
         }
 
         private static decimal ParseDecimal(string val)

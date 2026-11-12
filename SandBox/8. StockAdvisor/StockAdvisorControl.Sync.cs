@@ -696,6 +696,10 @@ namespace GateHelper.StockAdvisor
                 foreach (var leader in leaders)
                 {
                     if (string.IsNullOrEmpty(leader.StockCode) || leader.CurrentPrice <= 0 || leader.RecommendedBuyPrice <= 0) continue;
+                    // ETF/ETN 종목은 노이즈 방지를 위해 자동 알림 대상에서 제외
+                    if (leader.IsEtf) continue;
+                    // [급락 인터락] 당일 -4% 초과 급락 종목은 자동 매수 알림 대상에서 원천 차단
+                    if (leader.ChangeRate <= -4.0m) continue;
                     // [종목평가 단일 기준 인터락] 종합 6점 미만(C/F등급), 지뢰 탐지, 또는 종목평가 매수 불가(CanBuy == false) 종목은 매수가 알림 원천 차단
                     if (!leader.CanBuy || leader.FinalScore < 6 || leader.HasCriticalLandmine) continue;
 

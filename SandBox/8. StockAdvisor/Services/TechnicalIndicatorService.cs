@@ -214,13 +214,13 @@ namespace GateHelper.StockAdvisor.Services
                 // 7. 타이밍 안전벨트 뱃지 & 경고 판정
                 if (result.Rsi >= 70.0m)
                 {
-                    result.TimingBadge = "과열(매수금지)";
-                    result.TimingWarning = $"[과열 주의] RSI({result.Rsi:F1}) 과열 구간 진입! 신규 매수 금지, 5일/20일선 눌림목까지 대기 권고";
+                    result.TimingBadge = "과열(추격금지)";
+                    result.TimingWarning = $"[단기 과열] RSI({result.Rsi:F1}) 과열 구간 진입! 신규 매수 금지, 20일선 눌림목까지 대기 권고";
                 }
                 else if (result.Rsi <= 30.0m)
                 {
                     result.TimingBadge = "과매도 반등";
-                    result.TimingWarning = $"[과매도 반등] RSI({result.Rsi:F1}) 침체권. 지지선 확인 후 분할 접근 유효";
+                    result.TimingWarning = $"[과매도 반등] RSI({result.Rsi:F1}) 침체권. 20일 지지선 확인 후 역발상 분할 매수 유효";
                 }
                 else if (result.ChartScore >= 7 && result.RiskScore >= 7)
                 {
@@ -234,13 +234,13 @@ namespace GateHelper.StockAdvisor.Services
                 }
                 else if (result.ChartScore <= 3)
                 {
-                    result.TimingBadge = "보유불필요";
+                    result.TimingBadge = "비중축소";
                     result.TimingWarning = $"[비중 축소] 역배열 추세 이탈 및 하방 리스크 확대. 반등 시 비중 축소 권고";
                 }
                 else
                 {
-                    result.TimingBadge = "관망유지";
-                    result.TimingWarning = $"[관망] 뚜렷한 추세 모멘텀 형성 전까지 시장 관망";
+                    result.TimingBadge = "관망";
+                    result.TimingWarning = $"[관망 대기] 뚜렷한 추세 모멘텀 형성 전까지 시장 관망";
                 }
 
                 // 8. AI 퀀트 권고 매수가 및 진입 타점 계산

@@ -25,6 +25,7 @@ namespace GateHelper.StockAdvisor
         private Button _btnTabOversold;
         private Button _btnTabVolume;
         private Button _btnTabAll;
+        private CheckBox _chkIncludeEtf;
         private ListView _lvRadar;
         private Label _lblGuideBanner;
         private Button _btnRefresh;
@@ -78,7 +79,7 @@ namespace GateHelper.StockAdvisor
 
             var lblSubtitle = new Label
             {
-                Text = "시장 거래대금 최상위 150대 주도주 중에서 AI 퀀트 3대 매수 급소(골든 눌림목·과매도 바닥·거래대금 폭발)를 실시간 포착합니다.",
+                Text = "시장 거래대금 최상위 150대 주도주 중에서 AI 퀀트 3대 매수 급소(골든 눌림목·과매도 반등·거래대금 폭발)를 실시간 포착합니다.",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(170, 190, 220),
                 Dock = DockStyle.Top,
@@ -126,14 +127,31 @@ namespace GateHelper.StockAdvisor
             };
 
             _btnTabGolden = CreateTabButton("★ 골든 눌림목 (0)", RadarStrategyType.GoldenPullback);
-            _btnTabOversold = CreateTabButton("★ 과매도 바닥 (0)", RadarStrategyType.OversoldBounce);
+            _btnTabOversold = CreateTabButton("★ 과매도 반등 (0)", RadarStrategyType.OversoldBounce);
             _btnTabVolume = CreateTabButton("★ 거래 폭발 (0)", RadarStrategyType.VolumeBreakout);
             _btnTabAll = CreateTabButton("전체 주도주 TOP 100", RadarStrategyType.AllLeaders);
+
+            _chkIncludeEtf = new CheckBox
+            {
+                Text = "ETF/ETN 포함",
+                Font = new Font("Malgun Gothic", 9f),
+                ForeColor = Color.FromArgb(200, 220, 245),
+                Dock = DockStyle.Right,
+                Width = 115,
+                Checked = false,
+                Cursor = Cursors.Hand
+            };
+            _chkIncludeEtf.CheckedChanged += (s, e) =>
+            {
+                UpdateTabCounters();
+                RenderCurrentTabItems();
+            };
 
             flpTabs.Controls.Add(_btnTabGolden);
             flpTabs.Controls.Add(_btnTabOversold);
             flpTabs.Controls.Add(_btnTabVolume);
             flpTabs.Controls.Add(_btnTabAll);
+            pnlTabBar.Controls.Add(_chkIncludeEtf);
             pnlTabBar.Controls.Add(flpTabs);
 
             // 3. 메인 레이더 리스트뷰
@@ -339,16 +357,7 @@ namespace GateHelper.StockAdvisor
                     }
                 }
 
-                int goldenCount = _allLeaders.Count(x => x.IsGoldenPullback);
-                int oversoldCount = _allLeaders.Count(x => x.IsOversoldBounce);
-                int volumeCount = _allLeaders.Count(x => x.IsVolumeBreakout);
-
-                _btnTabGolden.Text = $"★ 골든 눌림목 ({goldenCount})";
-                _btnTabOversold.Text = $"★ 과매도 바닥 ({oversoldCount})";
-                _btnTabVolume.Text = $"★ 거래 폭발 ({volumeCount})";
-                _btnTabAll.Text = $"전체 주도주 ({_allLeaders.Count})";
-
-                _lblStatus.Text = $"스캔 완료: 총 {_allLeaders.Count}종목 | 골든 눌림목 {goldenCount}종목 | 과매도 바닥 {oversoldCount}종목 | 거래대금 폭발 {volumeCount}종목";
+                UpdateTabCounters();
                 RenderCurrentTabItems(_initialSelectCode);
             }
             catch (Exception ex)
@@ -362,26 +371,52 @@ namespace GateHelper.StockAdvisor
             }
         }
 
+        private void UpdateTabCounters()
+        {
+            if (_allLeaders == null) return;
+            bool includeEtf = _chkIncludeEtf != null && _chkIncludeEtf.Checked;
+            var pool = includeEtf ? _allLeaders : _allLeaders.Where(x => !x.IsEtf).ToList();
+
+            int goldenCount = pool.Count(x => x.IsGoldenPullback);
+            int oversoldCount = pool.Count(x => x.IsOversoldBounce);
+            int volumeCount = pool.Count(x => x.IsVolumeBreakout);
+
+            _btnTabGolden.Text = $"★ 골든 눌림목 ({goldenCount})";
+            _btnTabOversold.Text = $"★ 과매도 반등 ({oversoldCount})";
+            _btnTabVolume.Text = $"★ 거래 폭발 ({volumeCount})";
+            _btnTabAll.Text = $"전체 주도주 ({pool.Count})";
+
+            string etfGuide = includeEtf ? " [ETF 포함]" : " [개별주만]";
+            _lblStatus.Text = $"스캔 완료: 총 {pool.Count}종목{etfGuide} | 골든 눌림목 {goldenCount}종목 | 과매도 반등 {oversoldCount}종목 | 거래대금 폭발 {volumeCount}종목";
+        }
+
         private void RenderCurrentTabItems(string selectCode = null)
         {
             _lvRadar.BeginUpdate();
             _lvRadar.Items.Clear();
 
-            IEnumerable<MarketLeaderItem> targets = _allLeaders;
+            bool includeEtf = _chkIncludeEtf != null && _chkIncludeEtf.Checked;
+            IEnumerable<MarketLeaderItem> basePool = _allLeaders ?? Enumerable.Empty<MarketLeaderItem>();
+            if (!includeEtf)
+            {
+                basePool = basePool.Where(x => !x.IsEtf);
+            }
+
+            IEnumerable<MarketLeaderItem> targets = basePool;
             switch (_currentTab)
             {
                 case RadarStrategyType.GoldenPullback:
-                    targets = _allLeaders.Where(x => x.IsGoldenPullback);
+                    targets = basePool.Where(x => x.IsGoldenPullback);
                     break;
                 case RadarStrategyType.OversoldBounce:
-                    targets = _allLeaders.Where(x => x.IsOversoldBounce);
+                    targets = basePool.Where(x => x.IsOversoldBounce);
                     break;
                 case RadarStrategyType.VolumeBreakout:
-                    targets = _allLeaders.Where(x => x.IsVolumeBreakout);
+                    targets = basePool.Where(x => x.IsVolumeBreakout);
                     break;
                 case RadarStrategyType.AllLeaders:
                 default:
-                    targets = _allLeaders.Take(100);
+                    targets = basePool.Take(100);
                     break;
             }
 
@@ -436,6 +471,7 @@ namespace GateHelper.StockAdvisor
                 if (itm.IsGoldenPullback) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 230, 118);
                 else if (itm.IsOversoldBounce) lvi.SubItems[9].ForeColor = Color.FromArgb(0, 220, 255);
                 else if (itm.IsVolumeBreakout) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 190, 40);
+                else if (itm.PrimaryStrategyBadge != null && itm.PrimaryStrategyBadge.Contains("급락주의")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 160, 60);
                 else if (itm.PrimaryStrategyBadge != null && itm.PrimaryStrategyBadge.Contains("매수금지")) lvi.SubItems[9].ForeColor = Color.FromArgb(255, 95, 110);
                 else if (itm.PrimaryStrategyBadge != null && itm.PrimaryStrategyBadge.Contains("분할매수")) lvi.SubItems[9].ForeColor = Color.FromArgb(100, 240, 160);
                 else lvi.SubItems[9].ForeColor = Color.FromArgb(160, 175, 200);

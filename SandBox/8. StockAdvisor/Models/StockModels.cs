@@ -473,10 +473,12 @@ namespace GateHelper.StockAdvisor.Models
     /// </summary>
     public enum ActionVerdictType
     {
-        AvoidOrReduce,   // 🔴 매수 금지 / 비중 축소 (역배열, C/F등급, 악재)
+        AvoidOrReduce,   // 🔴 매수 금지 / 비중 축소 (역배열, C/F등급, 지뢰 악재)
+        SharpDropAlert,  // 🟠 급락 주의 (당일 -4% 초과 급락, 떨어지는 칼날 진입 보류)
         TakeProfit,      // 🔵 추격매수 금지 / 분할 익절 (RSI 68+ 과열 슈팅)
-        HoldOrWatch,     // 🟡 관망 / 지지선 확인 대기 (중립 B등급, 방향성 탐색)
-        BuyEntry         // 🟢 적극 분할 매수 진입 유효 (A등급, 7점+ 골든크로스)
+        HoldOrWatch,     // 🟡 관망 대기 / 지지선 확인 대기 (중립 B등급, 방향성 탐색)
+        OversoldBounce,  // 💎 과매도 반등 (RSI 36.5 이하 + 20일 지지선 안착 역발상 분할 매수)
+        BuyEntry         // 🟢 적극 분할 매수 진입 유효 (A등급/우량 B등급, 20일선 눌림목 안착)
     }
 
     /// <summary>
@@ -543,18 +545,47 @@ namespace GateHelper.StockAdvisor.Models
             string buy2Str = item.SecondaryBuyPrice > 0 ? $"{item.SecondaryBuyPrice:N0}원" : "-";
 
             // 2. 판정 로직 분기
+            // [급락 경보 인터락] 당일 -4.0%를 초과하여 급락 중인 종목은 지지선 붕괴 위험이 크므로 매수 배제 및 급락주의 경보
+            bool isSharpDrop = item.ChangeRate <= -4.0m;
+
             bool isAvoid = item.Grade == PositionGrade.C || item.Grade == PositionGrade.F ||
                            item.FinalScore <= 4 || item.HasCriticalLandmine ||
                            (item.LastDiagnosis != null && (item.LastDiagnosis.RecommendedAction.Contains("손절") || item.LastDiagnosis.RecommendedAction.Contains("축소") || item.LastDiagnosis.RecommendedAction.Contains("경보")));
 
             bool isOverheat = item.Rsi >= 68.0m || (item.TimingBadge != null && item.TimingBadge.Contains("과열"));
 
+            // 과매도 반등: RSI 36.5 이하 침체권 + 손익비/안전 우수 + 악재/지뢰 없음 + 단기 급락(-4% 초과) 아님
+            bool isOversold = item.Rsi <= 36.5m && item.Rsi > 0m && item.RiskScore >= 7 && !item.HasCriticalLandmine && !isSharpDrop;
+
             bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7 ||
                          (item.Grade == PositionGrade.B && item.FinalScore >= 6 && item.ChartScore >= 6 && item.SupplyFinanceScore >= 5))
-                         && !item.HasCriticalLandmine && item.Rsi < 65.0m;
+                         && !item.HasCriticalLandmine && item.Rsi < 65.0m && !isSharpDrop;
             bool isHeld = item.Quantity > 0;
 
-            if (isAvoid)
+            if (isSharpDrop)
+            {
+                info.Type = ActionVerdictType.SharpDropAlert;
+                if (isHeld)
+                {
+                    info.BadgeText = "[급락주의]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 당일 급락 발생! 성급한 물타기 금지 ]";
+                    info.GuideText = $"당일 등락률({item.ChangeRate:+0.00;-0.00}%) 급락 발생. 하방 지지선 안착 확인 전까지 추가 매수 보류 및 관망 권고";
+                    info.BuyPriceText = $"• 매수가: [진입 보류] (당일 급락 {item.ChangeRate:+0.00;-0.00}%로 섣부른 물타기 금지)";
+                }
+                else
+                {
+                    info.BadgeText = "[급락주의]";
+                    info.TitleText = "[ AI 참모 최종 결론 : 당일 급락! 떨어지는 칼날 진입 금지 ]";
+                    info.GuideText = $"당일 {item.ChangeRate:+0.00;-0.00}% 급락 중. 바닥 지지 확인 전까지 섣부른 역발상 매수를 엄격히 금지합니다.";
+                    info.BuyPriceText = $"• 매수가: [진입 보류] (당일 -4% 초과 급락으로 하방 지지선 확인 전 진입 불가)";
+                }
+                info.BackColor = Color.FromArgb(46, 26, 16);
+                info.ForeColor = Color.FromArgb(255, 175, 75);
+                info.BorderColor = Color.FromArgb(220, 120, 30);
+                info.ListBadgeColor = Color.FromArgb(255, 160, 60);
+                info.CanBuy = false;
+            }
+            else if (isAvoid)
             {
                 info.Type = ActionVerdictType.AvoidOrReduce;
                 if (isHeld)
@@ -625,26 +656,52 @@ namespace GateHelper.StockAdvisor.Models
             }
             else if (isBuy)
             {
-                info.Type = ActionVerdictType.BuyEntry;
-                if (isHeld)
+                if (isOversold)
                 {
-                    info.BadgeText = "[보유/추매]";
-                    info.TitleText = "[ AI 참모 최종 결론 : 추세 유지 홀딩 & 분할 추매 유효 ]";
-                    info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 1차 매수가 부근 분할 추매 유효";
-                    info.BuyPriceText = $"• 추가매수가: 1차 {buy1Str}   |   2차: {buy2Str}";
+                    info.Type = ActionVerdictType.OversoldBounce;
+                    if (isHeld)
+                    {
+                        info.BadgeText = "[과매도반등]";
+                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 분할 추매 유효 ]";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 분할 추매 가능";
+                        info.BuyPriceText = $"• 추가매수가: 1차 {buy1Str}   |   2차: {buy2Str}";
+                    }
+                    else
+                    {
+                        info.BadgeText = "[과매도반등]";
+                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 바닥 구간 분할 매수 유효 ]";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 분할 진입 권장";
+                        info.BuyPriceText = $"• 매수가: 1차 {buy1Str}   |   2차(추매): {buy2Str}";
+                    }
+                    info.BackColor = Color.FromArgb(14, 38, 48);
+                    info.ForeColor = Color.FromArgb(80, 230, 255);
+                    info.BorderColor = Color.FromArgb(30, 150, 180);
+                    info.ListBadgeColor = Color.FromArgb(0, 216, 255);
+                    info.CanBuy = true;
                 }
                 else
                 {
-                    info.BadgeText = "[분할매수]";
-                    info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 유효 ]";
-                    info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 1차 매수가 부근 분할 진입 권장";
-                    info.BuyPriceText = $"• 매수가: 1차 {buy1Str}   |   2차(추매): {buy2Str}";
+                    info.Type = ActionVerdictType.BuyEntry;
+                    if (isHeld)
+                    {
+                        info.BadgeText = "[보유/추매]";
+                        info.TitleText = "[ AI 참모 최종 결론 : 추세 유지 홀딩 & 분할 추매 유효 ]";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 1차 매수가 부근 분할 추매 유효";
+                        info.BuyPriceText = $"• 추가매수가: 1차 {buy1Str}   |   2차: {buy2Str}";
+                    }
+                    else
+                    {
+                        info.BadgeText = "[분할매수]";
+                        info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 유효 ]";
+                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 1차 매수가 부근 분할 진입 권장";
+                        info.BuyPriceText = $"• 매수가: 1차 {buy1Str}   |   2차(추매): {buy2Str}";
+                    }
+                    info.BackColor = Color.FromArgb(16, 44, 28);
+                    info.ForeColor = Color.FromArgb(90, 255, 170);
+                    info.BorderColor = Color.FromArgb(40, 170, 90);
+                    info.ListBadgeColor = Color.FromArgb(0, 230, 118);
+                    info.CanBuy = true;
                 }
-                info.BackColor = Color.FromArgb(16, 44, 28);
-                info.ForeColor = Color.FromArgb(90, 255, 170);
-                info.BorderColor = Color.FromArgb(40, 170, 90);
-                info.ListBadgeColor = Color.FromArgb(0, 230, 118);
-                info.CanBuy = true;
             }
             else
             {

@@ -713,15 +713,15 @@ namespace GateHelper.StockAdvisor.Models
                     info.Type = ActionVerdictType.OversoldBounce;
                     if (isHeld)
                     {
-                        info.BadgeText = "매수가능";
-                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 추매 유효 ]";
+                        info.BadgeText = "매수추천";
+                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 추매 추천 ]";
                         info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 추매 가능";
                         info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
                     }
                     else
                     {
-                        info.BadgeText = "매수가능";
-                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 바닥 구간 분할 매수 유효 ]";
+                        info.BadgeText = "매수추천";
+                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 바닥 구간 분할 매수 추천 ]";
                         info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 진입 권장";
                         info.BuyPriceText = $"• 매수가: {buy1Str}";
                     }
@@ -747,16 +747,16 @@ namespace GateHelper.StockAdvisor.Models
                         }
                         else
                         {
-                            info.BadgeText = "매수가능";
-                            info.TitleText = "[ AI 참모 최종 결론 : 눌림목 지지 안착 / 분할 추매 유효 ]";
+                            info.BadgeText = "매수추천";
+                            info.TitleText = "[ AI 참모 최종 결론 : 눌림목 지지 안착 / 분할 추매 추천 ]";
                             info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 매수가 부근 분할 추매 유효";
                             info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
                         }
                     }
                     else
                     {
-                        info.BadgeText = "매수가능";
-                        info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 유효 ]";
+                        info.BadgeText = "매수추천";
+                        info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 추천 ]";
                         info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 권고 매수가 부근 분할 진입 권장";
                         info.BuyPriceText = $"• 매수가: {buy1Str}";
                     }
@@ -795,12 +795,12 @@ namespace GateHelper.StockAdvisor.Models
         }
 
         /// <summary>
-        /// 최종 액션 뱃지 우선순위 정렬 가중치 (매수가능 > 상승추세 > 과열주의 > 관망 > 급락주의 > 비중축소/매수금지)
+        /// 최종 액션 뱃지 우선순위 정렬 가중치 (매수추천 > 상승추세 > 과열주의 > 관망 > 급락주의 > 비중축소/매수금지)
         /// </summary>
         public static int GetActionPriority(string badgeText)
         {
             if (string.IsNullOrEmpty(badgeText)) return 0;
-            if (badgeText.Contains("매수가능")) return 6;
+            if (badgeText.Contains("매수추천")) return 6;
             if (badgeText.Contains("상승추세")) return 5;
             if (badgeText.Contains("과열주의")) return 4;
             if (badgeText.Contains("관망")) return 3;

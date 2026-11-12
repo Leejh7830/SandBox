@@ -619,7 +619,7 @@ namespace GateHelper.StockAdvisor
                 case 13: // 타이밍 안전벨트
                     result = string.Compare(itemX.TimingBadge, itemY.TimingBadge, StringComparison.CurrentCultureIgnoreCase);
                     break;
-                case 14: // 권고 지침 / 최종 액션 (우선순위 정렬: 매수가능 > 상승추세 > 과열주의 > 관망 > 급락주의 > 비중축소/매수금지)
+                case 14: // 권고 지침 / 최종 액션 (우선순위 정렬: 매수추천 > 상승추세 > 과열주의 > 관망 > 급락주의 > 비중축소/매수금지)
                     string actX = lviX.SubItems.Count > 14 ? lviX.SubItems[14].Text : string.Empty;
                     string actY = lviY.SubItems.Count > 14 ? lviY.SubItems[14].Text : string.Empty;
                     int prioX = StockVerdictHelper.GetActionPriority(actX);

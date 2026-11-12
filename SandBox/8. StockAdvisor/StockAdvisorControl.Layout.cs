@@ -294,7 +294,7 @@ namespace GateHelper.StockAdvisor
             _lvStocks.Columns.Add("5일 거래량", 80, HorizontalAlignment.Right);
             _lvStocks.Columns.Add("종합점수", 75, HorizontalAlignment.Center);
             _lvStocks.Columns.Add("타이밍 안전벨트", 115, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("최종 액션", 140, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("최종 액션", 95, HorizontalAlignment.Center);
 
             // 표시 순서 최적화:
             // 1. 가장 중요한 [최종 액션](데이터 인덱스 14)을 [AI 등급](표시 7) 바로 뒤인 [표시 위치 8]로 전진 배치! (0.1초 직관성 확보)

@@ -1,22 +1,24 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using GateHelper.StockAdvisor.Models;
+using GateHelper.StockAdvisor.Services;
 
 namespace GateHelper.StockAdvisor
 {
     public partial class StockAdvisorControl
     {
-        // 오늘의 AI 알짜 추천주 배너 UI 컴포넌트
+        // 대한민국 시장 전체(코스피/코스닥) 실시간 스캔 기반 오늘의 AI 알짜 추천주 배너 UI 컴포넌트
         private Panel _pnlTopPickBanner;
         private FlowLayoutPanel _flpTopPickCards;
         private Label _lblTopPickTitle;
         private Label _lblTopPickSummary;
         private Button _btnToggleTopPickBanner;
         private bool _isTopPickBannerCollapsed = false;
+        private bool _isScanningMarketTopPicks = false;
 
         private void InitTopPickBanner()
         {
@@ -41,13 +43,13 @@ namespace GateHelper.StockAdvisor
             var pnlLeft = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 200,
+                Width = 220,
                 BackColor = Color.Transparent
             };
 
             _lblTopPickTitle = new Label
             {
-                Text = "★ 오늘의 AI 알짜 추천주",
+                Text = "★ 오늘의 시장 알짜 추천주",
                 Font = new Font("Malgun Gothic", 9.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 0),
                 Location = new Point(2, 6),
@@ -56,7 +58,7 @@ namespace GateHelper.StockAdvisor
 
             _lblTopPickSummary = new Label
             {
-                Text = "초엄격 조건 검증 중...",
+                Text = "대한민국 시장 전체 스캔 중...",
                 Font = new Font("Segoe UI", 8.2f),
                 ForeColor = Color.FromArgb(140, 160, 185),
                 Location = new Point(4, 30),
@@ -112,53 +114,92 @@ namespace GateHelper.StockAdvisor
             _pnlTopPickBanner.Controls.Add(_flpTopPickCards);
             _pnlTopPickBanner.Controls.Add(pnlLeft);
             _pnlTopPickBanner.Controls.Add(_btnToggleTopPickBanner);
+
+            // 최초 시장 전체 알짜 스캔 비동기 가동
+            _ = RefreshMarketTopPicksAsync(forceRefresh: false);
         }
 
         /// <summary>
-        /// 초엄격 알짜 기준 (종합 8점↑ + 메이저 매수 + 지뢰 0건 + 매수추천/상승추세) 통과 종목 0~3개 선별 및 배너 갱신
+        /// 동기화 호환용 배너 갱신 호출부
         /// </summary>
         public void UpdateTopPickBanner()
         {
-            if (_pnlTopPickBanner == null || _flpTopPickCards == null || _portfolio?.Items == null) return;
+            _ = RefreshMarketTopPicksAsync(forceRefresh: false);
+        }
 
-            // 1. 초엄격 알짜 필터링
-            var topPicks = _portfolio.Items.Where(item =>
+        /// <summary>
+        /// 대한민국 시장 전체(코스피/코스닥 150대 주도주 풀)에서
+        /// [종합 8점↑ + 메이저 매수 + 지뢰 0건] 초엄격 알짜 종목 0~3개 선별 비동기 실행
+        /// </summary>
+        public async Task RefreshMarketTopPicksAsync(bool forceRefresh = false)
+        {
+            if (_isScanningMarketTopPicks) return;
+            _isScanningMarketTopPicks = true;
+
+            try
             {
-                // 조건 1: 종합 점수 8점 이상 (A/S급 우량주)
-                if (item.FinalScore < 8) return false;
+                if (this.InvokeRequired)
+                {
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        if (_lblTopPickSummary != null)
+                        {
+                            _lblTopPickSummary.Text = "대한민국 시장 전체 스캔 중...";
+                            _lblTopPickSummary.ForeColor = Color.FromArgb(140, 160, 185);
+                        }
+                    }));
+                }
 
-                // 조건 2: 큰손(외인+기관) 동시 매집
-                string supply = SupplyHelper.GetSupplyInfo(item.MajorSupplyBadge).Text;
-                if (supply != "메이저 매수") return false;
+                // 시장 전체 코스피 100 + 코스닥 50 주도주 풀 스캔
+                var leaders = await MarketLeaderRadarService.ScanMarketLeadersAsync(forceRefresh).ConfigureAwait(false);
 
-                // 조건 3: 재무 및 공시 지뢰 0건 (안전 or 우수)
-                string landmine = LandmineHelper.GetSimplifiedBadge(item).Text;
-                if (landmine != "안전" && landmine != "우수") return false;
+                // 초엄격 알짜 필터링
+                var topPicks = (leaders ?? new List<MarketLeaderItem>())
+                    .Where(x => !x.IsEtf) // ETF/ETN 제외, 순수 알짜 주도주
+                    .Where(x => x.FinalScore >= 8) // 8점 이상 A/S급 우량주
+                    .Where(x => !x.HasCriticalLandmine && (x.LandmineBadge.Contains("안전") || x.LandmineBadge.Contains("우수") || x.LandmineBadge.Contains("클린"))) // 지뢰 0건
+                    .Where(x => x.SupplyBadge.Contains("메이저") || x.SupplyBadge.Contains("쌍끌이")) // 외인+기관 동시 대량 매집
+                    .Where(x => x.CanBuy || x.IsGoldenPullback || x.IsOversoldBounce || x.IsVolumeBreakout) // 매수 가능 신호
+                    .OrderByDescending(x => x.FinalScore)
+                    .ThenByDescending(x => x.ChartScore + x.SupplyFinanceScore)
+                    .ThenByDescending(x => x.TradingValueRaw)
+                    .Take(3)
+                    .ToList();
 
-                // 조건 4: 최종 액션이 매수추천 또는 상승추세 (과열/급락/비중축소/매수금지 전면 배제)
-                string action = StockVerdictHelper.Evaluate(item).BadgeText;
-                if (action != "매수추천" && action != "상승추세") return false;
+                if (this.IsDisposed || !this.IsHandleCreated) return;
 
-                return true;
-            })
-            .OrderByDescending(x => x.FinalScore)
-            .ThenByDescending(x => x.ChartScore + x.SupplyFinanceScore)
-            .Take(3)
-            .ToList();
+                this.BeginInvoke(new Action(() =>
+                {
+                    RenderTopPicksUi(topPicks);
+                }));
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisor.TopPickBanner.Refresh");
+            }
+            finally
+            {
+                _isScanningMarketTopPicks = false;
+            }
+        }
+
+        private void RenderTopPicksUi(List<MarketLeaderItem> topPicks)
+        {
+            if (_pnlTopPickBanner == null || _flpTopPickCards == null) return;
 
             _flpTopPickCards.SuspendLayout();
             _flpTopPickCards.Controls.Clear();
 
-            if (topPicks.Count == 0)
+            if (topPicks == null || topPicks.Count == 0)
             {
-                // [0개인 경우]: 억지로 추천하지 않고 정직하게 현금 관망 안내
-                _lblTopPickSummary.Text = "엄격 기준 통과: 0종목";
+                // [0개인 경우]: 억지로 추천하지 않고 정직하게 시장 전체 현금 관망 안내
+                _lblTopPickSummary.Text = "시장 전체 엄격 통과: 0종목";
                 _lblTopPickSummary.ForeColor = Color.FromArgb(140, 160, 185);
 
                 var pnlEmpty = new Panel
                 {
-                    Width = 620,
-                    Height = 64,
+                    Width = 640,
+                    Height = 66,
                     BackColor = Color.FromArgb(24, 30, 42),
                     Margin = new Padding(4, 2, 4, 2),
                     Padding = new Padding(12, 10, 12, 8)
@@ -174,8 +215,8 @@ namespace GateHelper.StockAdvisor
 
                 var lblEmptyTitle = new Label
                 {
-                    Text = "● 현재 엄격한 알짜 기준(8.0점↑, 메이저 매수, 지뢰 0건)을 통과한 종목이 없습니다.",
-                    Font = new Font("Malgun Gothic", 9.0f, FontStyle.Bold),
+                    Text = "● 현재 대한민국 시장 전체에서 초엄격 알짜 기준(8.0점↑, 메이저매수, 지뢰0건)을 통과한 종목이 없습니다.",
+                    Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
                     ForeColor = Color.FromArgb(200, 215, 235),
                     AutoSize = true,
                     Location = new Point(12, 12)
@@ -184,7 +225,7 @@ namespace GateHelper.StockAdvisor
                 var lblEmptySub = new Label
                 {
                     Text = "무리한 추격 매수를 자제하고, 확실한 큰손 수급이 유입될 때까지 [현금 관망]을 권장합니다.",
-                    Font = new Font("Segoe UI", 8.5f),
+                    Font = new Font("Segoe UI", 8.2f),
                     ForeColor = Color.FromArgb(130, 155, 185),
                     AutoSize = true,
                     Location = new Point(14, 34)
@@ -197,13 +238,13 @@ namespace GateHelper.StockAdvisor
             else
             {
                 // [1~3개인 경우]: 최우량 알짜 카드 렌더링
-                _lblTopPickSummary.Text = $"엄격 기준 통과: {topPicks.Count}종목 포착!";
+                _lblTopPickSummary.Text = $"시장 전체 엄격 통과: {topPicks.Count}종목 포착!";
                 _lblTopPickSummary.ForeColor = Color.FromArgb(0, 230, 118);
 
                 for (int i = 0; i < topPicks.Count; i++)
                 {
                     var stock = topPicks[i];
-                    var card = CreateTopPickCard(stock, i + 1);
+                    var card = CreateMarketTopPickCard(stock, i + 1);
                     _flpTopPickCards.Controls.Add(card);
                 }
             }
@@ -211,15 +252,15 @@ namespace GateHelper.StockAdvisor
             _flpTopPickCards.ResumeLayout();
         }
 
-        private Panel CreateTopPickCard(StockHoldingItem stock, int rank)
+        private Panel CreateMarketTopPickCard(MarketLeaderItem stock, int rank)
         {
             var pnlCard = new Panel
             {
-                Width = 240,
+                Width = 275,
                 Height = 68,
                 BackColor = Color.FromArgb(22, 30, 44),
                 Margin = new Padding(0, 0, 10, 0),
-                Padding = new Padding(10, 6, 10, 6),
+                Padding = new Padding(8, 6, 8, 6),
                 Cursor = Cursors.Hand
             };
 
@@ -237,87 +278,112 @@ namespace GateHelper.StockAdvisor
             pnlCard.MouseEnter += (s, e) => pnlCard.BackColor = Color.FromArgb(32, 44, 64);
             pnlCard.MouseLeave += (s, e) => pnlCard.BackColor = Color.FromArgb(22, 30, 44);
 
-            // 클릭 시 해당 종목 리스트뷰 선택 및 우측 상세 패널 자동 브리핑
-            pnlCard.Click += (s, e) => SelectStockInListView(stock.StockCode);
+            // 카드 클릭 시 해당 종목 AI 종합 평가 다이얼로그 즉시 팝업
+            pnlCard.Click += (s, e) => ShowStockEvaluatorDialog(stock.StockCode);
 
-            // 상단 행: 순위 뱃지 + 종목명
+            // 1. 상단 행: 순위 + 종목명 + 원클릭 [+담기] 버튼
             var lblRank = new Label
             {
                 Text = $"[{rank}위]",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = (rank == 1) ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 216, 255),
                 AutoSize = true,
-                Location = new Point(8, 6),
+                Location = new Point(6, 6),
                 Cursor = Cursors.Hand
             };
-            lblRank.Click += (s, e) => SelectStockInListView(stock.StockCode);
+            lblRank.Click += (s, e) => ShowStockEvaluatorDialog(stock.StockCode);
 
             var lblName = new Label
             {
                 Text = stock.StockName,
-                Font = new Font("Malgun Gothic", 9.8f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 AutoSize = true,
-                Location = new Point(44, 4),
+                Location = new Point(40, 4),
                 Cursor = Cursors.Hand
             };
-            lblName.Click += (s, e) => SelectStockInListView(stock.StockCode);
+            lblName.Click += (s, e) => ShowStockEvaluatorDialog(stock.StockCode);
 
+            // [+ 내 종목 담기] 버튼
+            bool isAlreadyIn = _portfolio.Items.Any(x => x.StockCode.TrimStart('0').Equals(stock.StockCode.TrimStart('0'), StringComparison.OrdinalIgnoreCase));
+            var btnAdd = new Button
+            {
+                Text = isAlreadyIn ? "✔ 담김" : "+ 담기",
+                Size = new Size(58, 24),
+                Location = new Point(210, 5),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = isAlreadyIn ? Color.FromArgb(34, 46, 62) : Color.FromArgb(0, 150, 110),
+                ForeColor = isAlreadyIn ? Color.FromArgb(140, 175, 205) : Color.White,
+                Font = new Font("Malgun Gothic", 7.8f, FontStyle.Bold),
+                Cursor = isAlreadyIn ? Cursors.Default : Cursors.Hand,
+                Enabled = !isAlreadyIn
+            };
+            btnAdd.FlatAppearance.BorderSize = 0;
+            btnAdd.Click += (s, e) =>
+            {
+                AddTopPickToWatchlist(stock);
+                btnAdd.Text = "✔ 담김";
+                btnAdd.BackColor = Color.FromArgb(34, 46, 62);
+                btnAdd.ForeColor = Color.FromArgb(140, 175, 205);
+                btnAdd.Enabled = false;
+            };
+
+            // 2. 중간 행: 현재가 + 등락률 + 거래대금
             string priceText = $"{stock.CurrentPrice:N0}원";
             string rateText = (stock.ChangeRate >= 0) ? $"+{stock.ChangeRate:F2}%" : $"{stock.ChangeRate:F2}%";
             Color rateColor = (stock.ChangeRate > 0) ? Color.FromArgb(255, 90, 90) : (stock.ChangeRate < 0 ? Color.FromArgb(90, 160, 255) : Color.White);
 
             var lblPrice = new Label
             {
-                Text = $"{priceText} ({rateText})",
-                Font = new Font("Segoe UI", 8.0f, FontStyle.Bold),
+                Text = $"{priceText} ({rateText}) · {stock.TradingValueText}",
+                Font = new Font("Segoe UI", 7.8f, FontStyle.Bold),
                 ForeColor = rateColor,
                 AutoSize = true,
-                Location = new Point(8, 27),
+                Location = new Point(6, 27),
                 Cursor = Cursors.Hand
             };
-            lblPrice.Click += (s, e) => SelectStockInListView(stock.StockCode);
+            lblPrice.Click += (s, e) => ShowStockEvaluatorDialog(stock.StockCode);
 
-            // 하단 행: 점수 + 액션 + 수급 뱃지
+            // 3. 하단 행: 점수 + 수급 + 매수 전략 뱃지
             var lblScore = new Label
             {
                 Text = $"★ {stock.FinalScore}점",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Font = new Font("Segoe UI", 8.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 215, 0),
                 AutoSize = true,
-                Location = new Point(8, 47),
+                Location = new Point(6, 47),
                 Cursor = Cursors.Hand
             };
-            lblScore.Click += (s, e) => SelectStockInListView(stock.StockCode);
+            lblScore.Click += (s, e) => ShowStockEvaluatorDialog(stock.StockCode);
 
             var lblAction = new Label
             {
-                Text = $"● {StockVerdictHelper.Evaluate(stock).BadgeText}",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                Text = $"● {stock.PrimaryStrategyBadge}",
+                Font = new Font("Segoe UI", 8.0f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 230, 118),
                 AutoSize = true,
-                Location = new Point(66, 47),
+                Location = new Point(58, 48),
                 Cursor = Cursors.Hand
             };
-            lblAction.Click += (s, e) => SelectStockInListView(stock.StockCode);
+            lblAction.Click += (s, e) => ShowStockEvaluatorDialog(stock.StockCode);
 
             var lblSupply = new Label
             {
                 Text = "[메이저 매수]",
-                Font = new Font("Segoe UI", 8.0f),
+                Font = new Font("Segoe UI", 7.8f),
                 ForeColor = Color.FromArgb(140, 210, 255),
                 AutoSize = true,
-                Location = new Point(148, 48),
+                Location = new Point(148, 49),
                 Cursor = Cursors.Hand
             };
-            lblSupply.Click += (s, e) => SelectStockInListView(stock.StockCode);
+            lblSupply.Click += (s, e) => ShowStockEvaluatorDialog(stock.StockCode);
 
             var tt = new ToolTip();
-            tt.SetToolTip(pnlCard, $"클릭 시 {stock.StockName} 종목의 AI 상세 진단 리포트를 엽니다.");
-            tt.SetToolTip(lblName, $"클릭 시 {stock.StockName} 종목의 AI 상세 진단 리포트를 엽니다.");
+            tt.SetToolTip(pnlCard, $"클릭 시 {stock.StockName} 종목의 AI 정밀 진단 팝업을 엽니다.\n오른쪽 [+ 담기]를 누르면 내 관심종목 리스트에 즉시 추가됩니다.");
 
             pnlCard.Controls.Add(lblRank);
             pnlCard.Controls.Add(lblName);
+            pnlCard.Controls.Add(btnAdd);
             pnlCard.Controls.Add(lblPrice);
             pnlCard.Controls.Add(lblScore);
             pnlCard.Controls.Add(lblAction);
@@ -327,24 +393,50 @@ namespace GateHelper.StockAdvisor
         }
 
         /// <summary>
-        /// 추천 카드 클릭 시 리스트뷰에서 해당 종목을 찾아 자동 포커스 및 상세 브리핑 갱신
+        /// 추천 카드에서 [+ 담기] 클릭 시 내 관심종목에 즉시 등록 및 리스트뷰 자동 동기화
         /// </summary>
-        private void SelectStockInListView(string stockCode)
+        private void AddTopPickToWatchlist(MarketLeaderItem leader)
         {
-            if (_lvStocks == null || string.IsNullOrEmpty(stockCode)) return;
+            if (leader == null || _portfolio == null) return;
 
-            foreach (ListViewItem lvi in _lvStocks.Items)
+            string normCode = leader.StockCode.TrimStart('0');
+            if (_portfolio.Items.Any(x => x.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase)))
             {
-                if (lvi.Tag is StockHoldingItem item && item.StockCode.Equals(stockCode, StringComparison.OrdinalIgnoreCase))
-                {
-                    _lvStocks.SelectedItems.Clear();
-                    lvi.Selected = true;
-                    lvi.EnsureVisible();
-                    _lvStocks.Focus();
-                    UpdateDetailPanel(item);
-                    break;
-                }
+                MessageBox.Show($"'{leader.StockName}' 종목은 이미 관심/보유 목록에 등록되어 있습니다.", "종목 등록", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
             }
+
+            var newItem = new StockHoldingItem
+            {
+                StockCode = leader.StockCode,
+                StockName = leader.StockName,
+                Quantity = 0, // 관심종목
+                BuyPrice = 0m,
+                CurrentPrice = leader.CurrentPrice,
+                ChangeRate = leader.ChangeRate,
+                FinalScore = leader.FinalScore,
+                ChartScore = leader.ChartScore,
+                SupplyFinanceScore = leader.SupplyFinanceScore,
+                MajorSupplyBadge = leader.SupplyBadge,
+                LandmineBadge = leader.LandmineBadge,
+                HasCriticalLandmine = leader.HasCriticalLandmine,
+                TimingBadge = leader.PrimaryStrategyBadge,
+                Memo = $"[AI 시장 알짜 추천] {leader.PrimaryStrategyBadge} 발굴 등록"
+            };
+
+            _portfolio.Items.Add(newItem);
+            SavePortfolio();
+            UpdateUi();
+
+            MessageBox.Show(
+                $"[{leader.StockName}] 종목이 내 관심종목에 성공적으로 추가되었습니다!\n\n" +
+                $"• 현재가: {leader.CurrentPrice:N0}원 ({leader.ChangeRate:+0.00;-0.00}%)\n" +
+                $"• 종합 점수: {leader.FinalScore}점 (A/S급 최우량)\n" +
+                $"• 수급 상태: 외인·기관 메이저 매수\n" +
+                $"• AI 추천 전략: {leader.PrimaryStrategyBadge}",
+                "★ 알짜 종목 관심 등록 완료",
+                MessageBoxButtons.OK,
+                MessageBoxIcon.Information);
         }
     }
 }

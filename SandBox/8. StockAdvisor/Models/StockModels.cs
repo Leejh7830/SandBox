@@ -387,6 +387,9 @@ namespace GateHelper.StockAdvisor.Models
 
         // 보유 종목 목표가/손절가 도달 시 실시간 토스트 알림 활성화 (기본 true)
         public bool EnablePriceTouchAlert { get; set; } = true;
+
+        // 주도주 매수 레이더 종목(관심 미등록 포함)이 AI 권고 매수가 도달 시 자동 토스트 알림 활성화 (기본 true)
+        public bool EnableLeaderRadarAutoAlert { get; set; } = true;
     }
 
     public enum ToastAlertType

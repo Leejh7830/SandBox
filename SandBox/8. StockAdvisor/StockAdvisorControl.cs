@@ -94,6 +94,7 @@ namespace GateHelper.StockAdvisor
         private bool _hasInitialDiagnosed = false; // 최초 메인 화면 진입 시 1회 자동 진단 실행 가드
         private bool _isUpdatingUi = false;        // 대량 리스트 갱신 중 ItemChecked 이벤트 중복 방지
         private bool _isDoubleClick = false;       // 더블클릭 시 체크박스 오동작 방지
+        private readonly HashSet<string> _alertedRadarCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase); // 주도주 레이더 중복 토스트 알림 방지 캐시
 
         // 리스트뷰 컬럼 정렬 상태
         private int _sortColumn = -1;
@@ -124,8 +125,8 @@ namespace GateHelper.StockAdvisor
                 if (!this.Visible)
                 {
                     _kbSyncTimer?.Stop();
-                    // 실시간 가격 도달 감시(초절전 백그라운드 모드)가 활성화되어 있으면 타이머 유지
-                    if (_portfolio == null || !_portfolio.EnablePriceTouchAlert)
+                    // 실시간 가격 도달 감시 또는 주도주 레이더 자동 알림(초절전 백그라운드 모드)이 활성화되어 있으면 타이머 유지
+                    if (_portfolio == null || (!_portfolio.EnablePriceTouchAlert && !_portfolio.EnableLeaderRadarAutoAlert))
                     {
                         _autoSyncTimer?.Stop();
                     }

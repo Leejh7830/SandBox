@@ -53,6 +53,7 @@ namespace GateHelper.StockAdvisor
                 UpdateUi();
                 _ = RefreshMarketThermometerAsync();
                 CheckAndDispatchPriceTouchAlerts();
+                _ = CheckAndDispatchLeaderRadarAlertsAsync();
 
                 // 상단 버튼: 시세 갱신 성공 시 밝은 색상 및 동기화 시간 게시
                 UpdatePriceRefreshButtonStatus(true, syncTime: DateTime.Now);
@@ -216,6 +217,7 @@ namespace GateHelper.StockAdvisor
                     SavePortfolio();
                     UpdateUi();
                     CheckAndDispatchPriceTouchAlerts();
+                    _ = CheckAndDispatchLeaderRadarAlertsAsync();
 
                     // 1. 하단 상태바에 작은 글씨로 정밀 동기화 일시 표시
                     if (_lblLastUpdated != null)
@@ -326,7 +328,7 @@ namespace GateHelper.StockAdvisor
         {
             try
             {
-                bool needTimer = (_portfolio != null) && (_portfolio.AutoPriceSyncEnabled || _portfolio.AutoAiDiagnosisEnabled || _portfolio.EnablePriceTouchAlert);
+                bool needTimer = (_portfolio != null) && (_portfolio.AutoPriceSyncEnabled || _portfolio.AutoAiDiagnosisEnabled || _portfolio.EnablePriceTouchAlert || _portfolio.EnableLeaderRadarAutoAlert);
                 if (needTimer)
                 {
                     if (_autoSyncTimer == null)
@@ -350,15 +352,17 @@ namespace GateHelper.StockAdvisor
 
         private async Task HandleAutoSyncTickAsync()
         {
-            if (_portfolio == null || _portfolio.Items.Count == 0) return;
+            if (_portfolio == null) return;
+            if (_portfolio.Items.Count == 0 && !_portfolio.EnableLeaderRadarAutoAlert) return;
             if (_isAiDiagnosing || _isRefreshingPrice) return;
 
             Form parentForm = this.FindForm();
             bool isMinimizedOrHidden = (parentForm == null || !parentForm.Visible || parentForm.WindowState == FormWindowState.Minimized);
             bool isControlVisible = this.Visible && !isMinimizedOrHidden;
+            bool anyAlertEnabled = _portfolio.EnablePriceTouchAlert || _portfolio.EnableLeaderRadarAutoAlert;
 
-            // 창이 비활성 상태이고 백그라운드 가격 도달 감시도 꺼져 있다면 즉시 패스
-            if (!isControlVisible && (!isMinimizedOrHidden || !_portfolio.EnablePriceTouchAlert))
+            // 창이 비활성 상태이고 백그라운드 가격 도달/레이더 감시도 꺼져 있다면 즉시 패스
+            if (!isControlVisible && (!isMinimizedOrHidden || !anyAlertEnabled))
             {
                 return;
             }
@@ -366,7 +370,7 @@ namespace GateHelper.StockAdvisor
             DateTime now = DateTime.Now;
 
             // [초절전 백그라운드 감시 모드] 메인 창이 최소화/트레이 상태일 때 (GDI+/UI 렌더링 0, CPU 0%)
-            if (isMinimizedOrHidden && _portfolio.EnablePriceTouchAlert)
+            if (isMinimizedOrHidden && anyAlertEnabled)
             {
                 int intervalMin = Math.Max(1, _portfolio.PriceSyncIntervalMinutes);
                 if (_lastAutoPriceSyncTime == DateTime.MinValue || now - _lastAutoPriceSyncTime >= TimeSpan.FromMinutes(intervalMin))
@@ -418,6 +422,7 @@ namespace GateHelper.StockAdvisor
                 // UI 렌더링과 차트 그리기를 건너뛰고 오직 초경량 백그라운드 HTTP 시세 수집 및 가격 터치 판정만 수행
                 await RefreshPricesInternalAsync();
                 CheckAndDispatchPriceTouchAlerts();
+                await CheckAndDispatchLeaderRadarAlertsAsync();
                 SavePortfolio();
             }
             catch (Exception ex)
@@ -597,18 +602,9 @@ namespace GateHelper.StockAdvisor
                                 decimal hitPrice = stopPrice;
                                 if (this.IsHandleCreated && !this.IsDisposed)
                                 {
-                                    this.BeginInvoke(new Action(() =>
-                                    {
-                                        StockToastNotification.ShowAlert(
-                                            stopItem.StockName,
-                                            stopItem.StockCode,
-                                            stopItem.CurrentPrice,
-                                            hitPrice,
-                                            stopItem.ChangeRate,
-                                            ToastAlertType.StopHit,
-                                            onClickAction: () => SelectAndFocusStock(stopItem.StockCode)
-                                        );
-                                    }));
+                                    this.BeginInvoke(new Action(() => StockToastNotification.ShowAlert(
+                                        stopItem.StockName, stopItem.StockCode, stopItem.CurrentPrice, hitPrice, stopItem.ChangeRate, ToastAlertType.StopHit,
+                                        onClickAction: () => SelectAndFocusStock(stopItem.StockCode))));
                                 }
                             }
                         }
@@ -630,18 +626,9 @@ namespace GateHelper.StockAdvisor
                                 decimal hitBuyPrice = item.SecondaryBuyPrice;
                                 if (this.IsHandleCreated && !this.IsDisposed)
                                 {
-                                    this.BeginInvoke(new Action(() =>
-                                    {
-                                        StockToastNotification.ShowAlert(
-                                            buyItem.StockName,
-                                            buyItem.StockCode,
-                                            buyItem.CurrentPrice,
-                                            hitBuyPrice,
-                                            buyItem.ChangeRate,
-                                            ToastAlertType.BuyHit,
-                                            onClickAction: () => SelectAndFocusStock(buyItem.StockCode)
-                                        );
-                                    }));
+                                    this.BeginInvoke(new Action(() => StockToastNotification.ShowAlert(
+                                        buyItem.StockName, buyItem.StockCode, buyItem.CurrentPrice, hitBuyPrice, buyItem.ChangeRate, ToastAlertType.BuyHit,
+                                        onClickAction: () => SelectAndFocusStock(buyItem.StockCode))));
                                 }
                             }
                         }
@@ -671,18 +658,9 @@ namespace GateHelper.StockAdvisor
                                     decimal hitBuy = buyTarget;
                                     if (this.IsHandleCreated && !this.IsDisposed)
                                     {
-                                        this.BeginInvoke(new Action(() =>
-                                        {
-                                            StockToastNotification.ShowAlert(
-                                                watchItem.StockName,
-                                                watchItem.StockCode,
-                                                watchItem.CurrentPrice,
-                                                hitBuy,
-                                                watchItem.ChangeRate,
-                                                ToastAlertType.BuyHit,
-                                                onClickAction: () => SelectAndFocusStock(watchItem.StockCode)
-                                            );
-                                        }));
+                                        this.BeginInvoke(new Action(() => StockToastNotification.ShowAlert(
+                                            watchItem.StockName, watchItem.StockCode, watchItem.CurrentPrice, hitBuy, watchItem.ChangeRate, ToastAlertType.BuyHit,
+                                            onClickAction: () => SelectAndFocusStock(watchItem.StockCode))));
                                     }
                                 }
                             }
@@ -693,6 +671,62 @@ namespace GateHelper.StockAdvisor
                         }
                     }
                 }
+            }
+        }
+
+        private async Task CheckAndDispatchLeaderRadarAlertsAsync()
+        {
+            if (_portfolio == null || !_portfolio.EnableLeaderRadarAutoAlert) return;
+
+            try
+            {
+                var leaders = await MarketLeaderRadarService.ScanMarketLeadersAsync(forceRefresh: false).ConfigureAwait(false);
+                if (leaders == null || leaders.Count == 0) return;
+
+                var portfolioCodes = new HashSet<string>(_portfolio.Items.Select(x => x.StockCode.TrimStart('0')), StringComparer.OrdinalIgnoreCase);
+                int newAlertCount = 0;
+
+                foreach (var leader in leaders)
+                {
+                    if (string.IsNullOrEmpty(leader.StockCode) || leader.CurrentPrice <= 0 || leader.RecommendedBuyPrice <= 0) continue;
+
+                    string normCode = leader.StockCode.TrimStart('0');
+                    if (portfolioCodes.Contains(normCode)) continue;
+
+                    bool isBuyStrategy = leader.IsGoldenPullback || leader.IsOversoldBounce;
+                    if (isBuyStrategy && leader.CurrentPrice <= leader.RecommendedBuyPrice)
+                    {
+                        if (!_alertedRadarCodes.Contains(normCode))
+                        {
+                            _alertedRadarCodes.Add(normCode);
+                            newAlertCount++;
+
+                            var target = leader;
+                            if (this.IsHandleCreated && !this.IsDisposed)
+                            {
+                                this.BeginInvoke(new Action(() =>
+                                {
+                                    StockToastNotification.ShowAlert(
+                                        $"★레이더 {target.StockName}", target.StockCode, target.CurrentPrice, target.RecommendedBuyPrice, target.ChangeRate, ToastAlertType.BuyHit,
+                                        onClickAction: () =>
+                                        {
+                                            if (this.FindForm() is SandBox sb) { sb.ShowSandBoxWindow(); sb.SwitchToGame("StockAdvisor"); }
+                                            ShowMarketLeaderRadarDialog();
+                                        });
+                                }));
+                            }
+                            if (newAlertCount >= 3) break;
+                        }
+                    }
+                    else if (leader.CurrentPrice > leader.RecommendedBuyPrice * 1.015m)
+                    {
+                        _alertedRadarCodes.Remove(normCode);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.CheckAndDispatchLeaderRadarAlertsAsync");
             }
         }
 

@@ -640,14 +640,31 @@ namespace GateHelper.StockAdvisor
             if (_lvStocks == null || _lvStocks.Columns.Count < 15) return;
             try
             {
-                int fixedWidth = 0;
-                int lastIdx = _lvStocks.Columns.Count - 1;
-                for (int i = 0; i < lastIdx; i++)
+                // 화면 표시 순서상 가장 마지막(DisplayIndex가 가장 큰) 컬럼을 찾아서 남은 폭을 채워줌
+                ColumnHeader displayLastCol = null;
+                int maxDisplayIdx = -1;
+                foreach (ColumnHeader col in _lvStocks.Columns)
                 {
-                    fixedWidth += _lvStocks.Columns[i].Width;
+                    if (col.DisplayIndex > maxDisplayIdx)
+                    {
+                        maxDisplayIdx = col.DisplayIndex;
+                        displayLastCol = col;
+                    }
                 }
-                int remain = _lvStocks.ClientSize.Width - fixedWidth - 4;
-                _lvStocks.Columns[lastIdx].Width = Math.Max(220, remain);
+
+                if (displayLastCol == null) return;
+
+                int otherColsWidth = 0;
+                foreach (ColumnHeader col in _lvStocks.Columns)
+                {
+                    if (col != displayLastCol)
+                    {
+                        otherColsWidth += col.Width;
+                    }
+                }
+
+                int remain = _lvStocks.ClientSize.Width - otherColsWidth - 4;
+                displayLastCol.Width = Math.Max(100, remain);
             }
             catch { }
         }

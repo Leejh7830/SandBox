@@ -125,8 +125,10 @@ namespace GateHelper.StockAdvisor
                             decimal oldStop = item.TargetStopPrice > 0 ? item.TargetStopPrice : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : 0m);
                             decimal newStop = ind.TargetStopPrice > 0 ? ind.TargetStopPrice : (ind.SupportPrice > 0 ? ind.SupportPrice * 0.97m : 0m);
 
-                            // 최초 진단이 아닐 때 (기존 기준가가 0보다 컸을 때) 의미 있는 가격 변동 감지 (최소 0.5% 이상 변동 시)
-                            if (item.LastDiagnosedTargetPrice > 0 && newTarget > 0 && Math.Abs(newTarget - item.LastDiagnosedTargetPrice) / item.LastDiagnosedTargetPrice >= 0.005m)
+                            // [MTS 앱주문 타점 변동 알림 안정화 필터]
+                            // 1. 단순 틱 노이즈/순간 펌핑(0.5%) 배제: 실질적인 1.5% 이상 유의미한 변동 시에만 알림
+                            // 2. 일시적 가격 출렁임으로 인한 잦은 MTS 정정 방지
+                            if (item.LastDiagnosedTargetPrice > 0 && newTarget > 0 && Math.Abs(newTarget - item.LastDiagnosedTargetPrice) / item.LastDiagnosedTargetPrice >= 0.015m)
                             {
                                 decimal chgTarget = newTarget;
                                 decimal prevT = item.LastDiagnosedTargetPrice;
@@ -147,9 +149,14 @@ namespace GateHelper.StockAdvisor
                                         );
                                     }));
                                 }
+                                item.LastDiagnosedTargetPrice = newTarget;
+                            }
+                            else if (item.LastDiagnosedTargetPrice <= 0)
+                            {
+                                item.LastDiagnosedTargetPrice = newTarget;
                             }
 
-                            if (item.LastDiagnosedStopPrice > 0 && newStop > 0 && Math.Abs(newStop - item.LastDiagnosedStopPrice) / item.LastDiagnosedStopPrice >= 0.005m)
+                            if (item.LastDiagnosedStopPrice > 0 && newStop > 0 && Math.Abs(newStop - item.LastDiagnosedStopPrice) / item.LastDiagnosedStopPrice >= 0.015m)
                             {
                                 decimal chgStop = newStop;
                                 decimal prevS = item.LastDiagnosedStopPrice;
@@ -170,10 +177,12 @@ namespace GateHelper.StockAdvisor
                                         );
                                     }));
                                 }
+                                item.LastDiagnosedStopPrice = newStop;
                             }
-
-                            item.LastDiagnosedTargetPrice = newTarget;
-                            item.LastDiagnosedStopPrice = newStop;
+                            else if (item.LastDiagnosedStopPrice <= 0)
+                            {
+                                item.LastDiagnosedStopPrice = newStop;
+                            }
                         }
 
                         item.Rsi = ind.Rsi;

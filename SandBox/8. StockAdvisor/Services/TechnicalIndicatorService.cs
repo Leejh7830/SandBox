@@ -319,21 +319,25 @@ namespace GateHelper.StockAdvisor.Services
                 }
 
                 // 9. AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
-                // [철벽 인터락] 목표가는 반드시 현재가 및 권고 매수가보다 최소 3% 이상 높아야 함!
-                decimal minTarget = Math.Max(currentPrice * 1.03m, result.RecommendedBuyPrice * 1.03m);
-
-                // [선제 익절 체결 버퍼 인터락 (사용자 요청 반영)]
-                // 저항선(ResistancePrice) 딱 그 가격에는 대량 매도 벽이 쌓여 미체결 후 급락할 위험이 큼.
-                // 저항선의 약 1.8% 아래(저항선 × 0.982)에서 선제 체결되도록 안전 버퍼를 적용하고 KRX 호가 단위로 내림!
+                // [닻(Anchor) 고정 원칙: 장중 틱/순간 펌핑 왜곡 방지]
+                // 익절가는 장중 순간 튀어오른 현재가에 반응하여 밀려 올라가지 않고,
+                // 객관적인 20일 일봉 최고 매물대(ResistancePrice)에 닻을 내리고 고정합니다.
                 decimal baseTarget;
-                if (result.ResistancePrice > minTarget)
+                if (result.ResistancePrice > 0m)
                 {
-                    decimal bufferedTarget = result.ResistancePrice * 0.982m;
-                    baseTarget = bufferedTarget > minTarget ? bufferedTarget : result.ResistancePrice;
+                    // 저항선 1.8% 선제 익절 안전 버퍼
+                    baseTarget = result.ResistancePrice * 0.982m;
                 }
                 else
                 {
-                    baseTarget = Math.Max(currentPrice * 1.08m, minTarget);
+                    baseTarget = currentPrice * 1.08m;
+                }
+
+                // 만약 현재가가 이미 저항선 부근까지 도달했거나 돌파한 경우에만 2차 저항선/상승 목표 적용
+                if (currentPrice >= baseTarget * 0.99m)
+                {
+                    // 기존 저항선 돌파 시: 최소 5% 이상 상방 룸 부여 (단, 틱 노이즈 방지를 위해 고정 마진)
+                    baseTarget = Math.Max(baseTarget, currentPrice * 1.05m);
                 }
 
                 result.RecommendedTargetPrice = RoundToKrxTick(baseTarget, roundDown: true);

@@ -187,22 +187,40 @@ namespace GateHelper.StockAdvisor.Services
                 // 건강한 RSI (45~65)
                 if (result.Rsi >= 45m && result.Rsi <= 65m) cScore += 1.0;
 
+                // [중기 역배열 및 하락 추세 감점] 60일선(Ma60) 하회 시 하락 추세로 감점
+                bool isUnderMa60 = result.Ma60 > 0m && currentPrice < result.Ma60;
+                bool isDeadCross60 = result.Ma60 > 0m && result.Ma20 < result.Ma60; // 20일선이 60일선 아래 (역배열)
+                if (isDeadCross60)
+                {
+                    cScore -= 2.0; // 중기 역배열 강력 감점
+                }
+                else if (isUnderMa60)
+                {
+                    cScore -= 1.0;
+                }
+
                 // 역배열 하락 추세 감점 (단, 20일 지지선 근접 과매도 반등 구간은 지지 테스트로 인정하여 과도한 감점 방지)
                 if (currentPrice < result.Ma5 && result.Ma5 < result.Ma20)
                 {
                     if (result.Rsi > 0m && result.Rsi <= 36.5m && result.DownsideRiskPercent <= 4.5m)
-                        cScore = Math.Max(cScore, 6.0);
+                        cScore = Math.Max(cScore, 5.5);
                     else
                         cScore -= 2.5;
                 }
                 else if (result.Rsi > 0m && result.Rsi <= 36.5m && result.DownsideRiskPercent <= 4.5m)
                 {
-                    cScore = Math.Max(cScore, 6.0);
+                    cScore = Math.Max(cScore, 5.5);
+                }
+
+                // [역배열 차트 점수 캡 인터락] 20일선 < 60일선 완전 역배열이면서 현재가가 60일선 아래인 경우 최대 5점 캡
+                if (isDeadCross60 && isUnderMa60)
+                {
+                    cScore = Math.Min(cScore, 5.0);
                 }
 
                 result.ChartScore = (int)Math.Max(1, Math.Min(10, Math.Round(cScore)));
 
-                // 6. 손익비/안전 점수 (1~10점)
+                // 6. 손익비/안전 점수 (1~10점) 초기 계산 (하방 리스크 기반)
                 // [신저가 왜곡 방지 인터락] 현재가가 20일 최저가를 계속 깨며 하락 중인 역배열 종목은 손익비 만점 왜곡 방지
                 bool isBreakingNewLow = currentPrice <= minLow * 1.005m && (result.Ma5 < result.Ma20 || currentPrice < result.Ma5);
                 if (isBreakingNewLow)
@@ -210,8 +228,8 @@ namespace GateHelper.StockAdvisor.Services
                     // 바닥 이탈 하락 지속 구간: 손익비 3점 이하로 제한하여 매수 추천 방지
                     result.RiskScore = 3;
                 }
-                else if (result.DownsideRiskPercent <= 3.0m) result.RiskScore = 10;
-                else if (result.DownsideRiskPercent <= 4.5m) result.RiskScore = 9;
+                else if (result.DownsideRiskPercent <= 3.0m) result.RiskScore = 9;
+                else if (result.DownsideRiskPercent <= 4.5m) result.RiskScore = 8;
                 else if (result.DownsideRiskPercent <= 6.0m) result.RiskScore = 7;
                 else if (result.DownsideRiskPercent <= 8.0m) result.RiskScore = 5;
                 else if (result.DownsideRiskPercent <= 11.0m) result.RiskScore = 3;
@@ -322,6 +340,32 @@ namespace GateHelper.StockAdvisor.Services
                 result.SecondaryTargetPrice = RoundToKrxTick(result.RecommendedTargetPrice * 1.09m, roundDown: true);
 
                 decimal upside1 = currentPrice > 0 ? ((result.RecommendedTargetPrice - currentPrice) / currentPrice * 100m) : 0m;
+
+                // [손익비(Risk-Reward Ratio) 최종 정밀 보정 인터락]
+                // 목표가까지 먹을 여력(upside1) 대비 손절가까지의 위험(DownsideRiskPercent)을 비교하여 왜곡 방지
+                // 손익비 R/R = 상승여력% / 하방위험%
+                decimal stopLossRiskPercent = currentPrice > 0 && result.TargetStopPrice > 0 && currentPrice > result.TargetStopPrice
+                    ? ((currentPrice - result.TargetStopPrice) / currentPrice * 100m)
+                    : result.DownsideRiskPercent;
+                if (stopLossRiskPercent <= 0m) stopLossRiskPercent = 3.0m;
+
+                decimal riskRewardRatio = stopLossRiskPercent > 0 ? (upside1 / stopLossRiskPercent) : 1.0m;
+
+                if (riskRewardRatio < 0.8m)
+                {
+                    // 먹을 여력(+3.7%)보다 손절 위험(-6.0%)이 더 큰 나쁜 손익비인 경우: 손익비 점수 3~4점 이하로 대폭 감점
+                    result.RiskScore = Math.Min(result.RiskScore, 4);
+                }
+                else if (riskRewardRatio < 1.2m)
+                {
+                    // 먹을 여력과 손절 위험이 비슷한 경우: 최대 6점 캡
+                    result.RiskScore = Math.Min(result.RiskScore, 6);
+                }
+                else if (riskRewardRatio >= 2.0m && result.DownsideRiskPercent <= 4.0m)
+                {
+                    // 상승 여력이 위험의 2배 이상인 이상적 손익비: 9~10점 유지
+                    result.RiskScore = Math.Max(result.RiskScore, 9);
+                }
 
                 if (result.Rsi >= 70.0m)
                 {

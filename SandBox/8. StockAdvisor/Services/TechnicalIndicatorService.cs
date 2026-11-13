@@ -253,16 +253,16 @@ namespace GateHelper.StockAdvisor.Services
                 }
 
                 // 8. AI 퀀트 권고 매수가 및 진입 타점 계산
-                // [단일 진실 공급원(SSOT)] 손절가는 지지선(최근 20일 최저가) 기준 -3% 단일 고정
+                // [단일 진실 공급원(SSOT)] 손절가는 지지선(최근 20일 최저가) 기준 -3% 단일 고정 (KRX 호가 단위 정돈)
                 decimal stopBase = result.SupportPrice > 0 ? result.SupportPrice : currentPrice * 0.95m;
-                result.TargetStopPrice = Math.Round(stopBase * 0.97m, 0); // 지지선 -3% 이탈 시 손절선
+                result.TargetStopPrice = RoundToKrxTick(stopBase * 0.97m, roundDown: true); // 지지선 -3% 이탈 시 손절선
 
                 if (result.Rsi >= 68.0m || (result.Ma20 > 0 && currentPrice > result.Ma20 * 1.12m))
                 {
                     decimal pullbackPrice = result.Ma20 > 0 ? result.Ma20 : currentPrice * 0.93m;
                     // 과열 시 1차 매수가도 절대 현재가보다 높을 수 없음
                     pullbackPrice = Math.Min(pullbackPrice, currentPrice * 0.96m);
-                    result.RecommendedBuyPrice = Math.Round(pullbackPrice, 0);
+                    result.RecommendedBuyPrice = RoundToKrxTick(pullbackPrice, roundDown: true);
                     result.EntryTimingBadge = "추격매수 금지 (대기)";
                     result.EntryTimingGuide = $"현재가 과열권! 지금 사지 말고 20일선 눌림목({result.RecommendedBuyPrice:N0}원) 도달 시 진입 권고";
                 }
@@ -272,7 +272,7 @@ namespace GateHelper.StockAdvisor.Services
                     decimal entryBase = (result.SupportPrice > 0 && result.SupportPrice <= currentPrice)
                         ? result.SupportPrice
                         : currentPrice;
-                    result.RecommendedBuyPrice = Math.Round(Math.Min(entryBase, currentPrice), 0);
+                    result.RecommendedBuyPrice = RoundToKrxTick(Math.Min(entryBase, currentPrice), roundDown: true);
                     result.EntryTimingBadge = "과매도 분할매수존";
                     result.EntryTimingGuide = $"RSI({result.Rsi:F1}) 침체 및 지지선 안착 구간! 권고 매수가({result.RecommendedBuyPrice:N0}원) 분할 진입 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
@@ -289,7 +289,7 @@ namespace GateHelper.StockAdvisor.Services
                         safeEntry = currentPrice;
                     }
 
-                    result.RecommendedBuyPrice = Math.Round(safeEntry, 0);
+                    result.RecommendedBuyPrice = RoundToKrxTick(safeEntry, roundDown: true);
                     result.EntryTimingBadge = "눌림목 분할 진입존";
                     result.EntryTimingGuide = $"20일 지지선 부근({result.RecommendedBuyPrice:N0}원) 도달 시 분할 진입 유효 (방어선: {result.TargetStopPrice:N0}원)";
                 }
@@ -297,17 +297,29 @@ namespace GateHelper.StockAdvisor.Services
                 // [철벽 가격 계단 인터락] 권고 매수가는 어떠한 경우에도 손절가보다 높아야 함!
                 if (result.RecommendedBuyPrice <= result.TargetStopPrice)
                 {
-                    result.RecommendedBuyPrice = Math.Round(result.TargetStopPrice * 1.02m, 0);
+                    result.RecommendedBuyPrice = RoundToKrxTick(result.TargetStopPrice * 1.02m, roundDown: false);
                 }
 
                 // 9. AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
                 // [철벽 인터락] 목표가는 반드시 현재가 및 권고 매수가보다 최소 3% 이상 높아야 함!
                 decimal minTarget = Math.Max(currentPrice * 1.03m, result.RecommendedBuyPrice * 1.03m);
-                decimal baseTarget = result.ResistancePrice > minTarget
-                    ? result.ResistancePrice
-                    : Math.Max(currentPrice * 1.08m, minTarget);
-                result.RecommendedTargetPrice = Math.Round(baseTarget, 0);
-                result.SecondaryTargetPrice = Math.Round(result.RecommendedTargetPrice * 1.09m, 0);
+
+                // [선제 익절 체결 버퍼 인터락 (사용자 요청 반영)]
+                // 저항선(ResistancePrice) 딱 그 가격에는 대량 매도 벽이 쌓여 미체결 후 급락할 위험이 큼.
+                // 저항선의 약 1.8% 아래(저항선 × 0.982)에서 선제 체결되도록 안전 버퍼를 적용하고 KRX 호가 단위로 내림!
+                decimal baseTarget;
+                if (result.ResistancePrice > minTarget)
+                {
+                    decimal bufferedTarget = result.ResistancePrice * 0.982m;
+                    baseTarget = bufferedTarget > minTarget ? bufferedTarget : result.ResistancePrice;
+                }
+                else
+                {
+                    baseTarget = Math.Max(currentPrice * 1.08m, minTarget);
+                }
+
+                result.RecommendedTargetPrice = RoundToKrxTick(baseTarget, roundDown: true);
+                result.SecondaryTargetPrice = RoundToKrxTick(result.RecommendedTargetPrice * 1.09m, roundDown: true);
 
                 decimal upside1 = currentPrice > 0 ? ((result.RecommendedTargetPrice - currentPrice) / currentPrice * 100m) : 0m;
 
@@ -413,6 +425,29 @@ namespace GateHelper.StockAdvisor.Services
                 return res;
             }
             return 0m;
+        }
+
+        /// <summary>
+        /// KRX 한국거래소 표준 호가 단위(Tick Size) 정돈 헬퍼
+        /// (실제 MTS/HTS 호가창에서 지정가 주문이 100% 체결될 수 있도록 실제 호가로 정돈)
+        /// </summary>
+        public static decimal RoundToKrxTick(decimal price, bool roundDown = true)
+        {
+            if (price <= 0) return 0m;
+
+            decimal tick;
+            if (price < 2000m) tick = 1m;
+            else if (price < 5000m) tick = 5m;
+            else if (price < 20000m) tick = 10m;
+            else if (price < 50000m) tick = 50m;
+            else if (price < 200000m) tick = 100m;
+            else if (price < 500000m) tick = 500m;
+            else tick = 1000m;
+
+            if (roundDown)
+                return Math.Floor(price / tick) * tick;
+            else
+                return Math.Ceiling(price / tick) * tick;
         }
     }
 }

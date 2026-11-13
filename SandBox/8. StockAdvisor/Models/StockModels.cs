@@ -343,6 +343,9 @@ namespace GateHelper.StockAdvisor.Models
         [JsonIgnore]
         public bool WasStopNearAlerted { get; set; } = false;
 
+        [JsonIgnore]
+        public bool WasBuyNearAlerted { get; set; } = false;
+
         // [신규] 이전 진단 타점 보관 (손절/익절가 변동 감지용)
         [JsonIgnore]
         public decimal LastDiagnosedTargetPrice { get; set; } = 0m;
@@ -531,6 +534,7 @@ namespace GateHelper.StockAdvisor.Models
         BuyHit,         // ★ 적정 매수가 도달 (관심종목 1차 진입 / 보유종목 추가매수)
         TargetNear,     // [신규] 목표가 1.5% 이내 도달 임박 (분할 익절 준비)
         StopNear,       // [신규] 손절가 1.5% 이내 접근 임박 (리스크 방어 경고)
+        BuyNear,        // [신규] 관심종목 매수가 1.5% 이내 접근 임박 (분할 매수 준비)
         TargetChanged,  // [신규] 앱주문 종목 익절가 변경 감지 (MTS/HTS 정정 권고)
         StopChanged     // [신규] 앱주문 종목 손절가 변경 감지 (MTS/HTS 정정 권고)
     }

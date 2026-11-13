@@ -767,7 +767,7 @@ namespace GateHelper.StockAdvisor
                     }
                 }
                 // ==========================================
-                // 2. 관심 종목 (IsWatchlist: 수량 0주): AI 1차 권고 매수가 도달 감지
+                // 2. 관심 종목 (IsWatchlist: 수량 0주): AI 1차 권고 매수가 도달 및 1.5% 도달임박 감지
                 // ==========================================
                 else
                 {
@@ -777,6 +777,39 @@ namespace GateHelper.StockAdvisor
                         decimal buyTarget = item.RecommendedBuyPrice > 0 ? item.RecommendedBuyPrice : item.SupportPrice;
                         if (buyTarget > 0)
                         {
+                            // 2-A. [사용자 요청 2] 관심 종목 AI 권고 매수가 1.5% 이내 도달 임박 사전 알림
+                            decimal buyNearThreshold = buyTarget * 1.015m; // 매수가 위 1.5% 이내 접근
+                            if (item.CurrentPrice <= buyNearThreshold && item.CurrentPrice > buyTarget)
+                            {
+                                if (!item.WasBuyNearAlerted && !item.WasBuyAlerted)
+                                {
+                                    item.WasBuyNearAlerted = true;
+                                    StockHoldingItem nearBuyItem = item;
+                                    decimal hitBuy = buyTarget;
+                                    if (this.IsHandleCreated && !this.IsDisposed)
+                                    {
+                                        this.BeginInvoke(new Action(() =>
+                                        {
+                                            StockToastNotification.ShowAlert(
+                                                nearBuyItem.StockName,
+                                                nearBuyItem.StockCode,
+                                                nearBuyItem.CurrentPrice,
+                                                hitBuy,
+                                                nearBuyItem.ChangeRate,
+                                                ToastAlertType.BuyNear,
+                                                onClickAction: () => SelectAndFocusStock(nearBuyItem.StockCode),
+                                                message: $"[{nearBuyItem.StockName}] AI 권고 매수가({hitBuy:N0}원) 1.5% 접근 임박! 분할 매수 준비"
+                                            );
+                                        }));
+                                    }
+                                }
+                            }
+                            else if (item.CurrentPrice > buyTarget * 1.03m)
+                            {
+                                item.WasBuyNearAlerted = false; // 가격이 다시 멀어지면 리셋
+                            }
+
+                            // 2-B. 매수가 100% 완전 도달 (진입 타점 권고)
                             if (item.CurrentPrice <= buyTarget)
                             {
                                 if (!item.WasBuyAlerted)

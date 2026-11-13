@@ -83,6 +83,10 @@ namespace GateHelper.StockAdvisor
                     accentColor = Color.FromArgb(255, 140, 0); // 오렌지 경보
                     actionStatus = "손절가 1.5% 접근경고";
                     break;
+                case ToastAlertType.BuyNear:
+                    accentColor = Color.FromArgb(0, 220, 255); // 네온 사이언
+                    actionStatus = "매수가 1.5% 접근임박";
+                    break;
                 case ToastAlertType.TargetChanged:
                     accentColor = Color.FromArgb(180, 140, 255); // 네온 퍼플
                     actionStatus = "AI 익절가 변동 알림";
@@ -219,6 +223,7 @@ namespace GateHelper.StockAdvisor
                     break;
                 case ToastAlertType.TargetNear:
                 case ToastAlertType.StopNear:
+                case ToastAlertType.BuyNear:
                     borderPen = PenNear;
                     accentBrush = BrushNear;
                     break;
@@ -281,6 +286,9 @@ namespace GateHelper.StockAdvisor
                         break;
                     case ToastAlertType.StopNear:
                         defaultMsg = $"[{stockName} 손절가 {triggerPrice:N0}원 접근경고(1.5%내)]";
+                        break;
+                    case ToastAlertType.BuyNear:
+                        defaultMsg = $"[{stockName} AI 매수가 {triggerPrice:N0}원 도달임박(1.5%내)]";
                         break;
                     case ToastAlertType.TargetChanged:
                         defaultMsg = $"[{stockName} AI 권고 익절가 {triggerPrice:N0}원으로 변동]";

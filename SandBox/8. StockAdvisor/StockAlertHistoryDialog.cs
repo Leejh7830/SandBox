@@ -107,9 +107,9 @@ namespace GateHelper.StockAdvisor
             };
 
             _btnTabAll = CreateFilterTab("전체 알림", 0);
-            _btnTabHit = CreateFilterTab("● 도달 완료", 1);
-            _btnTabNear = CreateFilterTab("⚡ 1.5% 도달임박", 2);
-            _btnTabChanged = CreateFilterTab("★ 앱주문 타점변경", 3);
+            _btnTabHit = CreateFilterTab("도달 완료", 1);
+            _btnTabNear = CreateFilterTab("1.5% 도달임박", 2);
+            _btnTabChanged = CreateFilterTab("앱주문 타점변경", 3);
 
             flpTabs.Controls.Add(_btnTabAll);
             flpTabs.Controls.Add(_btnTabHit);
@@ -150,9 +150,10 @@ namespace GateHelper.StockAdvisor
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
                 null, _lvHistory, new object[] { true });
 
-            // [+ 담기] 셀 클릭 시 관심종목 즉시 등록
+            // [+ 담기] 셀 클릭 시 관심종목 즉시 등록 (타점변동 탭에서는 관심등록 컬럼 없음)
             _lvHistory.MouseClick += (s, e) =>
             {
+                if (_currentTabFilter == 3) return; // 타점변동 탭은 관심등록 컬럼 제외
                 var hit = _lvHistory.HitTest(e.Location);
                 if (hit.Item != null && hit.SubItem != null)
                 {
@@ -167,6 +168,11 @@ namespace GateHelper.StockAdvisor
             // 마우스 호버 시 [+ 담기] 셀 위에서 손가락(Hand) 커서 표시
             _lvHistory.MouseMove += (s, e) =>
             {
+                if (_currentTabFilter == 3)
+                {
+                    _lvHistory.Cursor = Cursors.Default;
+                    return;
+                }
                 var hit = _lvHistory.HitTest(e.Location);
                 if (hit.Item != null && hit.SubItem != null && hit.SubItem.Text == "+ 담기")
                 {
@@ -183,7 +189,7 @@ namespace GateHelper.StockAdvisor
             {
                 var hit = _lvHistory.HitTest(e.Location);
                 if (hit.Item == null) return;
-                if (hit.SubItem != null && hit.Item.SubItems.IndexOf(hit.SubItem) == 7) return;
+                if (_currentTabFilter != 3 && hit.SubItem != null && hit.Item.SubItems.IndexOf(hit.SubItem) == 7) return;
 
                 var alertItem = hit.Item.Tag as StockAlertLogItem;
                 string code = alertItem != null ? alertItem.StockCode : (hit.Item.Tag as string);
@@ -332,6 +338,29 @@ namespace GateHelper.StockAdvisor
             return btn;
         }
 
+        private void ConfigureColumnsForTab(int tabIndex)
+        {
+            _lvHistory.Columns.Clear();
+            _lvHistory.Columns.Add("시간", 75, HorizontalAlignment.Center);
+            _lvHistory.Columns.Add("알림 구분", 125, HorizontalAlignment.Center);
+            _lvHistory.Columns.Add("코드", 65, HorizontalAlignment.Center);
+            _lvHistory.Columns.Add("종목명", 120);
+            _lvHistory.Columns.Add("현재가", 85, HorizontalAlignment.Right);
+            _lvHistory.Columns.Add("감지가격", 85, HorizontalAlignment.Right);
+            _lvHistory.Columns.Add("등락률", 75, HorizontalAlignment.Right);
+
+            if (tabIndex != 3) // 타점변동 탭(3)이 아닐 때만 [관심 등록] 열 노출
+            {
+                _lvHistory.Columns.Add("관심 등록", 80, HorizontalAlignment.Center);
+                _lvHistory.Columns.Add("AI 대응 권고 및 메시지", 260);
+            }
+            else
+            {
+                // 타점변동 탭: [관심 등록] 열 제거 및 메시지 열 너비 확장
+                _lvHistory.Columns.Add("AI 대응 권고 및 메시지", 340);
+            }
+        }
+
         private void UpdateTabButtonStyles()
         {
             SetSingleTabStyle(_btnTabAll, _currentTabFilter == 0);
@@ -360,6 +389,8 @@ namespace GateHelper.StockAdvisor
         private void LoadHistoryItems()
         {
             UpdateTabButtonStyles();
+            ConfigureColumnsForTab(_currentTabFilter);
+
             _lvHistory.BeginUpdate();
             _lvHistory.Items.Clear();
 
@@ -385,7 +416,7 @@ namespace GateHelper.StockAdvisor
                 if (item.AlertType == ToastAlertType.TargetHit) targetCount++;
                 else if (item.AlertType == ToastAlertType.StopHit) stopCount++;
                 else if (item.AlertType == ToastAlertType.BuyHit) buyCount++;
-                else if (item.AlertType == ToastAlertType.TargetNear || item.AlertType == ToastAlertType.StopNear) nearCount++;
+                else if (item.AlertType == ToastAlertType.TargetNear || item.AlertType == ToastAlertType.StopNear || item.AlertType == ToastAlertType.BuyNear) nearCount++;
                 else if (item.AlertType == ToastAlertType.TargetChanged || item.AlertType == ToastAlertType.StopChanged) changedCount++;
 
                 // 탭 필터링 (0: 전체, 1: 도달완료, 2: 1.5%도달임박, 3: 앱주문 타점변경)
@@ -396,7 +427,7 @@ namespace GateHelper.StockAdvisor
                 }
                 else if (_currentTabFilter == 2) // 1.5% 도달임박
                 {
-                    if (item.AlertType != ToastAlertType.TargetNear && item.AlertType != ToastAlertType.StopNear)
+                    if (item.AlertType != ToastAlertType.TargetNear && item.AlertType != ToastAlertType.StopNear && item.AlertType != ToastAlertType.BuyNear)
                         continue;
                 }
                 else if (_currentTabFilter == 3) // 앱주문 타점변경
@@ -423,40 +454,89 @@ namespace GateHelper.StockAdvisor
                         typeColor = Color.FromArgb(0, 216, 255);
                         break;
                     case ToastAlertType.TargetNear:
-                        typeStr = "⚡ 익절 1.5% 임박";
+                        typeStr = "익절 1.5% 임박";
                         typeColor = Color.FromArgb(255, 193, 7);
                         break;
                     case ToastAlertType.StopNear:
-                        typeStr = "⚡ 손절 1.5% 경고";
+                        typeStr = "손절 1.5% 경고";
                         typeColor = Color.FromArgb(255, 140, 0);
                         break;
+                    case ToastAlertType.BuyNear:
+                        typeStr = "매수 1.5% 임박";
+                        typeColor = Color.FromArgb(0, 216, 255);
+                        break;
                     case ToastAlertType.TargetChanged:
-                        typeStr = "★ 익절가 변동";
+                        typeStr = "익절가 변동";
                         typeColor = Color.FromArgb(180, 140, 255);
                         break;
                     case ToastAlertType.StopChanged:
-                        typeStr = "★ 손절가 변동";
+                        typeStr = "손절가 변동";
                         typeColor = Color.FromArgb(255, 110, 160);
                         break;
                 }
 
                 string cleanName = (item.StockName ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
                 string cleanMsg = (item.Message ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
+
+                // [사용자 요청 3] AI대응 권고 및 메시지열 내용에서 맨 앞 [종목명] 텍스트 제거
+                // 예: "[현대엘리베이터] AI 익절가 변경: ..." -> "AI 익절가 변경: ..."
+                //     "[삼성전자 75,000원 매수가 도달]" -> "75,000원 매수가 도달"
+                if (!string.IsNullOrEmpty(cleanName))
+                {
+                    string bracketPrefix = $"[{cleanName}]";
+                    if (cleanMsg.StartsWith(bracketPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        cleanMsg = cleanMsg.Substring(bracketPrefix.Length).Trim();
+                    }
+                    else if (cleanMsg.StartsWith("[" + cleanName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        int closeIdx = cleanMsg.IndexOf(']');
+                        if (closeIdx > 0)
+                        {
+                            string inner = cleanMsg.Substring(1, closeIdx - 1).Trim();
+                            if (inner.StartsWith(cleanName, StringComparison.OrdinalIgnoreCase))
+                            {
+                                string rest = inner.Substring(cleanName.Length).Trim();
+                                string tail = cleanMsg.Substring(closeIdx + 1).Trim();
+                                cleanMsg = (rest + " " + tail).Trim();
+                            }
+                        }
+                    }
+                }
+
                 bool isRegistered = !string.IsNullOrEmpty(item.StockCode) && _existingCodes.Contains(item.StockCode.TrimStart('0'));
                 string regStr = isRegistered ? "등록됨" : "+ 담기";
 
-                var lvi = new ListViewItem(new[]
+                ListViewItem lvi;
+                if (_currentTabFilter == 3) // 타점변동 탭: [관심 등록] 열 제외
                 {
-                    item.AlertTime.ToString("HH:mm:ss"),
-                    typeStr,
-                    item.StockCode,
-                    cleanName,
-                    $"{item.CurrentPrice:N0}원",
-                    $"{item.TriggerPrice:N0}원",
-                    $"{item.ChangeRate:+0.00;-0.00;0.00}%",
-                    regStr,
-                    cleanMsg
-                });
+                    lvi = new ListViewItem(new[]
+                    {
+                        item.AlertTime.ToString("HH:mm:ss"),
+                        typeStr,
+                        item.StockCode,
+                        cleanName,
+                        $"{item.CurrentPrice:N0}원",
+                        $"{item.TriggerPrice:N0}원",
+                        $"{item.ChangeRate:+0.00;-0.00;0.00}%",
+                        cleanMsg
+                    });
+                }
+                else
+                {
+                    lvi = new ListViewItem(new[]
+                    {
+                        item.AlertTime.ToString("HH:mm:ss"),
+                        typeStr,
+                        item.StockCode,
+                        cleanName,
+                        $"{item.CurrentPrice:N0}원",
+                        $"{item.TriggerPrice:N0}원",
+                        $"{item.ChangeRate:+0.00;-0.00;0.00}%",
+                        regStr,
+                        cleanMsg
+                    });
+                }
 
                 lvi.Tag = item;
                 lvi.SubItems[0].ForeColor = Color.FromArgb(140, 160, 190);
@@ -470,10 +550,16 @@ namespace GateHelper.StockAdvisor
                 else if (item.ChangeRate < 0) lvi.SubItems[6].ForeColor = Color.FromArgb(85, 160, 255);
                 else lvi.SubItems[6].ForeColor = Color.FromArgb(180, 190, 205);
 
-                lvi.SubItems[7].ForeColor = isRegistered ? Color.FromArgb(0, 216, 255) : Color.FromArgb(255, 140, 210);
-                lvi.SubItems[7].Font = BoldFont;
-
-                lvi.SubItems[8].ForeColor = Color.FromArgb(200, 220, 240);
+                if (_currentTabFilter != 3)
+                {
+                    lvi.SubItems[7].ForeColor = isRegistered ? Color.FromArgb(0, 216, 255) : Color.FromArgb(255, 140, 210);
+                    lvi.SubItems[7].Font = BoldFont;
+                    lvi.SubItems[8].ForeColor = Color.FromArgb(200, 220, 240);
+                }
+                else
+                {
+                    lvi.SubItems[7].ForeColor = Color.FromArgb(200, 220, 240);
+                }
 
                 lvi.UseItemStyleForSubItems = false;
                 _lvHistory.Items.Add(lvi);
@@ -481,11 +567,11 @@ namespace GateHelper.StockAdvisor
 
             _lvHistory.EndUpdate();
 
-            // 탭 텍스트 동적 개수 업데이트
+            // 탭 텍스트 동적 개수 업데이트 (이모지 100% 제거)
             if (_btnTabAll != null) _btnTabAll.Text = $"전체 ({snapshot.Count})";
-            if (_btnTabHit != null) _btnTabHit.Text = $"● 도달완료 ({targetCount + stopCount + buyCount})";
-            if (_btnTabNear != null) _btnTabNear.Text = $"⚡ 1.5%임박 ({nearCount})";
-            if (_btnTabChanged != null) _btnTabChanged.Text = $"★ 타점변동 ({changedCount})";
+            if (_btnTabHit != null) _btnTabHit.Text = $"도달완료 ({targetCount + stopCount + buyCount})";
+            if (_btnTabNear != null) _btnTabNear.Text = $"1.5%임박 ({nearCount})";
+            if (_btnTabChanged != null) _btnTabChanged.Text = $"타점변동 ({changedCount})";
 
             _lblSummary.Text = $"총 {snapshot.Count}건 알림 (도달완료 {targetCount + stopCount + buyCount}건 | 1.5% 도달임박 {nearCount}건 | 앱주문 타점변동 {changedCount}건)";
             _btnClear.Enabled = _lvHistory.Items.Count > 0;

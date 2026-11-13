@@ -37,6 +37,7 @@ namespace GateHelper.StockAdvisor
         private Timer _autoSyncTimer;
         private DateTime _lastAutoPriceSyncTime = DateTime.MinValue;
         private DateTime _lastAutoAiDiagnoseTime = DateTime.MinValue;
+        private bool _hasTriggeredMarketOpenSync = false; // 9시 장 개장 즉시 시세 동기화 가드 플래그
 
         private SplitContainer _splitMain;
         private Panel _pnlListFilter;

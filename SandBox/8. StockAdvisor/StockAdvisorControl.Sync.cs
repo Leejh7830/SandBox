@@ -402,12 +402,18 @@ namespace GateHelper.StockAdvisor
             // 2. 실시간 시세 동기화 및 가격 도달/주도주 레이더 감시 주기 체크
             if ((_portfolio.AutoPriceSyncEnabled || anyAlertEnabled) && _portfolio.PriceSyncIntervalMinutes > 0)
             {
-                int intervalMin = Math.Max(1, _portfolio.PriceSyncIntervalMinutes);
-                if (_lastAutoPriceSyncTime == DateTime.MinValue)
+                // [9시 장 개장 즉시 감지 인터락] 9:00:00~9:01:30 사이 장 개장 첫 시세를 딜레이 없이 0초 만에 즉시 동기화!
+                if (now.Hour == 9 && now.Minute <= 1 && !_hasTriggeredMarketOpenSync)
                 {
+                    _hasTriggeredMarketOpenSync = true;
                     _lastAutoPriceSyncTime = now;
+                    await RefreshPricesAsync();
+                    return;
                 }
-                else if (now - _lastAutoPriceSyncTime >= TimeSpan.FromMinutes(intervalMin))
+                if (now.Hour != 9) _hasTriggeredMarketOpenSync = false;
+
+                int intervalMin = Math.Max(1, _portfolio.PriceSyncIntervalMinutes);
+                if (_lastAutoPriceSyncTime == DateTime.MinValue || now - _lastAutoPriceSyncTime >= TimeSpan.FromMinutes(intervalMin))
                 {
                     _lastAutoPriceSyncTime = now;
                     await RefreshPricesAsync();

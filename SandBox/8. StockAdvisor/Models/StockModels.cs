@@ -852,16 +852,38 @@ namespace GateHelper.StockAdvisor.Models
                     }
                     else
                     {
-                        info.BadgeText = "매수추천";
-                        info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 추천 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 권고 매수가 부근 분할 진입 권장";
-                        info.BuyPriceText = $"• 매수가: {buy1Str}";
+                        // [관심 종목 진입 타점 인터락]
+                        // 우량주(isBuy)라도 현재가가 권고 매수가보다 2.0% 이상 높거나 타이밍 안전벨트가 '눌림목 대기/과열'이면
+                        // 시장가 추격 매수 방지를 위해 최종 액션을 '관망'으로 전환하고 눌림목 안착 대기 유도
+                        bool isWaitingPullback = (item.RecommendedBuyPrice > 0 && item.CurrentPrice > item.RecommendedBuyPrice * 1.02m) ||
+                                                 (item.TimingBadge != null && (item.TimingBadge.Contains("눌림목 대기") || item.TimingBadge.Contains("과열")));
+
+                        if (isWaitingPullback)
+                        {
+                            info.Type = ActionVerdictType.HoldOrWatch;
+                            info.BadgeText = "관망";
+                            info.TitleText = "[ AI 참모 최종 결론 : 우량주이나 현재 타점 이격 / 눌림목 관망 대기 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점, {item.Grade}등급) 종목이나 현재 단기 슈팅으로 권고 매수가({buy1Str})와 이격 발생. 20일선 눌림목 안착 시까지 추격 금지 및 관망 권고";
+                            info.BuyPriceText = $"• 매수가: [눌림목 대기] (희망 진입가: {buy1Str})";
+                            info.BackColor = Color.FromArgb(36, 32, 20);
+                            info.ForeColor = Color.FromArgb(255, 220, 90);
+                            info.BorderColor = Color.FromArgb(170, 140, 40);
+                            info.ListBadgeColor = Color.FromArgb(240, 200, 80);
+                            info.CanBuy = false;
+                        }
+                        else
+                        {
+                            info.BadgeText = "매수추천";
+                            info.TitleText = "[ AI 참모 최종 결론 : 20일 눌림목 분할 매수 추천 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 권고 매수가 부근 분할 진입 권장";
+                            info.BuyPriceText = $"• 매수가: {buy1Str}";
+                            info.BackColor = Color.FromArgb(16, 44, 28);
+                            info.ForeColor = Color.FromArgb(90, 255, 170);
+                            info.BorderColor = Color.FromArgb(40, 170, 90);
+                            info.ListBadgeColor = Color.FromArgb(0, 230, 118);
+                            info.CanBuy = true;
+                        }
                     }
-                    info.BackColor = Color.FromArgb(16, 44, 28);
-                    info.ForeColor = Color.FromArgb(90, 255, 170);
-                    info.BorderColor = Color.FromArgb(40, 170, 90);
-                    info.ListBadgeColor = Color.FromArgb(0, 230, 118);
-                    info.CanBuy = true;
                 }
             }
             else

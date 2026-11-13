@@ -438,8 +438,9 @@ namespace GateHelper.StockAdvisor
             int rank = 1;
             foreach (var itm in targets)
             {
-                string rsiStr = itm.Rsi > 0 ? $"{itm.Rsi:F1}" : "-";
-                string dispStr = itm.Ma20 > 0 ? $"{itm.Ma20DisparityRate:+0.0;-0.0}%" : "-";
+                string rsiStr = itm.IsScanned && itm.Rsi > 0 ? $"{itm.Rsi:F1}" : "-";
+                string dispStr = itm.IsScanned && itm.Ma20 > 0 ? $"{itm.Ma20DisparityRate:+0.0;-0.0}%" : "-";
+                string stratStr = itm.IsScanned ? itm.PrimaryStrategyBadge : "-";
                 string buyStr = itm.RecommendedBuyPrice > 0 ? $"{itm.RecommendedBuyPrice:N0}" : "-";
                 string regStr = itm.IsAlreadyInPortfolio ? "★ 등록됨" : "+ 담기";
 
@@ -454,7 +455,7 @@ namespace GateHelper.StockAdvisor
                     itm.TradingValueText,
                     rsiStr,
                     dispStr,
-                    itm.PrimaryStrategyBadge,
+                    stratStr,
                     buyStr,
                     regStr
                 });

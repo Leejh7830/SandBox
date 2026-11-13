@@ -15,10 +15,11 @@ namespace GateHelper
     public class ToastNotification : Form
     {
         private Timer _animationTimer;
+        private Timer _autoCloseTimer;
         private bool _isClosing = false;
         private const double OpacityStep = 0.08;
 
-        public ToastNotification(string message, string title, ToastIcon iconType)
+        public ToastNotification(string message, string title, ToastIcon iconType, int autoCloseMs = 3000)
         {
             this.FormBorderStyle = FormBorderStyle.None;
             this.ShowInTaskbar = false;
@@ -72,13 +73,13 @@ namespace GateHelper
             lblMessage.Size = new Size(325, 48);
             lblMessage.ForeColor = Color.FromArgb(220, 220, 220);
             
-            // Close Hint
+            // Close Hint (3초 후 자동 닫힘 안내)
             Label lblCloseHint = new Label();
-            lblCloseHint.Text = "클릭하여 닫기";
+            lblCloseHint.Text = (autoCloseMs > 0) ? "3초 후 자동 닫힘" : "클릭하여 닫기";
             lblCloseHint.Font = new Font("Malgun Gothic", 8, FontStyle.Regular);
             lblCloseHint.ForeColor = Color.Gray;
             lblCloseHint.AutoSize = true;
-            lblCloseHint.Location = new Point(this.Width - 85, 10);
+            lblCloseHint.Location = new Point(this.Width - 95, 10);
 
             this.Controls.Add(pbIcon);
             this.Controls.Add(lblTitle);
@@ -100,12 +101,36 @@ namespace GateHelper
             _animationTimer = new Timer();
             _animationTimer.Interval = 20; // 20ms
             _animationTimer.Tick += AnimationTimer_Tick;
+
+            // 3초 자동 닫힘 타이머 (기본 3000ms)
+            if (autoCloseMs > 0)
+            {
+                _autoCloseTimer = new Timer();
+                _autoCloseTimer.Interval = autoCloseMs;
+                _autoCloseTimer.Tick += (s, e) =>
+                {
+                    _autoCloseTimer.Stop();
+                    _autoCloseTimer.Dispose();
+                    _autoCloseTimer = null;
+                    if (!_isClosing)
+                    {
+                        _isClosing = true;
+                        _animationTimer?.Start();
+                    }
+                };
+            }
         }
 
         private void ToastNotification_Click(object sender, EventArgs e)
         {
             if (!_isClosing)
             {
+                if (_autoCloseTimer != null)
+                {
+                    _autoCloseTimer.Stop();
+                    _autoCloseTimer.Dispose();
+                    _autoCloseTimer = null;
+                }
                 _isClosing = true;
                 _animationTimer.Start(); // Start fade out
             }
@@ -123,7 +148,8 @@ namespace GateHelper
                 else
                 {
                     this.Opacity = 1.0;
-                    _animationTimer.Stop(); // Stay visible until clicked
+                    _animationTimer.Stop(); // Stay visible until autoCloseTimer or click
+                    _autoCloseTimer?.Start();
                 }
             }
             else
@@ -147,13 +173,30 @@ namespace GateHelper
             _animationTimer.Start();
         }
 
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            base.OnFormClosed(e);
+            if (_animationTimer != null)
+            {
+                _animationTimer.Stop();
+                _animationTimer.Dispose();
+                _animationTimer = null;
+            }
+            if (_autoCloseTimer != null)
+            {
+                _autoCloseTimer.Stop();
+                _autoCloseTimer.Dispose();
+                _autoCloseTimer = null;
+            }
+        }
+
         // Must be called on UI thread
-        public static void Show(string message, string title = "알림", ToastIcon icon = ToastIcon.Info)
+        public static void Show(string message, string title = "알림", ToastIcon icon = ToastIcon.Info, int autoCloseMs = 3000)
         {
             // Create and show it
             // Normally Show() is non-blocking. If we are called from a background thread, 
             // we might need Control.Invoke. But PerformGateOneAutoLogin is called directly from BtnStart2_Click (UI thread).
-            ToastNotification toast = new ToastNotification(message, title, icon);
+            ToastNotification toast = new ToastNotification(message, title, icon, autoCloseMs);
             toast.Show();
         }
 

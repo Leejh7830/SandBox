@@ -484,7 +484,7 @@ namespace GateHelper.StockAdvisor
             string normCode = leader.StockCode.TrimStart('0');
             if (_portfolio.Items.Any(x => x.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase)))
             {
-                MessageBox.Show($"'{leader.StockName}' 종목은 이미 관심/보유 목록에 등록되어 있습니다.", "종목 등록", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                ToastNotification.Show($"[{leader.StockName}] 종목은 이미 관심/보유 목록에 등록되어 있습니다.", "알림", ToastIcon.Info);
                 return;
             }
 
@@ -510,15 +510,9 @@ namespace GateHelper.StockAdvisor
             SavePortfolio();
             UpdateUi();
 
-            MessageBox.Show(
-                $"[{leader.StockName}] 종목이 내 관심종목에 성공적으로 추가되었습니다!\n\n" +
-                $"• 현재가: {leader.CurrentPrice:N0}원 ({leader.ChangeRate:+0.00;-0.00}%)\n" +
-                $"• 종합 점수: {leader.FinalScore}점 (A/S급 최우량)\n" +
-                $"• 수급 상태: 외인·기관 메이저 매수\n" +
-                $"• AI 추천 전략: {leader.PrimaryStrategyBadge}",
-                "★ 알짜 종목 관심 등록 완료",
-                MessageBoxButtons.OK,
-                MessageBoxIcon.Information);
+            // 모달 팝업 대신 3초 뒤 자동으로 사라지는 세련된 우측 하단 토스트 알림 연동
+            string toastMsg = $"[{leader.StockName}] 관심종목 등록 완료!\n• 현재가: {leader.CurrentPrice:N0}원 ({leader.ChangeRate:+0.00;-0.00}%)\n• 종합점수: {leader.FinalScore}점 ({leader.PrimaryStrategyBadge})";
+            ToastNotification.Show(toastMsg, "★ 알짜 종목 등록", ToastIcon.Success, autoCloseMs: 3000);
         }
     }
 }

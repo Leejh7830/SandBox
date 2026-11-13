@@ -24,6 +24,13 @@ namespace GateHelper.StockAdvisor
         private Button _btnClear;
         private Button _btnClose;
 
+        // [신규] 4대 탭 필터 버튼
+        private Button _btnTabAll;
+        private Button _btnTabHit;
+        private Button _btnTabNear;
+        private Button _btnTabChanged;
+        private int _currentTabFilter = 0; // 0: 전체, 1: 도달완료, 2: 1.5%도달임박, 3: 앱주문 타점변경
+
         private static readonly Font BoldFont = new Font("Segoe UI", 9.2f, FontStyle.Bold);
 
         public StockAlertHistoryDialog(
@@ -61,18 +68,18 @@ namespace GateHelper.StockAdvisor
 
         private void InitializeCustomUi()
         {
-            // 1. 상단 헤더
+            // 1. 상단 헤더 (타이틀 + 서브안내 + 탭 바)
             var pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 64,
+                Height = 98,
                 BackColor = Color.FromArgb(24, 28, 40),
                 Padding = new Padding(16, 8, 16, 6)
             };
 
             var lblTitle = new Label
             {
-                Text = "가격 도달 알림 기록 내역 (Price Alert History)",
+                Text = "가격 도달 및 타점 변동 알림 기록 내역 (Price & Diagnosis Alert History)",
                 Font = new Font("Malgun Gothic", 11.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 190, 40),
                 Dock = DockStyle.Top,
@@ -81,13 +88,35 @@ namespace GateHelper.StockAdvisor
 
             _lblSummary = new Label
             {
-                Text = "보유종목의 목표가/손절가 및 관심·주도주 종목의 AI 매수가 도달 알림 히스토리입니다.",
+                Text = "보유종목의 목표가/손절가 도달, 1.5% 도달임박, 및 앱주문 설정 종목의 AI 타점 변동 알림 히스토리입니다.",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(170, 190, 220),
                 Dock = DockStyle.Top,
-                Height = 20
+                Height = 22
             };
 
+            // 4대 탭 필터 바 (전체 / 도달완료 / 1.5%도달임박 / 앱주문 타점변동)
+            var flpTabs = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 32,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+
+            _btnTabAll = CreateFilterTab("전체 알림", 0);
+            _btnTabHit = CreateFilterTab("● 도달 완료", 1);
+            _btnTabNear = CreateFilterTab("⚡ 1.5% 도달임박", 2);
+            _btnTabChanged = CreateFilterTab("★ 앱주문 타점변경", 3);
+
+            flpTabs.Controls.Add(_btnTabAll);
+            flpTabs.Controls.Add(_btnTabHit);
+            flpTabs.Controls.Add(_btnTabNear);
+            flpTabs.Controls.Add(_btnTabChanged);
+
+            pnlHeader.Controls.Add(flpTabs);
             pnlHeader.Controls.Add(_lblSummary);
             pnlHeader.Controls.Add(lblTitle);
 
@@ -282,14 +311,63 @@ namespace GateHelper.StockAdvisor
             }
         }
 
+        private Button CreateFilterTab(string text, int filterMode)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
+                Size = new Size(130, 28),
+                FlatStyle = FlatStyle.Flat,
+                Margin = new Padding(0, 2, 6, 2),
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.Click += (s, e) =>
+            {
+                _currentTabFilter = filterMode;
+                UpdateTabButtonStyles();
+                LoadHistoryItems();
+            };
+            return btn;
+        }
+
+        private void UpdateTabButtonStyles()
+        {
+            SetSingleTabStyle(_btnTabAll, _currentTabFilter == 0);
+            SetSingleTabStyle(_btnTabHit, _currentTabFilter == 1);
+            SetSingleTabStyle(_btnTabNear, _currentTabFilter == 2);
+            SetSingleTabStyle(_btnTabChanged, _currentTabFilter == 3);
+        }
+
+        private void SetSingleTabStyle(Button btn, bool isSelected)
+        {
+            if (btn == null) return;
+            if (isSelected)
+            {
+                btn.BackColor = Color.FromArgb(0, 160, 210);
+                btn.ForeColor = Color.White;
+                btn.FlatAppearance.BorderColor = Color.FromArgb(0, 220, 255);
+            }
+            else
+            {
+                btn.BackColor = Color.FromArgb(28, 34, 48);
+                btn.ForeColor = Color.FromArgb(160, 180, 210);
+                btn.FlatAppearance.BorderColor = Color.FromArgb(50, 62, 85);
+            }
+        }
+
         private void LoadHistoryItems()
         {
+            UpdateTabButtonStyles();
             _lvHistory.BeginUpdate();
             _lvHistory.Items.Clear();
 
             int targetCount = 0;
             int stopCount = 0;
             int buyCount = 0;
+            int nearCount = 0;
+            int changedCount = 0;
 
             List<StockAlertLogItem> snapshot;
             lock (_history)
@@ -303,26 +381,63 @@ namespace GateHelper.StockAdvisor
             {
                 var item = snapshot[i];
 
+                // 통계 집계
+                if (item.AlertType == ToastAlertType.TargetHit) targetCount++;
+                else if (item.AlertType == ToastAlertType.StopHit) stopCount++;
+                else if (item.AlertType == ToastAlertType.BuyHit) buyCount++;
+                else if (item.AlertType == ToastAlertType.TargetNear || item.AlertType == ToastAlertType.StopNear) nearCount++;
+                else if (item.AlertType == ToastAlertType.TargetChanged || item.AlertType == ToastAlertType.StopChanged) changedCount++;
+
+                // 탭 필터링 (0: 전체, 1: 도달완료, 2: 1.5%도달임박, 3: 앱주문 타점변경)
+                if (_currentTabFilter == 1) // 도달완료
+                {
+                    if (item.AlertType != ToastAlertType.TargetHit && item.AlertType != ToastAlertType.StopHit && item.AlertType != ToastAlertType.BuyHit)
+                        continue;
+                }
+                else if (_currentTabFilter == 2) // 1.5% 도달임박
+                {
+                    if (item.AlertType != ToastAlertType.TargetNear && item.AlertType != ToastAlertType.StopNear)
+                        continue;
+                }
+                else if (_currentTabFilter == 3) // 앱주문 타점변경
+                {
+                    if (item.AlertType != ToastAlertType.TargetChanged && item.AlertType != ToastAlertType.StopChanged)
+                        continue;
+                }
+
                 string typeStr = "목표가 달성";
                 Color typeColor = Color.FromArgb(0, 230, 118);
 
-                if (item.AlertType == ToastAlertType.TargetHit)
+                switch (item.AlertType)
                 {
-                    typeStr = "목표가 달성 (익절)";
-                    typeColor = Color.FromArgb(0, 230, 118);
-                    targetCount++;
-                }
-                else if (item.AlertType == ToastAlertType.StopHit)
-                {
-                    typeStr = "손절선 터치 (방어)";
-                    typeColor = Color.FromArgb(255, 75, 85);
-                    stopCount++;
-                }
-                else if (item.AlertType == ToastAlertType.BuyHit)
-                {
-                    typeStr = "AI 매수가 도달 (진입)";
-                    typeColor = Color.FromArgb(0, 216, 255);
-                    buyCount++;
+                    case ToastAlertType.TargetHit:
+                        typeStr = "목표가 달성 (익절)";
+                        typeColor = Color.FromArgb(0, 230, 118);
+                        break;
+                    case ToastAlertType.StopHit:
+                        typeStr = "손절선 터치 (방어)";
+                        typeColor = Color.FromArgb(255, 75, 85);
+                        break;
+                    case ToastAlertType.BuyHit:
+                        typeStr = "AI 매수가 도달 (진입)";
+                        typeColor = Color.FromArgb(0, 216, 255);
+                        break;
+                    case ToastAlertType.TargetNear:
+                        typeStr = "⚡ 익절 1.5% 임박";
+                        typeColor = Color.FromArgb(255, 193, 7);
+                        break;
+                    case ToastAlertType.StopNear:
+                        typeStr = "⚡ 손절 1.5% 경고";
+                        typeColor = Color.FromArgb(255, 140, 0);
+                        break;
+                    case ToastAlertType.TargetChanged:
+                        typeStr = "★ 익절가 변동";
+                        typeColor = Color.FromArgb(180, 140, 255);
+                        break;
+                    case ToastAlertType.StopChanged:
+                        typeStr = "★ 손절가 변동";
+                        typeColor = Color.FromArgb(255, 110, 160);
+                        break;
                 }
 
                 string cleanName = (item.StockName ?? string.Empty).Replace("★레이더 ", "").Replace("★", "").Trim();
@@ -366,7 +481,13 @@ namespace GateHelper.StockAdvisor
 
             _lvHistory.EndUpdate();
 
-            _lblSummary.Text = $"총 {snapshot.Count}건의 알림 기록 (목표가 {targetCount}건 | 손절가 {stopCount}건 | 적정매수가 {buyCount}건)";
+            // 탭 텍스트 동적 개수 업데이트
+            if (_btnTabAll != null) _btnTabAll.Text = $"전체 ({snapshot.Count})";
+            if (_btnTabHit != null) _btnTabHit.Text = $"● 도달완료 ({targetCount + stopCount + buyCount})";
+            if (_btnTabNear != null) _btnTabNear.Text = $"⚡ 1.5%임박 ({nearCount})";
+            if (_btnTabChanged != null) _btnTabChanged.Text = $"★ 타점변동 ({changedCount})";
+
+            _lblSummary.Text = $"총 {snapshot.Count}건 알림 (도달완료 {targetCount + stopCount + buyCount}건 | 1.5% 도달임박 {nearCount}건 | 앱주문 타점변동 {changedCount}건)";
             _btnClear.Enabled = _lvHistory.Items.Count > 0;
 
             _lvHistory.SelectedItems.Clear();

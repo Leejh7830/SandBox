@@ -116,6 +116,66 @@ namespace GateHelper.StockAdvisor
                         var ind = indTask.Result;
                         var intel = intelTask.Result;
 
+                        // [사용자 요청 1] 앱주문 설정(IsBrokerOrderSet)된 종목의 AI 권고 익절가/손절가 변동 감지 및 알림
+                        if (item.IsBrokerOrderSet && !item.IsWatchlist)
+                        {
+                            decimal oldTarget = item.RecommendedTargetPrice > 0 ? item.RecommendedTargetPrice : item.ResistancePrice;
+                            decimal newTarget = ind.RecommendedTargetPrice > 0 ? ind.RecommendedTargetPrice : ind.ResistancePrice;
+
+                            decimal oldStop = item.TargetStopPrice > 0 ? item.TargetStopPrice : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : 0m);
+                            decimal newStop = ind.TargetStopPrice > 0 ? ind.TargetStopPrice : (ind.SupportPrice > 0 ? ind.SupportPrice * 0.97m : 0m);
+
+                            // 최초 진단이 아닐 때 (기존 기준가가 0보다 컸을 때) 의미 있는 가격 변동 감지 (최소 0.5% 이상 변동 시)
+                            if (item.LastDiagnosedTargetPrice > 0 && newTarget > 0 && Math.Abs(newTarget - item.LastDiagnosedTargetPrice) / item.LastDiagnosedTargetPrice >= 0.005m)
+                            {
+                                decimal chgTarget = newTarget;
+                                decimal prevT = item.LastDiagnosedTargetPrice;
+                                StockHoldingItem alertItm = item;
+                                if (this.IsHandleCreated && !this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        StockToastNotification.ShowAlert(
+                                            alertItm.StockName,
+                                            alertItm.StockCode,
+                                            alertItm.CurrentPrice,
+                                            chgTarget,
+                                            alertItm.ChangeRate,
+                                            ToastAlertType.TargetChanged,
+                                            onClickAction: () => SelectAndFocusStock(alertItm.StockCode),
+                                            message: $"[{alertItm.StockName}] AI 익절가 변경: {prevT:N0}원 ➔ {chgTarget:N0}원 (MTS 정정 권고)"
+                                        );
+                                    }));
+                                }
+                            }
+
+                            if (item.LastDiagnosedStopPrice > 0 && newStop > 0 && Math.Abs(newStop - item.LastDiagnosedStopPrice) / item.LastDiagnosedStopPrice >= 0.005m)
+                            {
+                                decimal chgStop = newStop;
+                                decimal prevS = item.LastDiagnosedStopPrice;
+                                StockHoldingItem alertItm = item;
+                                if (this.IsHandleCreated && !this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        StockToastNotification.ShowAlert(
+                                            alertItm.StockName,
+                                            alertItm.StockCode,
+                                            alertItm.CurrentPrice,
+                                            chgStop,
+                                            alertItm.ChangeRate,
+                                            ToastAlertType.StopChanged,
+                                            onClickAction: () => SelectAndFocusStock(alertItm.StockCode),
+                                            message: $"[{alertItm.StockName}] AI 손절가 변경: {prevS:N0}원 ➔ {chgStop:N0}원 (MTS 정정 권고)"
+                                        );
+                                    }));
+                                }
+                            }
+
+                            item.LastDiagnosedTargetPrice = newTarget;
+                            item.LastDiagnosedStopPrice = newStop;
+                        }
+
                         item.Rsi = ind.Rsi;
                         item.VolumeRatio = ind.VolumeRatio;
                         item.SupportPrice = ind.SupportPrice;
@@ -135,6 +195,10 @@ namespace GateHelper.StockAdvisor
                         item.SecondaryTargetPrice = ind.SecondaryTargetPrice;
                         item.ExitTimingBadge = ind.ExitTimingBadge;
                         item.ExitTimingGuide = ind.ExitTimingGuide;
+
+                        // 비보유 종목이거나 초기 상태일 때도 기준 가격 추적 동기화
+                        if (item.LastDiagnosedTargetPrice <= 0) item.LastDiagnosedTargetPrice = item.RecommendedTargetPrice > 0 ? item.RecommendedTargetPrice : item.ResistancePrice;
+                        if (item.LastDiagnosedStopPrice <= 0) item.LastDiagnosedStopPrice = item.TargetStopPrice;
 
                         // 수급 및 지뢰 탐지 지표 반영
                         item.MajorSupplyBadge = intel.SupplyBadge;
@@ -560,7 +624,7 @@ namespace GateHelper.StockAdvisor
                 var verdict = StockVerdictHelper.Evaluate(item);
 
                 // ==========================================
-                // 1. 보유 종목 (Quantity > 0): 목표가/손절가/2차추매가 감지
+                // 1. 보유 종목 (Quantity > 0): 목표가/손절가/도달임박 감지
                 // ==========================================
                 if (!item.IsWatchlist)
                 {
@@ -568,6 +632,39 @@ namespace GateHelper.StockAdvisor
                     decimal targetPrice = item.RecommendedTargetPrice > 0 ? item.RecommendedTargetPrice : item.ResistancePrice;
                     if (targetPrice > 0)
                     {
+                        // 1-A. [사용자 요청 2] 목표가 1.5% 이내 도달 임박 사전 경보
+                        decimal nearThreshold = targetPrice * 0.985m; // 1.5% 이내 접근
+                        if (item.CurrentPrice >= nearThreshold && item.CurrentPrice < targetPrice)
+                        {
+                            if (!item.WasTargetNearAlerted && !item.WasTargetAlerted)
+                            {
+                                item.WasTargetNearAlerted = true;
+                                StockHoldingItem nearItem = item;
+                                decimal hitPrice = targetPrice;
+                                if (this.IsHandleCreated && !this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        StockToastNotification.ShowAlert(
+                                            nearItem.StockName,
+                                            nearItem.StockCode,
+                                            nearItem.CurrentPrice,
+                                            hitPrice,
+                                            nearItem.ChangeRate,
+                                            ToastAlertType.TargetNear,
+                                            onClickAction: () => SelectAndFocusStock(nearItem.StockCode),
+                                            message: $"[{nearItem.StockName}] 목표가({hitPrice:N0}원) 1.5% 이내 도달 임박! 분할 익절 준비"
+                                        );
+                                    }));
+                                }
+                            }
+                        }
+                        else if (item.CurrentPrice < targetPrice * 0.97m)
+                        {
+                            item.WasTargetNearAlerted = false; // 충분히 멀어지면 재알림 가능
+                        }
+
+                        // 1-B. 목표가 100% 완전 도달 (익절 권고)
                         if (item.CurrentPrice >= targetPrice)
                         {
                             if (!item.WasTargetAlerted)
@@ -606,6 +703,39 @@ namespace GateHelper.StockAdvisor
 
                     if (stopPrice > 0)
                     {
+                        // 2-A. [사용자 요청 2] 손절가 1.5% 이내 접근 임박 사전 경보
+                        decimal stopNearThreshold = stopPrice * 1.015m; // 손절선 +1.5% 이내 접근
+                        if (item.CurrentPrice <= stopNearThreshold && item.CurrentPrice > stopPrice)
+                        {
+                            if (!item.WasStopNearAlerted && !item.WasStopAlerted)
+                            {
+                                item.WasStopNearAlerted = true;
+                                StockHoldingItem nearStopItem = item;
+                                decimal hitPrice = stopPrice;
+                                if (this.IsHandleCreated && !this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        StockToastNotification.ShowAlert(
+                                            nearStopItem.StockName,
+                                            nearStopItem.StockCode,
+                                            nearStopItem.CurrentPrice,
+                                            hitPrice,
+                                            nearStopItem.ChangeRate,
+                                            ToastAlertType.StopNear,
+                                            onClickAction: () => SelectAndFocusStock(nearStopItem.StockCode),
+                                            message: $"[{nearStopItem.StockName}] 손절 방어선({hitPrice:N0}원) 1.5% 접근 경고! 지지 여부 주시"
+                                        );
+                                    }));
+                                }
+                            }
+                        }
+                        else if (item.CurrentPrice > stopPrice * 1.03m)
+                        {
+                            item.WasStopNearAlerted = false; // 반등하여 멀어지면 리셋
+                        }
+
+                        // 2-B. 손절선 100% 터치/이탈 (손절 방어 권고)
                         if (item.CurrentPrice <= stopPrice)
                         {
                             if (!item.WasStopAlerted)

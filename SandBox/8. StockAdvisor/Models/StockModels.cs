@@ -336,6 +336,20 @@ namespace GateHelper.StockAdvisor.Models
         [JsonIgnore]
         public bool WasSecondaryBuyAlerted { get; set; } = false;
 
+        // [신규] 근처(도달 임박 1.5%) 사전 알림 상태 추적 (중복 방지)
+        [JsonIgnore]
+        public bool WasTargetNearAlerted { get; set; } = false;
+
+        [JsonIgnore]
+        public bool WasStopNearAlerted { get; set; } = false;
+
+        // [신규] 이전 진단 타점 보관 (손절/익절가 변동 감지용)
+        [JsonIgnore]
+        public decimal LastDiagnosedTargetPrice { get; set; } = 0m;
+
+        [JsonIgnore]
+        public decimal LastDiagnosedStopPrice { get; set; } = 0m;
+
         /// <summary>
         /// 미니 캔들 차트용 최근 20일 일봉 데이터 캐시 (런타임 메모리 유지, 0-IO)
         /// </summary>
@@ -512,9 +526,13 @@ namespace GateHelper.StockAdvisor.Models
 
     public enum ToastAlertType
     {
-        TargetHit, // 목표가 도달 (익절 권고)
-        StopHit,   // 손절 방어선 터치/이탈 (리스크 관리 권고)
-        BuyHit     // ★ 적정 매수가 도달 (관심종목 1차 진입 / 보유종목 추가매수)
+        TargetHit,      // 목표가 도달 (익절 권고)
+        StopHit,        // 손절 방어선 터치/이탈 (리스크 관리 권고)
+        BuyHit,         // ★ 적정 매수가 도달 (관심종목 1차 진입 / 보유종목 추가매수)
+        TargetNear,     // [신규] 목표가 1.5% 이내 도달 임박 (분할 익절 준비)
+        StopNear,       // [신규] 손절가 1.5% 이내 접근 임박 (리스크 방어 경고)
+        TargetChanged,  // [신규] 앱주문 종목 익절가 변경 감지 (MTS/HTS 정정 권고)
+        StopChanged     // [신규] 앱주문 종목 손절가 변경 감지 (MTS/HTS 정정 권고)
     }
 
     /// <summary>

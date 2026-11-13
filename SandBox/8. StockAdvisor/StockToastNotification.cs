@@ -23,9 +23,14 @@ namespace GateHelper.StockAdvisor
         private static readonly Pen PenTarget = new Pen(Color.FromArgb(0, 230, 118), 1.5f);
         private static readonly Pen PenBuy = new Pen(Color.FromArgb(0, 216, 255), 1.5f);
         private static readonly Pen PenStop = new Pen(Color.FromArgb(255, 75, 85), 1.5f);
+        private static readonly Pen PenNear = new Pen(Color.FromArgb(255, 193, 7), 1.5f);
+        private static readonly Pen PenChanged = new Pen(Color.FromArgb(180, 140, 255), 1.5f);
+
         private static readonly SolidBrush BrushTarget = new SolidBrush(Color.FromArgb(0, 230, 118));
         private static readonly SolidBrush BrushBuy = new SolidBrush(Color.FromArgb(0, 216, 255));
         private static readonly SolidBrush BrushStop = new SolidBrush(Color.FromArgb(255, 75, 85));
+        private static readonly SolidBrush BrushNear = new SolidBrush(Color.FromArgb(255, 193, 7));
+        private static readonly SolidBrush BrushChanged = new SolidBrush(Color.FromArgb(180, 140, 255));
 
         private readonly Action _onClickAction;
         private readonly ToastAlertType _alertType;
@@ -37,7 +42,8 @@ namespace GateHelper.StockAdvisor
             decimal triggerPrice,
             decimal changeRate,
             ToastAlertType alertType,
-            Action onClickAction = null)
+            Action onClickAction = null,
+            string customMessage = null)
         {
             _alertType = alertType;
             _onClickAction = onClickAction;
@@ -52,18 +58,48 @@ namespace GateHelper.StockAdvisor
             this.DoubleBuffered = true;
             this.Cursor = Cursors.Hand;
 
-            Color accentColor = alertType == ToastAlertType.TargetHit
-                ? Color.FromArgb(0, 230, 118) // 에메랄드 그린 (목표가 매도)
-                : (alertType == ToastAlertType.BuyHit
-                    ? Color.FromArgb(0, 216, 255) // 네온 사이언 (매수 진입)
-                    : Color.FromArgb(255, 75, 85));  // 네온 레드 (손절 방어)
+            Color accentColor;
+            string actionStatus;
 
-            string actionStatus = alertType == ToastAlertType.BuyHit
-                ? "매수가 도달"
-                : (alertType == ToastAlertType.TargetHit ? "매도가 도달" : "손절가 도달");
+            switch (alertType)
+            {
+                case ToastAlertType.TargetHit:
+                    accentColor = Color.FromArgb(0, 230, 118);
+                    actionStatus = "매도가 도달";
+                    break;
+                case ToastAlertType.BuyHit:
+                    accentColor = Color.FromArgb(0, 216, 255);
+                    actionStatus = "매수가 도달";
+                    break;
+                case ToastAlertType.StopHit:
+                    accentColor = Color.FromArgb(255, 75, 85);
+                    actionStatus = "손절가 도달";
+                    break;
+                case ToastAlertType.TargetNear:
+                    accentColor = Color.FromArgb(255, 193, 7); // 골드 옐로우
+                    actionStatus = "익절가 1.5% 도달임박";
+                    break;
+                case ToastAlertType.StopNear:
+                    accentColor = Color.FromArgb(255, 140, 0); // 오렌지 경보
+                    actionStatus = "손절가 1.5% 접근경고";
+                    break;
+                case ToastAlertType.TargetChanged:
+                    accentColor = Color.FromArgb(180, 140, 255); // 네온 퍼플
+                    actionStatus = "AI 익절가 변동 알림";
+                    break;
+                case ToastAlertType.StopChanged:
+                    accentColor = Color.FromArgb(255, 110, 160); // 핑크 로즈
+                    actionStatus = "AI 손절가 변동 알림";
+                    break;
+                default:
+                    accentColor = Color.FromArgb(0, 216, 255);
+                    actionStatus = "가격 알림";
+                    break;
+            }
 
-            // 사용자 맞춤 포맷: [종목명 + 매수(매도)가격 + 도달 여부] 만 심플하게 노출하여 긴 종목명도 글자 잘림 원천 차단
-            string headline = $"[{stockName} {triggerPrice:N0}원 {actionStatus}]";
+            string headline = !string.IsNullOrEmpty(customMessage)
+                ? customMessage
+                : $"[{stockName} {triggerPrice:N0}원 {actionStatus}]";
 
             // 1. 헤더 (종목명 + 가격 + 도달여부)
             var lblTitle = new Label
@@ -164,12 +200,35 @@ namespace GateHelper.StockAdvisor
         {
             base.OnPaint(e);
 
-            Pen borderPen = _alertType == ToastAlertType.TargetHit
-                ? PenTarget
-                : (_alertType == ToastAlertType.BuyHit ? PenBuy : PenStop);
-            SolidBrush accentBrush = _alertType == ToastAlertType.TargetHit
-                ? BrushTarget
-                : (_alertType == ToastAlertType.BuyHit ? BrushBuy : BrushStop);
+            Pen borderPen;
+            SolidBrush accentBrush;
+
+            switch (_alertType)
+            {
+                case ToastAlertType.TargetHit:
+                    borderPen = PenTarget;
+                    accentBrush = BrushTarget;
+                    break;
+                case ToastAlertType.BuyHit:
+                    borderPen = PenBuy;
+                    accentBrush = BrushBuy;
+                    break;
+                case ToastAlertType.StopHit:
+                    borderPen = PenStop;
+                    accentBrush = BrushStop;
+                    break;
+                case ToastAlertType.TargetNear:
+                case ToastAlertType.StopNear:
+                    borderPen = PenNear;
+                    accentBrush = BrushNear;
+                    break;
+                case ToastAlertType.TargetChanged:
+                case ToastAlertType.StopChanged:
+                default:
+                    borderPen = PenChanged;
+                    accentBrush = BrushChanged;
+                    break;
+            }
 
             e.Graphics.DrawRectangle(borderPen, 0, 0, this.Width - 1, this.Height - 1);
             e.Graphics.FillRectangle(accentBrush, 0, 0, 4, this.Height);
@@ -202,8 +261,37 @@ namespace GateHelper.StockAdvisor
         {
             try
             {
-                var toast = new StockToastNotification(stockName, stockCode, currentPrice, triggerPrice, changeRate, alertType, onClickAction);
+                var toast = new StockToastNotification(stockName, stockCode, currentPrice, triggerPrice, changeRate, alertType, onClickAction, message);
                 toast.Show();
+
+                string defaultMsg;
+                switch (alertType)
+                {
+                    case ToastAlertType.BuyHit:
+                        defaultMsg = $"[{stockName} {triggerPrice:N0}원 매수가 도달]";
+                        break;
+                    case ToastAlertType.TargetHit:
+                        defaultMsg = $"[{stockName} {triggerPrice:N0}원 매도가 도달]";
+                        break;
+                    case ToastAlertType.StopHit:
+                        defaultMsg = $"[{stockName} {triggerPrice:N0}원 손절가 도달]";
+                        break;
+                    case ToastAlertType.TargetNear:
+                        defaultMsg = $"[{stockName} 익절가 {triggerPrice:N0}원 도달임박(1.5%내)]";
+                        break;
+                    case ToastAlertType.StopNear:
+                        defaultMsg = $"[{stockName} 손절가 {triggerPrice:N0}원 접근경고(1.5%내)]";
+                        break;
+                    case ToastAlertType.TargetChanged:
+                        defaultMsg = $"[{stockName} AI 권고 익절가 {triggerPrice:N0}원으로 변동]";
+                        break;
+                    case ToastAlertType.StopChanged:
+                        defaultMsg = $"[{stockName} AI 권고 손절가 {triggerPrice:N0}원으로 변동]";
+                        break;
+                    default:
+                        defaultMsg = $"[{stockName} 가격 알림]";
+                        break;
+                }
 
                 // 히스토리 이벤트 브로드캐스트
                 AlertLogged?.Invoke(new StockAlertLogItem
@@ -215,11 +303,7 @@ namespace GateHelper.StockAdvisor
                     CurrentPrice = currentPrice,
                     TriggerPrice = triggerPrice,
                     ChangeRate = changeRate,
-                    Message = message ?? (alertType == ToastAlertType.BuyHit
-                        ? $"[{stockName} {triggerPrice:N0}원 매수가 도달]"
-                        : (alertType == ToastAlertType.TargetHit
-                            ? $"[{stockName} {triggerPrice:N0}원 매도가 도달]"
-                            : $"[{stockName} {triggerPrice:N0}원 손절가 도달]")),
+                    Message = message ?? defaultMsg,
                     IsRead = false
                 });
             }

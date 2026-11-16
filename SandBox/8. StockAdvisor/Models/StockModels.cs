@@ -887,10 +887,16 @@ namespace GateHelper.StockAdvisor.Models
 
                         if (item.Rsi >= 58.0m)
                         {
-                            info.BadgeText = "상승추세";
-                            info.TitleText = "[ AI 참모 최종 결론 : 우량 상승추세 지속 / 수익 극대화 홀딩 ]";
-                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 상승 추세 유지. 기존 물량은 수익 극대화 홀딩하되, RSI({item.Rsi:F1}) 상승권으로 추가 매수는 자제 권고";
+                            info.Type = ActionVerdictType.HoldOrWatch;
+                            info.BadgeText = "관망";
+                            info.TitleText = "[ AI 참모 최종 결론 : 우량 상승추세 지속 / 불타기 금지 및 관망 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 상승 추세 유지. 기존 물량은 수익 극대화 홀딩하되, RSI({item.Rsi:F1}) 상승권으로 추가 매수는 자제하고 관망 권고";
                             info.BuyPriceText = $"• 매수가: [추매 보류] (상승 추세 홀딩 중 / 추가 매수는 20일선 눌림목까지 대기)";
+                            info.BackColor = Color.FromArgb(36, 32, 20);
+                            info.ForeColor = Color.FromArgb(255, 220, 90);
+                            info.BorderColor = Color.FromArgb(170, 140, 40);
+                            info.ListBadgeColor = Color.FromArgb(240, 200, 80);
+                            info.CanBuy = false;
                         }
                         else if (isHeldWaitingPullback)
                         {
@@ -982,13 +988,12 @@ namespace GateHelper.StockAdvisor.Models
         }
 
         /// <summary>
-        /// 최종 액션 뱃지 우선순위 정렬 가중치 (매수추천 > 상승추세 > 과열주의 > 관망 > 급락주의 > 비중축소/매수금지)
+        /// 최종 액션 뱃지 우선순위 정렬 가중치 (매수추천 > 과열주의 > 관망 > 급락주의 > 비중축소/매수금지)
         /// </summary>
         public static int GetActionPriority(string badgeText)
         {
             if (string.IsNullOrEmpty(badgeText)) return 0;
-            if (badgeText.Contains("매수추천")) return 6;
-            if (badgeText.Contains("상승추세")) return 5;
+            if (badgeText.Contains("매수추천")) return 5;
             if (badgeText.Contains("과열주의")) return 4;
             if (badgeText.Contains("관망")) return 3;
             if (badgeText.Contains("급락주의")) return 2;

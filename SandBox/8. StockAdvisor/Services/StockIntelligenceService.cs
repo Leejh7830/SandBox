@@ -488,11 +488,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "G",
-                    Name = "PER (주가수익)",
-                    Criteria = "20.0배 이하 (성장 마진)",
+                    Name = "PER (수익)",
+                    Criteria = "20.0배 이하 (성장)",
                     ActualValue = per > 0 ? $"{per:F2}배" : "-",
                     IsPassed = perPassed,
-                    Description = "실적 대비 적정 밸류에이션 (거품 및 극단적 고평가 배제)"
+                    Description = "실적 대비 적정 밸류에이션 (거품 및 극단적 고평가 배제, 성장주 마진 반영)"
                 });
 
                 // 6. PBR (2.5배 이하)
@@ -511,7 +511,7 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "H",
-                    Name = "PBR (주가순자산)",
+                    Name = "PBR (순자산)",
                     Criteria = "2.5배 이하",
                     ActualValue = pbr > 0 ? $"{pbr:F2}배" : "-",
                     IsPassed = pbrPassed,
@@ -533,7 +533,7 @@ namespace GateHelper.StockAdvisor.Services
                 {
                     Id = "I",
                     Name = "배당수익률",
-                    Criteria = "2.0%↑ (성장예외)",
+                    Criteria = "2.0% 이상",
                     ActualValue = divActual,
                     IsPassed = divPassed,
                     Description = "안정적 현금배당 쿠폰 또는 순이익을 사내 재투자하는 고성장(ROE 15%↑) 우량주"
@@ -545,7 +545,7 @@ namespace GateHelper.StockAdvisor.Services
                 {
                     Id = "B",
                     Name = "14일 RSI",
-                    Criteria = "60.0 이하 (미과열)",
+                    Criteria = "60.0 이하",
                     ActualValue = currentRsi > 0 ? $"{currentRsi:F1}" : "-",
                     IsPassed = rsiPassed,
                     Description = "단기 과열 슈팅을 배제하고 눌림목 및 저가 분할 매수가 유효한 안전 구간"

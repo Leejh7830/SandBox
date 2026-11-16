@@ -13,8 +13,8 @@ namespace GateHelper.StockAdvisor
         private void InitializeCustomComponent()
         {
             this.Text = "종목 AI 즉시 진단 & 정통 퀀트 8대 우량주 스캐너";
-            this.Size = new Size(1160, 750);
-            this.MinimumSize = new Size(1060, 680);
+            this.Size = new Size(1200, 750);
+            this.MinimumSize = new Size(1080, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Color.FromArgb(18, 22, 32);
             this.ForeColor = Color.White;
@@ -144,8 +144,8 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(18, 22, 32)
             };
             tblCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 32f));
-            tblCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));
-            tblCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 34f));
+            tblCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33f));
+            tblCards.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35f));
 
             _pnlCard1 = CreateCardPanel("【 1. 기술적 AI 종합 점수 】");
             _pnlCard2 = CreateCardPanel("【 2. 메이저 수급 & 재무·지뢰 검증 】");
@@ -416,10 +416,10 @@ namespace GateHelper.StockAdvisor
                 Margin = new Padding(0, 4, 0, 0),
                 Padding = new Padding(0)
             };
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 135f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 54f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 86f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 102f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 58f));
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             var lblH1 = new Label { Text = "검증항목", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255), Padding = new Padding(6, 0, 0, 0) };
@@ -437,16 +437,16 @@ namespace GateHelper.StockAdvisor
                 using (var pen = new Pen(Color.FromArgb(55, 70, 100)))
                 {
                     e.Graphics.DrawLine(pen, 0, tblHeader.Height - 1, tblHeader.Width, tblHeader.Height - 1);
-                    e.Graphics.DrawLine(pen, 95, 3, 95, tblHeader.Height - 4);
-                    e.Graphics.DrawLine(pen, 95 + 135, 3, 95 + 135, tblHeader.Height - 4);
-                    e.Graphics.DrawLine(pen, 95 + 135 + 90, 3, 95 + 135 + 90, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 86, 3, 86, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 86 + 102, 3, 86 + 102, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 86 + 102 + 82, 3, 86 + 102 + 82, tblHeader.Height - 4);
                 }
             };
 
             _lvQuantFilters = new ListView
             {
                 Dock = DockStyle.Top,
-                Height = 224,
+                Height = 176, // 8개 행에 딱 맞추어 하단 빈 격자선 100% 제거
                 View = View.Details,
                 FullRowSelect = true,
                 GridLines = true,
@@ -457,10 +457,10 @@ namespace GateHelper.StockAdvisor
                 Scrollable = false, // 스크롤바 완전 차단
                 HeaderStyle = ColumnHeaderStyle.None // ListView 자체 OS 헤더는 숨김!
             };
-            _lvQuantFilters.Columns.Add("", 95, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("", 135, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("", 90, HorizontalAlignment.Right);
-            _lvQuantFilters.Columns.Add("", 54, HorizontalAlignment.Center);
+            _lvQuantFilters.Columns.Add("", 86, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 102, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 82, HorizontalAlignment.Right);
+            _lvQuantFilters.Columns.Add("", 58, HorizontalAlignment.Center);
 
             // 더블 버퍼링
             typeof(ListView).InvokeMember("DoubleBuffered",

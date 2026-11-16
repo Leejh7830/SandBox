@@ -48,12 +48,12 @@ namespace GateHelper.StockAdvisor
             _onEvaluateStock = onEvaluateStock;
 
             this.Text = "가격 도달 알림 기록 내역 (Price Alert History)";
-            this.Size = new Size(950, 520);
+            this.Size = new Size(1000, 520);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Color.FromArgb(18, 22, 32);
             this.ForeColor = Color.White;
             this.Font = new Font("Malgun Gothic", 9f);
-            this.MinimumSize = new Size(820, 420);
+            this.MinimumSize = new Size(860, 420);
 
             InitializeCustomUi();
             LoadHistoryItems();
@@ -341,7 +341,7 @@ namespace GateHelper.StockAdvisor
         private void ConfigureColumnsForTab(int tabIndex)
         {
             _lvHistory.Columns.Clear();
-            _lvHistory.Columns.Add("시간", 75, HorizontalAlignment.Center);
+            _lvHistory.Columns.Add("일시", 115, HorizontalAlignment.Center);
             _lvHistory.Columns.Add("알림 구분", 125, HorizontalAlignment.Center);
             _lvHistory.Columns.Add("코드", 65, HorizontalAlignment.Center);
             _lvHistory.Columns.Add("종목명", 120);
@@ -507,12 +507,15 @@ namespace GateHelper.StockAdvisor
                 bool isRegistered = !string.IsNullOrEmpty(item.StockCode) && _existingCodes.Contains(item.StockCode.TrimStart('0'));
                 string regStr = isRegistered ? "등록됨" : "+ 담기";
 
+                // 전체 날짜+시간 포맷 (예: 11-16 11:24:27)
+                string timeDisplay = item.AlertTime.ToString("MM-dd HH:mm:ss");
+
                 ListViewItem lvi;
                 if (_currentTabFilter == 3) // 타점변동 탭: [관심 등록] 열 제외
                 {
                     lvi = new ListViewItem(new[]
                     {
-                        item.AlertTime.ToString("HH:mm:ss"),
+                        timeDisplay,
                         typeStr,
                         item.StockCode,
                         cleanName,
@@ -526,7 +529,7 @@ namespace GateHelper.StockAdvisor
                 {
                     lvi = new ListViewItem(new[]
                     {
-                        item.AlertTime.ToString("HH:mm:ss"),
+                        timeDisplay,
                         typeStr,
                         item.StockCode,
                         cleanName,

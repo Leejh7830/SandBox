@@ -33,6 +33,7 @@ namespace GateHelper.StockAdvisor
         private Button _btnAlertHistory; // 실시간 가격 도달 알림 기록 열기
         private static readonly List<StockAlertLogItem> _alertHistory = new List<StockAlertLogItem>();
         private Button _btnEarningsRadar; // 실적 발표 D-Day 레이더
+        private string _earningsRadarButtonText = "실적발표";
         private Button _btnMarketCloseReport; // 장마감 결산 & 포트폴리오 리뷰
 
         private Timer _autoSyncTimer;

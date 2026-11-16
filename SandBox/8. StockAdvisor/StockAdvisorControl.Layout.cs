@@ -27,7 +27,7 @@ namespace GateHelper.StockAdvisor
             var pnlLeft = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 395,
+                Width = 415,
                 BackColor = Color.Transparent
             };
 
@@ -40,7 +40,7 @@ namespace GateHelper.StockAdvisor
                 Location = new Point(0, 8)
             };
 
-            // 신호등 뱃지 (가로 1행 단정 레이아웃 - 텍스트 잘림 방지 118px)
+            // 신호등 뱃지 (가로 1행 단정 레이아웃 - 텍스트 잘림 방지 120px)
             _lblTrafficLight = new Label
             {
                 Text = "● 시장안전 (뉴스)",
@@ -48,19 +48,23 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(70, 220, 140),
                 BackColor = Color.FromArgb(28, 36, 50),
-                BorderStyle = BorderStyle.FixedSingle,
-                Size = new Size(118, 34),
+                BorderStyle = BorderStyle.None,
+                Size = new Size(120, 34),
                 Location = new Point(140, 2),
                 Cursor = Cursors.Hand
             };
             _lblTrafficLight.MouseEnter += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(42, 54, 74);
             _lblTrafficLight.MouseLeave += (s, e) => _lblTrafficLight.BackColor = Color.FromArgb(28, 36, 50);
+            _lblTrafficLight.Paint += (s, e) =>
+            {
+                ControlPaint.DrawBorder(e.Graphics, _lblTrafficLight.ClientRectangle, Color.FromArgb(70, 85, 110), ButtonBorderStyle.Solid);
+            };
             _lblTrafficLight.Click += (s, e) => ShowMarketIntelNewsDialog();
 
             var ttTraffic = new ToolTip();
             ttTraffic.SetToolTip(_lblTrafficLight, "클릭 시 엔비디아(NVDA)/삼성전자/SK하이닉스 실시간 뉴스 및 글로벌 지표 브리핑이 열립니다.");
 
-            // 시장 체온계 뱃지 (코스피 20일선 이격도 기반 실시간 과열/공포 측정기)
+            // 시장 체온계 뱃지 (코스피 20일선 이격도 기반 실시간 과열/공포 측정기 - 우측 테두리 잘림 100% 방지)
             _lblMarketThermometer = new Label
             {
                 Text = "체온 36.5℃ [정상]",
@@ -68,13 +72,19 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(70, 230, 150),
                 BackColor = Color.FromArgb(22, 40, 36),
-                BorderStyle = BorderStyle.FixedSingle,
-                Size = new Size(118, 34),
-                Location = new Point(264, 2),
+                BorderStyle = BorderStyle.None,
+                Size = new Size(122, 34),
+                Location = new Point(266, 2),
                 Cursor = Cursors.Hand
             };
             _lblMarketThermometer.MouseEnter += (s, e) => _lblMarketThermometer.BackColor = Color.FromArgb(32, 54, 48);
             _lblMarketThermometer.MouseLeave += (s, e) => _lblMarketThermometer.BackColor = _marketTemperature?.BadgeBackColor ?? Color.FromArgb(22, 40, 36);
+            _lblMarketThermometer.Paint += (s, e) =>
+            {
+                // 테두리 1px 잘림 방지: ControlPaint.DrawBorder로 4면 테두리 정밀 렌더링
+                Color borderColor = _marketTemperature != null ? _lblMarketThermometer.ForeColor : Color.FromArgb(70, 85, 110);
+                ControlPaint.DrawBorder(e.Graphics, _lblMarketThermometer.ClientRectangle, borderColor, ButtonBorderStyle.Solid);
+            };
             _lblMarketThermometer.Click += (s, e) => ShowMarketThermometerDialog();
 
             var ttThermo = new ToolTip();
@@ -164,12 +174,20 @@ namespace GateHelper.StockAdvisor
                 }
             };
 
-            _btnEarningsRadar = CreateNeonButton("실적발표", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
+            _btnEarningsRadar = CreateNeonButton("", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
             _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
-            _btnEarningsRadar.Size = new Size(82, 34);
-            _btnEarningsRadar.TextAlign = ContentAlignment.MiddleCenter;
+            _btnEarningsRadar.Size = new Size(92, 34);
             _btnEarningsRadar.Margin = new Padding(2, 1, 2, 1);
             _btnEarningsRadar.Click += (s, e) => ShowEarningsRadarDialog();
+
+            // 사용자 요청: 실적발표 버튼 텍스트 수평/수직 정중앙 정렬 (상단 치우침 100% 박멸)
+            _btnEarningsRadar.Paint += (s, e) =>
+            {
+                var g = e.Graphics;
+                g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
+                string displayText = string.IsNullOrEmpty(_earningsRadarButtonText) ? "실적발표" : _earningsRadarButtonText;
+                TextRenderer.DrawText(g, displayText, _btnEarningsRadar.Font, _btnEarningsRadar.ClientRectangle, _btnEarningsRadar.ForeColor, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            };
 
             _btnMarketCloseReport = CreateNeonButton("장마감 결산", Color.FromArgb(48, 34, 18), Color.FromArgb(255, 175, 45), Color.FromArgb(255, 235, 180));
             _btnMarketCloseReport.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);

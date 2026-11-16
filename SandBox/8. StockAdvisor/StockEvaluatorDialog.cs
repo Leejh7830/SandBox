@@ -312,12 +312,19 @@ namespace GateHelper.StockAdvisor
                 lvi.SubItems[3].ForeColor = itm.IsPassed ? Color.FromArgb(100, 255, 160) : Color.FromArgb(255, 95, 95);
                 _lvQuantFilters.Items.Add(lvi);
             }
-            _lvQuantFilters.SelectedItems.Clear();
-            if (_lvQuantFilters.FocusedItem != null) _lvQuantFilters.FocusedItem.Focused = false;
-
-            if (_lblQuantDescription != null)
+            if (_lvQuantFilters.Items.Count > 0)
             {
-                _lblQuantDescription.Text = $"💡 [정통 퀀트 8대 필터 안내]\n통과율: {quant.PassCount}/{quant.TotalCount} ({quant.PassPercent:F0}%)\n위 목록의 항목을 클릭하면 해당 퀀트 기준의 투자 원리와 안전마진 해설을 상세히 확인할 수 있습니다.";
+                _lvQuantFilters.Items[0].Selected = true;
+            }
+            else
+            {
+                _lvQuantFilters.SelectedItems.Clear();
+                if (_lvQuantFilters.FocusedItem != null) _lvQuantFilters.FocusedItem.Focused = false;
+
+                if (_lblQuantDescription != null)
+                {
+                    _lblQuantDescription.Text = $"💡 [정통 퀀트 8대 필터 안내]\n통과율: {quant.PassCount}/{quant.TotalCount} ({quant.PassPercent:F0}%)\n위 목록의 항목을 클릭하면 해당 퀀트 기준의 투자 방향성(↑/↓)과 안전마진 해설을 상세히 확인할 수 있습니다.";
+                }
             }
         }
 

@@ -416,10 +416,10 @@ namespace GateHelper.StockAdvisor
                 Margin = new Padding(0, 4, 0, 0),
                 Padding = new Padding(0)
             };
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 86f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 102f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 82f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 58f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 18f));
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             var lblH1 = new Label { Text = "검증항목", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255), Padding = new Padding(6, 0, 0, 0) };
@@ -437,9 +437,16 @@ namespace GateHelper.StockAdvisor
                 using (var pen = new Pen(Color.FromArgb(55, 70, 100)))
                 {
                     e.Graphics.DrawLine(pen, 0, tblHeader.Height - 1, tblHeader.Width, tblHeader.Height - 1);
-                    e.Graphics.DrawLine(pen, 86, 3, 86, tblHeader.Height - 4);
-                    e.Graphics.DrawLine(pen, 86 + 102, 3, 86 + 102, tblHeader.Height - 4);
-                    e.Graphics.DrawLine(pen, 86 + 102 + 82, 3, 86 + 102 + 82, tblHeader.Height - 4);
+                    int[] widths = tblHeader.GetColumnWidths();
+                    if (widths != null && widths.Length >= 4)
+                    {
+                        int x1 = widths[0];
+                        int x2 = x1 + widths[1];
+                        int x3 = x2 + widths[2];
+                        e.Graphics.DrawLine(pen, x1, 3, x1, tblHeader.Height - 4);
+                        e.Graphics.DrawLine(pen, x2, 3, x2, tblHeader.Height - 4);
+                        e.Graphics.DrawLine(pen, x3, 3, x3, tblHeader.Height - 4);
+                    }
                 }
             };
 
@@ -457,15 +464,39 @@ namespace GateHelper.StockAdvisor
                 Scrollable = false, // 스크롤바 완전 차단
                 HeaderStyle = ColumnHeaderStyle.None // ListView 자체 OS 헤더는 숨김!
             };
-            _lvQuantFilters.Columns.Add("", 86, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("", 102, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("", 82, HorizontalAlignment.Right);
-            _lvQuantFilters.Columns.Add("", 58, HorizontalAlignment.Center);
+            _lvQuantFilters.Columns.Add("", 105, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 100, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 85, HorizontalAlignment.Right);
+            _lvQuantFilters.Columns.Add("", 75, HorizontalAlignment.Center);
+
+            // 행 높이 쾌적하게 21px로 확장하는 더미 이미지리스트 (8행*22px = 176px 딱 맞춤!)
+            var dummyImgList = new ImageList { ImageSize = new Size(1, 20) };
+            _lvQuantFilters.SmallImageList = dummyImgList;
 
             // 더블 버퍼링
             typeof(ListView).InvokeMember("DoubleBuffered",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
                 null, _lvQuantFilters, new object[] { true });
+
+            // 4대 컬럼 폭을 Card 패널 폭 100%에 정확히 맞추는 동적 맞춤 (우측 잉여 빈 격자선 분할 현상 원천 차단!)
+            Action adjustColumns = () =>
+            {
+                if (_lvQuantFilters.Columns.Count < 4) return;
+                int totalW = _lvQuantFilters.ClientSize.Width;
+                if (totalW <= 0) return;
+
+                int w1 = (int)(totalW * 0.30f);
+                int w2 = (int)(totalW * 0.28f);
+                int w3 = (int)(totalW * 0.24f);
+                int w4 = totalW - w1 - w2 - w3; // 남은 모든 폭을 4열(검증결과)이 꽉 채움!
+
+                _lvQuantFilters.Columns[0].Width = w1;
+                _lvQuantFilters.Columns[1].Width = w2;
+                _lvQuantFilters.Columns[2].Width = w3;
+                _lvQuantFilters.Columns[3].Width = w4;
+            };
+            _lvQuantFilters.Resize += (s, e) => adjustColumns();
+            card.Resize += (s, e) => adjustColumns();
 
             // 하단 퀀트 상세 해설 및 투자 안전마진 원리 안내창
             var pnlDescWrap = new Panel

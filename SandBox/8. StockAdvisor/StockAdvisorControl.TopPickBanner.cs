@@ -25,6 +25,12 @@ namespace GateHelper.StockAdvisor
         private bool _blinkToggleState = false;
         private int _discoveredTopPickCount = 0;
 
+        // Zero-Resource: OnPaint 내 GC 압박 0화를 위한 정적 캐시 펜
+        private static readonly Pen PenTopPickBannerBorder = new Pen(Color.FromArgb(38, 48, 68), 1.2f);
+        private static readonly Pen PenTopPickEmptyBorder = new Pen(Color.FromArgb(50, 62, 85), 1f);
+        private static readonly Pen PenTopPickRank1Border = new Pen(Color.FromArgb(255, 215, 0), 1.2f);
+        private static readonly Pen PenTopPickRankOtherBorder = new Pen(Color.FromArgb(0, 216, 255), 1.2f);
+
         private void InitTopPickBanner()
         {
             _pnlTopPickBanner = new Panel
@@ -35,13 +41,10 @@ namespace GateHelper.StockAdvisor
                 Padding = new Padding(12, 5, 12, 5)
             };
 
-            // 커스텀 하단 테두리 페인팅
+            // 커스텀 하단 테두리 페인팅 (정적 캐시 Pen 재사용)
             _pnlTopPickBanner.Paint += (s, e) =>
             {
-                using (var pen = new Pen(Color.FromArgb(38, 48, 68), 1.2f))
-                {
-                    e.Graphics.DrawLine(pen, 0, _pnlTopPickBanner.Height - 1, _pnlTopPickBanner.Width, _pnlTopPickBanner.Height - 1);
-                }
+                e.Graphics.DrawLine(PenTopPickBannerBorder, 0, _pnlTopPickBanner.Height - 1, _pnlTopPickBanner.Width, _pnlTopPickBanner.Height - 1);
             };
 
             // 좌측 헤더 영역 (타이틀 + 부제목)
@@ -283,10 +286,7 @@ namespace GateHelper.StockAdvisor
 
                 pnlEmpty.Paint += (s, e) =>
                 {
-                    using (var pen = new Pen(Color.FromArgb(50, 62, 85), 1f))
-                    {
-                        e.Graphics.DrawRectangle(pen, 0, 0, pnlEmpty.Width - 1, pnlEmpty.Height - 1);
-                    }
+                    e.Graphics.DrawRectangle(PenTopPickEmptyBorder, 0, 0, pnlEmpty.Width - 1, pnlEmpty.Height - 1);
                 };
 
                 var lblEmptyTitle = new Label
@@ -346,14 +346,11 @@ namespace GateHelper.StockAdvisor
                 Cursor = Cursors.Hand
             };
 
-            // 카드 외곽 테두리 페인팅 (1위는 골드, 2~3위는 청록 네온)
-            Color borderColor = (rank == 1) ? Color.FromArgb(255, 215, 0) : Color.FromArgb(0, 216, 255);
+            // 카드 외곽 테두리 페인팅 (1위는 골드, 2~3위는 청록 네온 - 정적 캐시 Pen 재사용)
+            Pen cardPen = (rank == 1) ? PenTopPickRank1Border : PenTopPickRankOtherBorder;
             pnlCard.Paint += (s, e) =>
             {
-                using (var pen = new Pen(borderColor, 1.2f))
-                {
-                    e.Graphics.DrawRectangle(pen, 0, 0, pnlCard.Width - 1, pnlCard.Height - 1);
-                }
+                e.Graphics.DrawRectangle(cardPen, 0, 0, pnlCard.Width - 1, pnlCard.Height - 1);
             };
 
             // 호버 인터랙션

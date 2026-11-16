@@ -204,6 +204,7 @@
     </Compile>
     <Compile Include="SandBox\8. StockAdvisor\Security\DpapiHelper.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Models\StockModels.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Models\StockVerdictHelper.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\NaverStockPriceService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\GlobalMarketPollerService.cs" />
     <Compile Include="SandBox\8. StockAdvisor\Services\GeminiRiskAdvisorService.cs" />

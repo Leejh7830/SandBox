@@ -8,6 +8,9 @@ namespace GateHelper.StockAdvisor
 {
     public partial class StockEvaluatorDialog : Form
     {
+        // Zero-Resource: OnPaint 내 Pen 반복 생성 0화를 위한 정적 캐시
+        private static readonly Pen PenQuantTableHeader = new Pen(Color.FromArgb(55, 70, 100));
+
         #region UI Layout Construction
 
         private void InitializeCustomComponent()
@@ -434,19 +437,16 @@ namespace GateHelper.StockAdvisor
 
             tblHeader.Paint += (s, e) =>
             {
-                using (var pen = new Pen(Color.FromArgb(55, 70, 100)))
+                e.Graphics.DrawLine(PenQuantTableHeader, 0, tblHeader.Height - 1, tblHeader.Width, tblHeader.Height - 1);
+                int[] widths = tblHeader.GetColumnWidths();
+                if (widths != null && widths.Length >= 4)
                 {
-                    e.Graphics.DrawLine(pen, 0, tblHeader.Height - 1, tblHeader.Width, tblHeader.Height - 1);
-                    int[] widths = tblHeader.GetColumnWidths();
-                    if (widths != null && widths.Length >= 4)
-                    {
-                        int x1 = widths[0];
-                        int x2 = x1 + widths[1];
-                        int x3 = x2 + widths[2];
-                        e.Graphics.DrawLine(pen, x1, 3, x1, tblHeader.Height - 4);
-                        e.Graphics.DrawLine(pen, x2, 3, x2, tblHeader.Height - 4);
-                        e.Graphics.DrawLine(pen, x3, 3, x3, tblHeader.Height - 4);
-                    }
+                    int x1 = widths[0];
+                    int x2 = x1 + widths[1];
+                    int x3 = x2 + widths[2];
+                    e.Graphics.DrawLine(PenQuantTableHeader, x1, 3, x1, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(PenQuantTableHeader, x2, 3, x2, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(PenQuantTableHeader, x3, 3, x3, tblHeader.Height - 4);
                 }
             };
 

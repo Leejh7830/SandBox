@@ -430,18 +430,18 @@ namespace GateHelper.StockAdvisor.Services
                     Description = "클수록 안전하다. 상장폐지나 세력 작전을 원천 차단하는 중견·대기업 체급 필터"
                 });
 
-                // 2. ROE (자기자본이익률 10% 이상)
+                // 2. ROE (자기자본이익률 8% 이상 - 한국 시장 턴어라운드 및 사이클 적정화)
                 decimal roe = finDict.ContainsKey("ROE") ? finDict["ROE"] : 0m;
                 result.Roe = roe;
-                bool roePassed = (roe >= 10.0m);
+                bool roePassed = (roe >= 8.0m);
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "C",
                     Name = "ROE",
-                    Criteria = "10.0% 이상",
+                    Criteria = "8.0% 이상",
                     ActualValue = roe > 0 ? $"{roe:F2}%" : (finDict.ContainsKey("ROE") ? $"{roe:F2}%" : "-"),
                     IsPassed = roePassed,
-                    Description = "높을수록 알짜 우량 기업이다. 자본 대비 순이익 창출 능력 (연 10% 이상 우량)"
+                    Description = "높을수록 알짜 우량 기업이다. 자본 대비 순이익 창출 능력 (연 8% 이상 우량)"
                 });
 
                 // 3. 영업이익률 (5% 이상)
@@ -458,21 +458,21 @@ namespace GateHelper.StockAdvisor.Services
                     Description = "높을수록 마진이 좋다. 가격 결정력과 제품 경쟁력이 높은 비즈니스 (연 5% 이상)"
                 });
 
-                // 4. 부채비율 (150% 이하)
+                // 4. 부채비율 (200% 이하 - 제조업/설비투자 현실 반영 안전선)
                 decimal debt = finDict.ContainsKey("부채비율") ? finDict["부채비율"] : 0m;
                 result.DebtRatio = debt;
-                bool debtPassed = (debt > 0m && debt <= 150.0m);
+                bool debtPassed = (debt > 0m && debt <= 200.0m);
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "F",
                     Name = "부채비율",
-                    Criteria = "150.0% 이하",
+                    Criteria = "200.0% 이하",
                     ActualValue = debt > 0 ? $"{debt:F2}%" : (finDict.ContainsKey("부채비율") ? $"{debt:F2}%" : "-"),
                     IsPassed = debtPassed,
-                    Description = "낮을수록 빚이 적어 안전하다. 고금리/불황에도 부도 위험 없는 탄탄한 재무 구조"
+                    Description = "낮을수록 빚이 적어 안전하다. 고금리/불황에도 부도 위험 없는 탄탄한 재무 구조 (200% 이하)"
                 });
 
-                // 5. PER (20.0배 이하 적정 밸류 / 성장주 감안)
+                // 5. PER (25.0배 이하 적정 밸류 / 고마진 성장주는 35배 이하 허용)
                 decimal per = 0m;
                 if (integ.ContainsKey("PER"))
                 {
@@ -484,18 +484,20 @@ namespace GateHelper.StockAdvisor.Services
                     per = finDict["PER"];
                 }
                 result.Per = per;
-                bool perPassed = (per > 0m && per <= 20.0m);
+                bool isGrowthPer = (opMargin >= 12.0m || roe >= 12.0m);
+                bool perPassed = (per > 0m && (per <= 25.0m || (isGrowthPer && per <= 35.0m)));
+                string perCriteria = isGrowthPer ? "35.0배 이하 (성장)" : "25.0배 이하";
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "G",
                     Name = "PER",
-                    Criteria = "20.0배 이하 (성장)",
+                    Criteria = perCriteria,
                     ActualValue = per > 0 ? $"{per:F2}배" : "-",
                     IsPassed = perPassed,
-                    Description = "낮을수록 저평가되어 좋다. 번 돈 대비 주가가 싼 상태 (성장주는 마진 감안 20배 이하)"
+                    Description = "낮을수록 저평가되어 좋다. 번 돈 대비 주가가 싼 상태 (고마진 성장주는 35배 이하)"
                 });
 
-                // 6. PBR (2.5배 이하)
+                // 6. PBR (3.0배 이하 / 고ROE 알짜주는 4.0배 이하 허용)
                 decimal pbr = 0m;
                 if (integ.ContainsKey("PBR"))
                 {
@@ -507,15 +509,17 @@ namespace GateHelper.StockAdvisor.Services
                     pbr = finDict["PBR"];
                 }
                 result.Pbr = pbr;
-                bool pbrPassed = (pbr > 0m && pbr <= 2.5m);
+                bool isHighRoePbr = (roe >= 12.0m);
+                bool pbrPassed = (pbr > 0m && (pbr <= 3.0m || (isHighRoePbr && pbr <= 4.0m)));
+                string pbrCriteria = isHighRoePbr ? "4.0배 이하 (고ROE)" : "3.0배 이하";
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "H",
                     Name = "PBR",
-                    Criteria = "2.5배 이하",
+                    Criteria = pbrCriteria,
                     ActualValue = pbr > 0 ? $"{pbr:F2}배" : "-",
                     IsPassed = pbrPassed,
-                    Description = "낮을수록 자산가치 대비 싸다. 청산가치에 가까워 주가 하방이 단단하고 안전함"
+                    Description = "낮을수록 자산가치 대비 싸다. 청산가치에 가까워 하방 단단 (고ROE주는 4배 이하)"
                 });
 
                 // 7. 배당수익률 (2.0% ~ 20.0% 또는 고성장 ROE 재투자)

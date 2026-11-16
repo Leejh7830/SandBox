@@ -178,18 +178,31 @@ namespace GateHelper.StockAdvisor
                     lvi.SubItems[7].ForeColor = GradeHelper.GetGradeColor(item.Grade);
                     lvi.SubItems[7].Font = SubItemBoldFont;
 
+                    bool isDangerAction = verdict.BadgeText.Contains("급락") || verdict.BadgeText.Contains("매수금지") || verdict.BadgeText.Contains("비중축소");
+
                     // 8: 수급 (외인·기관) - 메이저 매수(연초록), 외인/기관(하늘색), 수급공방(노란색), 개미홀로(주황색), 메이저 매도(빨간색)
-                    lvi.SubItems[8].ForeColor = supplyInfo.Color;
-                    if (supplyInfo.IsBold) lvi.SubItems[8].Font = SubItemBoldFont;
+                    // 만약 최종 액션이 위험(급락/매수금지/비중축소)이면 수급이 양호해도 톤다운(뮤트)하여 뇌동매매 유인 차단!
+                    if (isDangerAction && (supplyInfo.Text.Contains("매수") || supplyInfo.Text.Contains("메이저")))
+                    {
+                        lvi.SubItems[8].ForeColor = Color.FromArgb(120, 150, 175);
+                    }
+                    else
+                    {
+                        lvi.SubItems[8].ForeColor = supplyInfo.Color;
+                    }
+                    if (supplyInfo.IsBold && !isDangerAction) lvi.SubItems[8].Font = SubItemBoldFont;
 
                     // 9: 지뢰검증 (간결 4단계: 우수/안전 -> 연초록, 주의 -> 주황, 위험 -> 빨강)
                     lvi.SubItems[9].ForeColor = landmineInfo.Color;
                     if (landmineInfo.IsBold) lvi.SubItems[9].Font = SubItemBoldFont;
 
-                    // 10: 14일 RSI
+                    // 10: 14일 RSI (위험 상태일 경우 과매도 반등 톤다운)
                     if (item.Rsi >= 70m) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 80, 80);
-                    else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[10].ForeColor = Color.FromArgb(80, 180, 255);
-                    else lvi.SubItems[10].ForeColor = Color.FromArgb(120, 230, 150);
+                    else if (item.Rsi <= 30m && item.Rsi > 0)
+                    {
+                        lvi.SubItems[10].ForeColor = isDangerAction ? Color.FromArgb(120, 160, 190) : Color.FromArgb(80, 180, 255);
+                    }
+                    else lvi.SubItems[10].ForeColor = isDangerAction ? Color.FromArgb(140, 160, 170) : Color.FromArgb(120, 230, 150);
 
                     // 11: 5일 거래량
                     if (item.VolumeRatio >= 140m) lvi.SubItems[11].ForeColor = Color.FromArgb(0, 230, 200);
@@ -200,12 +213,12 @@ namespace GateHelper.StockAdvisor
                     else if (item.FinalScore <= 3) lvi.SubItems[12].ForeColor = Color.FromArgb(255, 110, 110);
                     else lvi.SubItems[12].ForeColor = Color.FromArgb(235, 240, 255);
 
-                    // 13: 타이밍 안전벨트
+                    // 13: 타이밍 안전벨트 (위험 상태일 때는 골든/과매도 배지가 밝은 초록색으로 튀지 않게 뮤트 처리)
                     string tb = item.TimingBadge ?? string.Empty;
                     if (tb.Contains("과열")) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 75, 95);
-                    else if (tb.Contains("골든")) lvi.SubItems[13].ForeColor = Color.FromArgb(0, 230, 118);
-                    else if (tb.Contains("눌림목")) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 210, 60);
-                    else if (tb.Contains("과매도")) lvi.SubItems[13].ForeColor = Color.FromArgb(0, 230, 118);
+                    else if (tb.Contains("골든")) lvi.SubItems[13].ForeColor = isDangerAction ? Color.FromArgb(130, 165, 175) : Color.FromArgb(0, 230, 118);
+                    else if (tb.Contains("눌림목")) lvi.SubItems[13].ForeColor = isDangerAction ? Color.FromArgb(160, 155, 130) : Color.FromArgb(255, 210, 60);
+                    else if (tb.Contains("과매도")) lvi.SubItems[13].ForeColor = isDangerAction ? Color.FromArgb(130, 165, 175) : Color.FromArgb(0, 230, 118);
                     else if (tb.Contains("보유불필요")) lvi.SubItems[13].ForeColor = Color.FromArgb(255, 90, 90);
                     else lvi.SubItems[13].ForeColor = Color.FromArgb(190, 200, 215);
 
@@ -308,17 +321,57 @@ namespace GateHelper.StockAdvisor
         {
             if (item == null)
             {
-                _lblDetailTitle.Text = "선택된 종목이 없습니다";
+                _lblDetailTitle.Text = "📊 포트폴리오 리스크 & 시장 요약 브리핑";
+
+                // 매수추천 종목 및 리스크 통계 탐색
+                StockHoldingItem topPick = null;
+                int dangerCount = 0;
+                int buyCount = 0;
+                int holdCount = 0;
+                int watchCount = 0;
+
+                if (_portfolio?.Items != null)
+                {
+                    foreach (var p in _portfolio.Items)
+                    {
+                        if (p.Quantity > 0) holdCount++;
+                        else watchCount++;
+
+                        var v = StockVerdictHelper.Evaluate(p);
+                        if (v.BadgeText.Contains("매수추천"))
+                        {
+                            buyCount++;
+                            if (topPick == null) topPick = p;
+                        }
+                        else if (v.BadgeText.Contains("급락") || v.BadgeText.Contains("비중축소") || v.BadgeText.Contains("매수금지") || p.ChangeRate <= -3.0m)
+                        {
+                            dangerCount++;
+                        }
+                    }
+                }
+
                 if (_lblFinalVerdict != null)
                 {
-                    _lblFinalVerdict.Text = "[ AI 참모 최종 결론 : 좌측 목록에서 종목을 선택하세요 ]\n종목을 선택하시면 단일화된 최종 행동 결론이 표시됩니다.";
-                    _lblFinalVerdict.BackColor = Color.FromArgb(24, 28, 38);
-                    _lblFinalVerdict.ForeColor = Color.FromArgb(170, 185, 205);
+                    if (topPick != null)
+                    {
+                        _lblFinalVerdict.Text = $"【 오늘의 알짜 탑픽 추천 】 : {topPick.StockName} ({topPick.CurrentPrice:N0}원)\n20일 눌림목 및 퀀트 통과 우량주 - 분할 진입 가이드 확인 권고";
+                        _lblFinalVerdict.BackColor = Color.FromArgb(18, 48, 32);
+                        _lblFinalVerdict.ForeColor = Color.FromArgb(100, 255, 180);
+                    }
+                    else
+                    {
+                        string thermoLabel = _marketTemperature?.BadgeText ?? "체온 31.0°C [공포]";
+                        _lblFinalVerdict.Text = $"【 시장 리스크 관리 모드 】 : {thermoLabel}\n폭락장 뇌동매매 엄금 - 현금 비중 유지 및 손절 방어선 준수";
+                        _lblFinalVerdict.BackColor = Color.FromArgb(44, 32, 20);
+                        _lblFinalVerdict.ForeColor = Color.FromArgb(255, 215, 100);
+                    }
                 }
-                _lblDetailPriceTargets.Text = "• 매수가: - 원\n• 목표가: - 원   |   손절가: - 원";
-                _lblDetailSummary.Text = "• AI 등급: -   |   종합 점수: -점\n• 수급: -   |   지뢰: -";
+
+                string thermoStr = _marketTemperature?.BadgeText ?? "체온 31.0°C [공포]";
+                _lblDetailPriceTargets.Text = $"• 계좌 현황: 보유 {holdCount}종목 | 관심 {watchCount}종목\n• 시장 진단: {thermoStr} (보수적 대응 권고)";
+                _lblDetailSummary.Text = $"• 매수 추천: {buyCount}종목  |  급락·위험 종목: {dangerCount}종목 감지\n• 항목 클릭 시 1초 만에 14대 지표 상세 리포트가 열람됩니다.";
                 _miniChart?.SetData(null);
-                RenderEmptyReport();
+                RenderEmptyReport(topPick, holdCount, watchCount, dangerCount, buyCount);
                 return;
             }
 
@@ -383,11 +436,34 @@ namespace GateHelper.StockAdvisor
             }
         }
 
-        private void RenderEmptyReport()
+        private void RenderEmptyReport(StockHoldingItem topPick, int holdCount, int watchCount, int dangerCount, int buyCount)
         {
             if (_rtbDetailReason == null) return;
+            _rtbDetailReason.SuspendLayout();
             _rtbDetailReason.Clear();
-            AppendText("좌측 종목 목록에서 항목을 선택하시면 AI 참모 심층 진단 리포트가 열람됩니다.", RtbBodyFont, Color.FromArgb(170, 185, 205));
+
+            AppendText("【 AI 주식 리스크 참모 - 통합 종합 브리핑 】\n\n", RtbSectionFont, Color.FromArgb(0, 230, 255));
+
+            AppendText("1. 시장 환경 및 대응 원칙\n", RtbSectionFont, Color.FromArgb(255, 215, 64));
+            string tempLabel = _marketTemperature?.BadgeText ?? "체온 31.0°C [공포]";
+            AppendText($"• 현재 시장 상태: {tempLabel}\n", RtbBodyFont, Color.FromArgb(220, 230, 245));
+            AppendText("• 하락/공포장에서는 지표 1~2개만 보고 섣불리 물타기하면 위험합니다. 20일선 지지선과 퀀트 8대 필터를 엄격히 통과한 종목에만 분할 진입하십시오.\n\n", RtbBodyFont, Color.FromArgb(180, 195, 215));
+
+            AppendText("2. 내 계좌 및 관심종목 상태\n", RtbSectionFont, Color.FromArgb(255, 215, 64));
+            AppendText($"• 총 보유 {holdCount}종목 중 손절선 위협 및 급락주의 종목이 {dangerCount}건 감지되었습니다.\n", RtbBodyFont, dangerCount > 0 ? Color.FromArgb(255, 120, 120) : Color.FromArgb(100, 240, 160));
+            AppendText($"• 엄격한 안전벨트 기준을 통과한 매수추천 종목은 총 {buyCount}건입니다.\n\n", RtbBodyFont, buyCount > 0 ? Color.FromArgb(100, 255, 180) : Color.FromArgb(180, 195, 215));
+
+            if (topPick != null)
+            {
+                AppendText("3. 오늘의 핵심 관심 종목 (Top Pick)\n", RtbSectionFont, Color.FromArgb(0, 230, 255));
+                AppendText($"• 종목명: {topPick.StockName} ({topPick.CurrentPrice:N0}원, {topPick.ChangeRate:+#0.00;-#0.00;0.00}%)\n", RtbBodyFont, Color.FromArgb(255, 230, 100));
+                AppendText($"• AI 판정: {topPick.TimingBadge} | 종합점수 {topPick.FinalScore}점\n\n", RtbBodyFont, Color.FromArgb(180, 220, 245));
+            }
+
+            AppendText("💡 [조작 안내]\n", RtbSectionFont, Color.FromArgb(140, 200, 255));
+            AppendText("좌측 종목 목록에서 원하는 종목을 클릭하시면, 해당 종목의 일봉 차트, 목표가/손절가 타점, 외인·기관 수급, DART 지뢰 공시 심층 분석 리포트가 즉시 표시됩니다.\n더블클릭 시 8대 정통 퀀트 전수 검증창이 열립니다.", RtbBodyFont, Color.FromArgb(160, 180, 205));
+
+            _rtbDetailReason.ResumeLayout();
         }
 
         private void RenderRichPreDiagnosisReport(StockHoldingItem item)

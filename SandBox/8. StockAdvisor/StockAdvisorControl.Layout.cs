@@ -40,7 +40,7 @@ namespace GateHelper.StockAdvisor
                 Location = new Point(0, 8)
             };
 
-            // 신호등 뱃지 (가로 1행 단정 레이아웃)
+            // 신호등 뱃지 (가로 1행 단정 레이아웃 - 텍스트 잘림 방지 118px)
             _lblTrafficLight = new Label
             {
                 Text = "● 시장안전 (뉴스)",
@@ -49,7 +49,7 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.FromArgb(70, 220, 140),
                 BackColor = Color.FromArgb(28, 36, 50),
                 BorderStyle = BorderStyle.FixedSingle,
-                Size = new Size(108, 34),
+                Size = new Size(118, 34),
                 Location = new Point(140, 2),
                 Cursor = Cursors.Hand
             };
@@ -70,7 +70,7 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(22, 40, 36),
                 BorderStyle = BorderStyle.FixedSingle,
                 Size = new Size(118, 34),
-                Location = new Point(252, 2),
+                Location = new Point(264, 2),
                 Cursor = Cursors.Hand
             };
             _lblMarketThermometer.MouseEnter += (s, e) => _lblMarketThermometer.BackColor = Color.FromArgb(32, 54, 48);
@@ -257,16 +257,16 @@ namespace GateHelper.StockAdvisor
             _pnlFooter.Controls.Add(_lblLastUpdated);
             _pnlFooter.Controls.Add(_lblAccountSummary);
 
-            // 3. 중앙 분할 컨테이너 (좌측 리스트뷰 최적폭 880px, 우측 상세 카드 380px 쾌적 확보)
+            // 3. 중앙 분할 컨테이너 (좌측 리스트뷰 15대 컬럼 쾌적 확보 960px, 우측 상세 카드 쾌적 확보)
             _splitMain = new SplitContainer
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 880,
+                SplitterDistance = 960,
                 BackColor = Color.FromArgb(30, 34, 46)
             };
 
-            // 좌측: 종목 리스트뷰 (15대 컬럼 구성: 종목명에 증권앱 주문 체크박스 탑재, 불필요한 코드 컬럼 삭제)
+            // 좌측: 종목 리스트뷰 (15대 컬럼 구성: 텍스트 잘림 0% 최적 폭 다이어트)
             _lvStocks = new ListView
             {
                 Dock = DockStyle.Fill,
@@ -280,21 +280,21 @@ namespace GateHelper.StockAdvisor
                 BorderStyle = BorderStyle.None,
                 ShowItemToolTips = true
             };
-            _lvStocks.Columns.Add("종목명 (앱주문체크)", 140);
-            _lvStocks.Columns.Add("현재가", 75, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("전일대비", 68, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("평단", 75, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("보유", 50, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("손익금(원)", 85, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("수익률", 68, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("AI 등급", 55, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("수급(외인·기관)", 108, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("지뢰검증", 88, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("14일 RSI", 62, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("5일 거래량", 80, HorizontalAlignment.Right);
-            _lvStocks.Columns.Add("종합점수", 75, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("타이밍 안전벨트", 115, HorizontalAlignment.Center);
-            _lvStocks.Columns.Add("최종 액션", 95, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("종목명 (앱주문체크)", 135);
+            _lvStocks.Columns.Add("현재가", 72, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("전일대비", 62, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("평단", 72, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("보유", 45, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("손익금(원)", 80, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("수익률", 65, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("AI 등급", 50, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("수급(외인·기관)", 100, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("지뢰검증", 75, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("14일 RSI", 60, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("5일 거래량", 72, HorizontalAlignment.Right);
+            _lvStocks.Columns.Add("종합점수", 65, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("타이밍 안전벨트", 125, HorizontalAlignment.Center);
+            _lvStocks.Columns.Add("최종 액션", 90, HorizontalAlignment.Center);
 
             // 표시 순서 최적화:
             // 1. 가장 중요한 [최종 액션](데이터 인덱스 14)을 [AI 등급](표시 7) 바로 뒤인 [표시 위치 8]로 전진 배치! (0.1초 직관성 확보)
@@ -672,7 +672,7 @@ namespace GateHelper.StockAdvisor
                 }
 
                 int remain = _lvStocks.ClientSize.Width - otherColsWidth - 4;
-                displayLastCol.Width = Math.Max(100, remain);
+                displayLastCol.Width = Math.Max(120, remain);
             }
             catch { }
         }

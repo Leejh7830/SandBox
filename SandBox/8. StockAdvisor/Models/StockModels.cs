@@ -810,37 +810,100 @@ namespace GateHelper.StockAdvisor.Models
                     info.Type = ActionVerdictType.OversoldBounce;
                     if (isHeld)
                     {
-                        info.BadgeText = "매수추천";
-                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 추매 추천 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 추매 가능";
-                        info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
+                        // [보유 종목 과매도 추매 인터락]
+                        // RSI 과매도 구간이라도 당일 주가가 음봉 하락 중(ChangeRate < -0.5%)이면 바닥 확인 전이므로
+                        // 떨어지는 칼날 물타기를 방지하고 [관망]으로 유지
+                        bool isHoldingSupportConfirmed = item.ChangeRate >= -0.5m && item.CurrentPrice > stopPrice;
+
+                        if (!isHoldingSupportConfirmed)
+                        {
+                            info.Type = ActionVerdictType.HoldOrWatch;
+                            info.BadgeText = "관망";
+                            info.TitleText = "[ AI 참모 최종 결론 : 과매도 구간이나 당일 하락 중 / 지지선 안착 대기 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도이나 당일 {item.ChangeRate:+0.00;-0.00}% 약세 지속 중. 성급한 물타기를 자제하고 하락 멈춤(양봉/보합 지지) 확인 후 추매 권고";
+                            info.BuyPriceText = $"• 매수가: [지지 확인 대기] (1차 지지선: {buy1Str})";
+                            info.BackColor = Color.FromArgb(36, 32, 20);
+                            info.ForeColor = Color.FromArgb(255, 220, 90);
+                            info.BorderColor = Color.FromArgb(170, 140, 40);
+                            info.ListBadgeColor = Color.FromArgb(240, 200, 80);
+                            info.CanBuy = false;
+                        }
+                        else
+                        {
+                            info.BadgeText = "매수추천";
+                            info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 구간 지지 & 추매 추천 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 추매 가능";
+                            info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
+                            info.BackColor = Color.FromArgb(16, 44, 28);
+                            info.ForeColor = Color.FromArgb(90, 255, 170);
+                            info.BorderColor = Color.FromArgb(40, 170, 90);
+                            info.ListBadgeColor = Color.FromArgb(0, 230, 118);
+                            info.CanBuy = true;
+                        }
                     }
                     else
                     {
-                        info.BadgeText = "매수추천";
-                        info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 바닥 구간 분할 매수 추천 ]";
-                        info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 진입 권장";
-                        info.BuyPriceText = $"• 매수가: {buy1Str}";
+                        // 미보유 관심 종목의 과매도 진입
+                        // 당일 급락 중이거나 지지선 안착 전이면 관망 유도
+                        bool isEntrySupportConfirmed = item.ChangeRate >= -1.0m;
+                        if (!isEntrySupportConfirmed)
+                        {
+                            info.Type = ActionVerdictType.HoldOrWatch;
+                            info.BadgeText = "관망";
+                            info.TitleText = "[ AI 참모 최종 결론 : 과매도 침체권이나 추가 하락 대기 / 지지선 관망 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 침체권이나 당일 하락세 지속 중. 하방 지지선 안착 확인 전까지 신규 진입 보류";
+                            info.BuyPriceText = $"• 매수가: [바닥 확인 대기] (희망 진입가: {buy1Str})";
+                            info.BackColor = Color.FromArgb(36, 32, 20);
+                            info.ForeColor = Color.FromArgb(255, 220, 90);
+                            info.BorderColor = Color.FromArgb(170, 140, 40);
+                            info.ListBadgeColor = Color.FromArgb(240, 200, 80);
+                            info.CanBuy = false;
+                        }
+                        else
+                        {
+                            info.BadgeText = "매수추천";
+                            info.TitleText = "[ AI 참모 최종 결론 : RSI 과매도 바닥 구간 분할 매수 추천 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 RSI({item.Rsi:F1}) 과매도 침체권. 20일 지지선 안착 확인 후 역발상 진입 권장";
+                            info.BuyPriceText = $"• 매수가: {buy1Str}";
+                            info.BackColor = Color.FromArgb(16, 44, 28);
+                            info.ForeColor = Color.FromArgb(90, 255, 170);
+                            info.BorderColor = Color.FromArgb(40, 170, 90);
+                            info.ListBadgeColor = Color.FromArgb(0, 230, 118);
+                            info.CanBuy = true;
+                        }
                     }
-                    // 과매도반등도 매수 승인 신호이므로 통일된 안전 초록색 테마 적용
-                    info.BackColor = Color.FromArgb(16, 44, 28);
-                    info.ForeColor = Color.FromArgb(90, 255, 170);
-                    info.BorderColor = Color.FromArgb(40, 170, 90);
-                    info.ListBadgeColor = Color.FromArgb(0, 230, 118);
-                    info.CanBuy = true;
                 }
                 else
                 {
                     info.Type = ActionVerdictType.BuyEntry;
                     if (isHeld)
                     {
-                        // [RSI 58 이상 과열 진입 구간 인터락] 주가가 올라선 상태이므로 추가 매수는 금지하고 기존 물량만 안전 홀딩
+                        // [보유 종목 추가 매수(불타기/추매) 철벽 인터락]
+                        // 1. RSI 58 이상 과열 진입 구간: 추가 매수 금지, 기존 물량만 수익 극대화 홀딩
+                        // 2. 타이밍 안전벨트가 '눌림목 대기'이거나 현재가가 권고 매수가보다 2% 이상 높을 때:
+                        //    이미 수익 중이거나 주가가 위로 튀어있는 상태에서 평단을 높이는 불타기를 막고 [관망]으로 유지
+                        bool isHeldWaitingPullback = (item.RecommendedBuyPrice > 0 && item.CurrentPrice > item.RecommendedBuyPrice * 1.02m) ||
+                                                     (item.TimingBadge != null && (item.TimingBadge.Contains("눌림목 대기") || item.TimingBadge.Contains("과열")));
+
                         if (item.Rsi >= 58.0m)
                         {
                             info.BadgeText = "상승추세";
                             info.TitleText = "[ AI 참모 최종 결론 : 우량 상승추세 지속 / 수익 극대화 홀딩 ]";
                             info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 상승 추세 유지. 기존 물량은 수익 극대화 홀딩하되, RSI({item.Rsi:F1}) 상승권으로 추가 매수는 자제 권고";
                             info.BuyPriceText = $"• 매수가: [추매 보류] (상승 추세 홀딩 중 / 추가 매수는 20일선 눌림목까지 대기)";
+                        }
+                        else if (isHeldWaitingPullback)
+                        {
+                            info.Type = ActionVerdictType.HoldOrWatch;
+                            info.BadgeText = "관망";
+                            info.TitleText = "[ AI 참모 최종 결론 : 우량 보유 중이나 타점 이격 / 불타기 금지 및 관망 ]";
+                            info.GuideText = $"종합 우량(점수 {item.FinalScore}점)이나 현재 주가가 눌림목 권고선보다 높아 추가 매수(불타기) 시 평단 상승 위험. 기존 물량 홀딩 및 지지선 관망 권고";
+                            info.BuyPriceText = $"• 매수가: [추매 대기] (눌림목 대기선: {buy1Str})";
+                            info.BackColor = Color.FromArgb(36, 32, 20);
+                            info.ForeColor = Color.FromArgb(255, 220, 90);
+                            info.BorderColor = Color.FromArgb(170, 140, 40);
+                            info.ListBadgeColor = Color.FromArgb(240, 200, 80);
+                            info.CanBuy = false;
                         }
                         else
                         {

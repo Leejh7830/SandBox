@@ -18,6 +18,7 @@ namespace GateHelper.StockAdvisor
     {
         private PortfolioData _portfolio = new PortfolioData();
         private static readonly string SaveFilePath = Path.Combine(Util.MetaFolder, "stock_portfolio.dat");
+        private static readonly string AlertHistoryFilePath = Path.Combine(Util.MetaFolder, "stock_alert_history.json");
 
         // UI 컨트롤 요소
         private Panel _pnlHeader;
@@ -117,7 +118,9 @@ namespace GateHelper.StockAdvisor
             InitializeComponent();
             BuildUiLayout();
             LoadPortfolio();
+            LoadAlertHistory();
             UpdateUi();
+            UpdateAlertHistoryButtonText();
 
             SetupKbSyncTimer();
             SetupAutoSyncTimers();
@@ -510,6 +513,7 @@ namespace GateHelper.StockAdvisor
                     if (parent != null) dlg.ShowDialog(parent);
                     else dlg.ShowDialog(this);
                 }
+                SaveAlertHistory();
                 UpdateAlertHistoryButtonText();
             }
             catch (Exception ex)
@@ -518,13 +522,77 @@ namespace GateHelper.StockAdvisor
             }
         }
 
+        private void LoadAlertHistory()
+        {
+            try
+            {
+                if (File.Exists(AlertHistoryFilePath))
+                {
+                    string json = File.ReadAllText(AlertHistoryFilePath);
+                    if (!string.IsNullOrWhiteSpace(json))
+                    {
+                        var list = JsonConvert.DeserializeObject<List<StockAlertLogItem>>(json);
+                        if (list != null && list.Count > 0)
+                        {
+                            lock (_alertHistory)
+                            {
+                                _alertHistory.Clear();
+                                // 최근 300개만 보존 (Zero-Resource: 디스크/메모리 부하 원천 차단)
+                                _alertHistory.AddRange(list.Take(300));
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.LoadAlertHistory");
+            }
+        }
+
+        private void SaveAlertHistory()
+        {
+            try
+            {
+                List<StockAlertLogItem> snapshot;
+                lock (_alertHistory)
+                {
+                    // 최대 300건 롤링 유지 (용량 50KB 미만 경량화)
+                    if (_alertHistory.Count > 300)
+                    {
+                        _alertHistory.RemoveRange(300, _alertHistory.Count - 300);
+                    }
+                    snapshot = _alertHistory.ToList();
+                }
+
+                string dir = Path.GetDirectoryName(AlertHistoryFilePath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                {
+                    Directory.CreateDirectory(dir);
+                }
+
+                string json = JsonConvert.SerializeObject(snapshot, Formatting.Indented);
+                File.WriteAllText(AlertHistoryFilePath, json);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.SaveAlertHistory");
+            }
+        }
+
         private void OnAlertLogged(StockAlertLogItem item)
         {
             if (item == null) return;
             lock (_alertHistory)
             {
-                _alertHistory.Add(item);
+                // 최신 알림이 맨 앞에 오도록 맨 앞에 삽입
+                _alertHistory.Insert(0, item);
+                if (_alertHistory.Count > 300)
+                {
+                    _alertHistory.RemoveAt(_alertHistory.Count - 1);
+                }
             }
+            SaveAlertHistory();
             if (this.IsHandleCreated && !this.IsDisposed)
             {
                 this.BeginInvoke(new Action(UpdateAlertHistoryButtonText));

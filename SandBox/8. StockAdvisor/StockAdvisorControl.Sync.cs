@@ -606,7 +606,7 @@ namespace GateHelper.StockAdvisor
             if (urgentCount > 0)
             {
                 string badge = minDays == 0 ? "오늘!" : $"D-{minDays}";
-                _btnEarningsRadar.Text = $"실적 ({badge})";
+                _btnEarningsRadar.Text = $"실적 {badge}";
                 if (minDays == 0)
                 {
                     _btnEarningsRadar.BackColor = Color.FromArgb(58, 20, 28);
@@ -628,7 +628,7 @@ namespace GateHelper.StockAdvisor
             }
             else
             {
-                _btnEarningsRadar.Text = "실적 D-Day";
+                _btnEarningsRadar.Text = "실적발표";
                 _btnEarningsRadar.BackColor = Color.FromArgb(42, 24, 46);
                 _btnEarningsRadar.FlatAppearance.BorderColor = Color.FromArgb(210, 110, 255);
                 _btnEarningsRadar.ForeColor = Color.FromArgb(245, 225, 255);

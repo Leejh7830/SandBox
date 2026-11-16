@@ -27,7 +27,7 @@ namespace GateHelper.StockAdvisor
             var pnlLeft = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 374,
+                Width = 395,
                 BackColor = Color.Transparent
             };
 
@@ -164,9 +164,10 @@ namespace GateHelper.StockAdvisor
                 }
             };
 
-            _btnEarningsRadar = CreateNeonButton("실적 D-Day", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
-            _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
-            _btnEarningsRadar.Size = new Size(80, 34);
+            _btnEarningsRadar = CreateNeonButton("실적발표", Color.FromArgb(42, 24, 46), Color.FromArgb(210, 110, 255), Color.FromArgb(245, 225, 255));
+            _btnEarningsRadar.Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold);
+            _btnEarningsRadar.Size = new Size(82, 34);
+            _btnEarningsRadar.TextAlign = ContentAlignment.MiddleCenter;
             _btnEarningsRadar.Margin = new Padding(2, 1, 2, 1);
             _btnEarningsRadar.Click += (s, e) => ShowEarningsRadarDialog();
 

@@ -45,6 +45,7 @@ namespace GateHelper.StockAdvisor
         private Panel _pnlCard3;
         private Label _lblQuantHeader;
         private ListView _lvQuantFilters;
+        private Label _lblQuantDescription;
 
         // 하단 버튼
         private Button _btnAddToPortfolio;
@@ -277,7 +278,7 @@ namespace GateHelper.StockAdvisor
             _lblSupplyBadge.Text = $"수급 주체: {supInfo.Text}";
             _lblSupplyBadge.ForeColor = supInfo.Color;
 
-            _lblSupplyDetails.Text = $"• {intel.SupplyDetail}\n• 최근 순매수 : 외인 {intel.ForeignNetQuantity:+0;-0;0} | 기관 {intel.OrganNetQuantity:+0;-0;0}";
+            _lblSupplyDetails.Text = $"• {intel.SupplyDetail}\n• 최근 순매수 : 외인 {intel.ForeignNetQuantity:+#,##0;-#,##0;0}주 | 기관 {intel.OrganNetQuantity:+#,##0;-#,##0;0}주";
 
             _lblLandmineBadge.Text = $"지뢰 검증: {intel.LandmineBadge}";
             _lblLandmineBadge.ForeColor = intel.HasCriticalLandmine ? Color.FromArgb(255, 95, 95) : Color.FromArgb(100, 240, 140);
@@ -303,6 +304,7 @@ namespace GateHelper.StockAdvisor
                     itm.ActualValue,            // 3열: 현재값
                     passMark                    // 4열: 검증결과
                 });
+                lvi.Tag = itm;
                 lvi.UseItemStyleForSubItems = false;
                 lvi.SubItems[0].ForeColor = Color.FromArgb(220, 235, 255);
                 lvi.SubItems[1].ForeColor = Color.FromArgb(170, 195, 225);
@@ -312,6 +314,11 @@ namespace GateHelper.StockAdvisor
             }
             _lvQuantFilters.SelectedItems.Clear();
             if (_lvQuantFilters.FocusedItem != null) _lvQuantFilters.FocusedItem.Focused = false;
+
+            if (_lblQuantDescription != null)
+            {
+                _lblQuantDescription.Text = $"💡 [정통 퀀트 8대 필터 안내]\n통과율: {quant.PassCount}/{quant.TotalCount} ({quant.PassPercent:F0}%)\n위 목록의 항목을 클릭하면 해당 퀀트 기준의 투자 원리와 안전마진 해설을 상세히 확인할 수 있습니다.";
+            }
         }
 
         private void AddCurrentStockToPortfolio()

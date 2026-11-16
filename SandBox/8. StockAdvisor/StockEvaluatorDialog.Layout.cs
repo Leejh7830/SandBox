@@ -13,8 +13,8 @@ namespace GateHelper.StockAdvisor
         private void InitializeCustomComponent()
         {
             this.Text = "종목 AI 즉시 진단 & 정통 퀀트 8대 우량주 스캐너";
-            this.Size = new Size(1120, 740);
-            this.MinimumSize = new Size(1000, 660);
+            this.Size = new Size(1160, 750);
+            this.MinimumSize = new Size(1060, 680);
             this.StartPosition = FormStartPosition.CenterParent;
             this.BackColor = Color.FromArgb(18, 22, 32);
             this.ForeColor = Color.White;
@@ -416,10 +416,10 @@ namespace GateHelper.StockAdvisor
                 Margin = new Padding(0, 4, 0, 0),
                 Padding = new Padding(0)
             };
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 94f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 104f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 72f));
-            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 70f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 135f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90f));
+            tblHeader.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 54f));
             tblHeader.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             var lblH1 = new Label { Text = "검증항목", Dock = DockStyle.Fill, TextAlign = ContentAlignment.MiddleLeft, Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold), ForeColor = Color.FromArgb(0, 230, 255), Padding = new Padding(6, 0, 0, 0) };
@@ -437,15 +437,16 @@ namespace GateHelper.StockAdvisor
                 using (var pen = new Pen(Color.FromArgb(55, 70, 100)))
                 {
                     e.Graphics.DrawLine(pen, 0, tblHeader.Height - 1, tblHeader.Width, tblHeader.Height - 1);
-                    e.Graphics.DrawLine(pen, 94, 3, 94, tblHeader.Height - 4);
-                    e.Graphics.DrawLine(pen, 94 + 104, 3, 94 + 104, tblHeader.Height - 4);
-                    e.Graphics.DrawLine(pen, 94 + 104 + 72, 3, 94 + 104 + 72, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 95, 3, 95, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 95 + 135, 3, 95 + 135, tblHeader.Height - 4);
+                    e.Graphics.DrawLine(pen, 95 + 135 + 90, 3, 95 + 135 + 90, tblHeader.Height - 4);
                 }
             };
 
             _lvQuantFilters = new ListView
             {
-                Dock = DockStyle.Fill,
+                Dock = DockStyle.Top,
+                Height = 224,
                 View = View.Details,
                 FullRowSelect = true,
                 GridLines = true,
@@ -453,18 +454,58 @@ namespace GateHelper.StockAdvisor
                 ForeColor = Color.White,
                 Font = new Font("Malgun Gothic", 8.8f),
                 BorderStyle = BorderStyle.None,
+                Scrollable = false, // 스크롤바 완전 차단
                 HeaderStyle = ColumnHeaderStyle.None // ListView 자체 OS 헤더는 숨김!
             };
-            _lvQuantFilters.Columns.Add("", 94, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("", 104, HorizontalAlignment.Left);
-            _lvQuantFilters.Columns.Add("", 72, HorizontalAlignment.Right);
-            _lvQuantFilters.Columns.Add("", 70, HorizontalAlignment.Center);
+            _lvQuantFilters.Columns.Add("", 95, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 135, HorizontalAlignment.Left);
+            _lvQuantFilters.Columns.Add("", 90, HorizontalAlignment.Right);
+            _lvQuantFilters.Columns.Add("", 54, HorizontalAlignment.Center);
 
             // 더블 버퍼링
             typeof(ListView).InvokeMember("DoubleBuffered",
                 System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.SetProperty,
                 null, _lvQuantFilters, new object[] { true });
 
+            // 하단 퀀트 상세 해설 및 투자 안전마진 원리 안내창
+            var pnlDescWrap = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Padding = new Padding(0, 8, 0, 0),
+                BackColor = Color.Transparent
+            };
+
+            _lblQuantDescription = new Label
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(16, 20, 28),
+                BorderStyle = BorderStyle.FixedSingle,
+                ForeColor = Color.FromArgb(170, 205, 245),
+                Font = new Font("Malgun Gothic", 8.8f),
+                Padding = new Padding(10),
+                Text = "💡 위 표에서 항목을 클릭하면 해당 퀀트 기준의 투자 원리와 안전마진 해설이 표시됩니다.",
+                TextAlign = ContentAlignment.TopLeft
+            };
+            pnlDescWrap.Controls.Add(_lblQuantDescription);
+
+            // 항목 클릭 시 상세 설명 바인딩
+            _lvQuantFilters.SelectedIndexChanged += (s, e) =>
+            {
+                if (_lvQuantFilters.SelectedItems.Count > 0)
+                {
+                    var itm = _lvQuantFilters.SelectedItems[0].Tag as QuantFilterItem;
+                    if (itm != null)
+                    {
+                        string status = itm.IsPassed ? "✔ 통과 (PASS)" : "❌ 기준 미달 (FAIL)";
+                        _lblQuantDescription.Text = $"【 {itm.Name} 】  판정: {status}\n" +
+                                                    $"• 기준: {itm.Criteria} | 현재값: {itm.ActualValue}\n\n" +
+                                                    $"• 핵심 해설:\n{itm.Description}";
+                    }
+                }
+            };
+
+            // 도킹 순서: 맨 위 타이틀(lblCardTitle)이 최상단, 맨 아래 pnlDescWrap이 채움
+            card.Controls.Add(pnlDescWrap);
             card.Controls.Add(_lvQuantFilters);
             card.Controls.Add(tblHeader);
             card.Controls.Add(_lblQuantHeader);

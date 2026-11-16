@@ -424,7 +424,7 @@ namespace GateHelper.StockAdvisor.Services
                 {
                     Id = "E",
                     Name = "시가총액",
-                    Criteria = "1조원(10,000억) 이상",
+                    Criteria = "1조원 이상",
                     ActualValue = capRaw,
                     IsPassed = capPassed,
                     Description = "상장폐지 및 세력 장난 차단 (중견·대기업 체급 필터)"
@@ -472,7 +472,7 @@ namespace GateHelper.StockAdvisor.Services
                     Description = "고금리 환경 안전판 (빚이 적은 탄탄한 재무 구조)"
                 });
 
-                // 5. PER (12배 이하 저평가)
+                // 5. PER (20.0배 이하 적정 밸류 / 성장주 감안)
                 decimal per = 0m;
                 if (integ.ContainsKey("PER"))
                 {
@@ -484,18 +484,18 @@ namespace GateHelper.StockAdvisor.Services
                     per = finDict["PER"];
                 }
                 result.Per = per;
-                bool perPassed = (per > 0m && per <= 12.0m);
+                bool perPassed = (per > 0m && per <= 20.0m);
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "G",
                     Name = "PER (주가수익)",
-                    Criteria = "12.0배 이하",
+                    Criteria = "20.0배 이하 (성장 마진)",
                     ActualValue = per > 0 ? $"{per:F2}배" : "-",
                     IsPassed = perPassed,
-                    Description = "실적 대비 저평가 안전마진 (거품 및 고평가 배제)"
+                    Description = "실적 대비 적정 밸류에이션 (거품 및 극단적 고평가 배제)"
                 });
 
-                // 6. PBR (1.5배 이하)
+                // 6. PBR (2.5배 이하)
                 decimal pbr = 0m;
                 if (integ.ContainsKey("PBR"))
                 {
@@ -507,18 +507,18 @@ namespace GateHelper.StockAdvisor.Services
                     pbr = finDict["PBR"];
                 }
                 result.Pbr = pbr;
-                bool pbrPassed = (pbr > 0m && pbr <= 1.5m);
+                bool pbrPassed = (pbr > 0m && pbr <= 2.5m);
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "H",
                     Name = "PBR (주가순자산)",
-                    Criteria = "1.5배 이하",
+                    Criteria = "2.5배 이하",
                     ActualValue = pbr > 0 ? $"{pbr:F2}배" : "-",
                     IsPassed = pbrPassed,
-                    Description = "청산가치 대비 거품 없는 적정 자산 밸류에이션"
+                    Description = "자산가치 대비 적정 프리미엄 (과도한 장부가 괴리 배제)"
                 });
 
-                // 7. 배당수익률 (3% ~ 20%)
+                // 7. 배당수익률 (2.0% ~ 20.0% 또는 고성장 ROE 재투자)
                 decimal divYield = 0m;
                 if (integ.ContainsKey("배당수익률"))
                 {
@@ -526,27 +526,29 @@ namespace GateHelper.StockAdvisor.Services
                     decimal.TryParse(dRaw, out divYield);
                 }
                 result.DividendYield = divYield;
-                bool divPassed = (divYield >= 3.0m && divYield <= 20.0m);
+                bool isHighGrowth = (roe >= 15.0m && opMargin >= 10.0m);
+                bool divPassed = (divYield >= 2.0m && divYield <= 20.0m) || isHighGrowth;
+                string divActual = divYield > 0 ? $"{divYield:F2}%" : (isHighGrowth ? "성장재투자" : "-");
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "I",
                     Name = "배당수익률",
-                    Criteria = "3.0% ~ 20.0%",
-                    ActualValue = divYield > 0 ? $"{divYield:F2}%" : "-",
+                    Criteria = "2.0%↑ (성장예외)",
+                    ActualValue = divActual,
                     IsPassed = divPassed,
-                    Description = "주가 하락 시 방어선 역할을 하는 쏠쏠한 배당금 쿠폰"
+                    Description = "안정적 현금배당 쿠폰 또는 순이익을 사내 재투자하는 고성장(ROE 15%↑) 우량주"
                 });
 
-                // 8. 14일 RSI (30 이하 극단적 과매도 타이밍 또는 40 이하 저점존)
-                bool rsiPassed = (currentRsi > 0m && currentRsi <= 35.0m);
+                // 8. 14일 RSI (미과열 및 눌림목/과매도 매수 유효 구간)
+                bool rsiPassed = (currentRsi > 0m && currentRsi <= 60.0m);
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "B",
                     Name = "14일 RSI",
-                    Criteria = "35.0 이하 (과매도 저점존)",
+                    Criteria = "60.0 이하 (미과열)",
                     ActualValue = currentRsi > 0 ? $"{currentRsi:F1}" : "-",
                     IsPassed = rsiPassed,
-                    Description = "공포 투매 구간에서 저가 분할 매수하는 역발상 타이밍"
+                    Description = "단기 과열 슈팅을 배제하고 눌림목 및 저가 분할 매수가 유효한 안전 구간"
                 });
 
                 // 통과 개수 계산

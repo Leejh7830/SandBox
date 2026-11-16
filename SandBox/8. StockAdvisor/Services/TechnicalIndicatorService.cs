@@ -319,9 +319,8 @@ namespace GateHelper.StockAdvisor.Services
                 }
 
                 // 9. AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
-                // [닻(Anchor) 고정 원칙: 장중 틱/순간 펌핑 왜곡 방지]
-                // 익절가는 장중 순간 튀어오른 현재가에 반응하여 밀려 올라가지 않고,
-                // 객관적인 20일 일봉 최고 매물대(ResistancePrice)에 닻을 내리고 고정합니다.
+                // [닻(Anchor) 고정 원칙 & 래칫(Ratchet) 상향 락: 장중 틱/순간 펌핑 및 경계선 핑퐁 왜곡 원천 차단]
+                // 익절가는 객관적인 20일 일봉 최고 매물대(ResistancePrice)에 닻을 내리고 고정합니다.
                 decimal baseTarget;
                 if (result.ResistancePrice > 0m)
                 {
@@ -333,10 +332,11 @@ namespace GateHelper.StockAdvisor.Services
                     baseTarget = currentPrice * 1.08m;
                 }
 
-                // 만약 현재가가 이미 저항선 부근까지 도달했거나 돌파한 경우에만 2차 저항선/상승 목표 적용
-                if (currentPrice >= baseTarget * 0.99m)
+                // [돌파 히스테리시스 필터]
+                // 현재가가 저항선을 완전히 돌파 안착(저항선 +0.8% 이상 돌파)했을 때만 상향 목표 적용
+                // 단순 경계선 틱 흔들림으로 161,500원 <-> 168,000원이 번갈아 스위칭되는 핑퐁 현상을 원천 방지
+                if (currentPrice >= baseTarget * 1.008m)
                 {
-                    // 기존 저항선 돌파 시: 최소 5% 이상 상방 룸 부여 (단, 틱 노이즈 방지를 위해 고정 마진)
                     baseTarget = Math.Max(baseTarget, currentPrice * 1.05m);
                 }
 

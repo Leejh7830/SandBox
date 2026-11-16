@@ -125,10 +125,27 @@ namespace GateHelper.StockAdvisor
                             decimal oldStop = item.TargetStopPrice > 0 ? item.TargetStopPrice : (item.SupportPrice > 0 ? item.SupportPrice * 0.97m : 0m);
                             decimal newStop = ind.TargetStopPrice > 0 ? ind.TargetStopPrice : (ind.SupportPrice > 0 ? ind.SupportPrice * 0.97m : 0m);
 
-                            // [MTS 앱주문 타점 변동 알림 안정화 필터]
+                            // [MTS 앱주문 타점 변동 알림 안정화 & 래칫(Ratchet) 상향 유지 필터]
                             // 1. 단순 틱 노이즈/순간 펌핑(0.5%) 배제: 실질적인 1.5% 이상 유의미한 변동 시에만 알림
-                            // 2. 일시적 가격 출렁임으로 인한 잦은 MTS 정정 방지
-                            if (item.LastDiagnosedTargetPrice > 0 && newTarget > 0 && Math.Abs(newTarget - item.LastDiagnosedTargetPrice) / item.LastDiagnosedTargetPrice >= 0.015m)
+                            // 2. 장중 핑퐁 방지: 한 번 목표가를 높여 잡았으면, 장중 일시적 몇백 원 하락으로 도로 깎아내리지 않고 고정 유지
+                            // (단, 지지선 붕괴 등 추세 훼손 시 또는 2.5% 이상 명백한 하향 조정 시에만 하향 정정 알림)
+                            bool isTargetSignificant = false;
+                            if (item.LastDiagnosedTargetPrice > 0 && newTarget > 0)
+                            {
+                                decimal diffRate = (newTarget - item.LastDiagnosedTargetPrice) / item.LastDiagnosedTargetPrice;
+                                // 상향 변경: 1.5% 이상 상승 시 즉시 알림
+                                if (diffRate >= 0.015m)
+                                {
+                                    isTargetSignificant = true;
+                                }
+                                // 하향 변경: 장중 경계선 플리커링(161,500 <-> 168,000)을 막기 위해 2.5% 이상 확실한 하향일 때만 알림
+                                else if (diffRate <= -0.025m)
+                                {
+                                    isTargetSignificant = true;
+                                }
+                            }
+
+                            if (isTargetSignificant)
                             {
                                 decimal chgTarget = newTarget;
                                 decimal prevT = item.LastDiagnosedTargetPrice;

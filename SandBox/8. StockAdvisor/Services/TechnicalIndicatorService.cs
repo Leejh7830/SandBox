@@ -248,9 +248,9 @@ namespace GateHelper.StockAdvisor.Services
                     result.TimingBadge = "과매도 반등";
                     result.TimingWarning = $"[과매도 반등] RSI({result.Rsi:F1}) 침체권. 20일 지지선 확인 후 역발상 분할 매수 유효";
                 }
-                else if (result.ChartScore >= 6 && ma20Disp >= -3.0m && ma20Disp <= 2.5m && result.Rsi >= 39m && result.Rsi <= 57m)
+                else if (result.ChartScore >= 6 && ma20Disp >= -4.5m && ma20Disp <= 3.5m && result.Rsi >= 36.5m && result.Rsi <= 60m)
                 {
-                    // 주도주 레이더의 '골든 눌림목' 조건과 1:1 완벽 일치 (차트 6점 이상 + 20일선 이격 -3%~+2.5% 안착)
+                    // 주도주 레이더와 동일한 유연한 '골든 눌림목' 조건 (차트 6점 이상 + 20일선 이격 -4.5%~+3.5% 안착)
                     result.TimingBadge = "골든 눌림목";
                     result.TimingWarning = $"[최적 진입] 20일선({result.Ma20:N0}원, 이격 {ma20Disp:+0.0;-0.0}%) 지지선 안착된 골든 눌림목 매수 구간";
                 }

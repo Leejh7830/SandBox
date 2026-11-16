@@ -423,11 +423,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "E",
-                    Name = "시가총액 [체급↑]",
+                    Name = "시가총액",
                     Criteria = "1조원 이상",
                     ActualValue = capRaw,
                     IsPassed = capPassed,
-                    Description = "[ 클수록 안전 우수 ↑ ] 상장폐지나 세력 장난을 원천 차단하는 중견·대기업 체급 필터"
+                    Description = "클수록 안전하다. 상장폐지나 세력 작전을 원천 차단하는 중견·대기업 체급 필터"
                 });
 
                 // 2. ROE (자기자본이익률 10% 이상)
@@ -437,11 +437,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "C",
-                    Name = "ROE [수익성↑]",
+                    Name = "ROE",
                     Criteria = "10.0% 이상",
                     ActualValue = roe > 0 ? $"{roe:F2}%" : (finDict.ContainsKey("ROE") ? $"{roe:F2}%" : "-"),
                     IsPassed = roePassed,
-                    Description = "[ 높을수록 알짜 우량 ↑ ] 주주 자본을 굴려 연 10% 이상 순이익을 창출하는 고수익 비즈니스"
+                    Description = "높을수록 알짜 우량 기업이다. 자본 대비 순이익 창출 능력 (연 10% 이상 우량)"
                 });
 
                 // 3. 영업이익률 (5% 이상)
@@ -451,11 +451,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "D",
-                    Name = "영업이익률 [마진↑]",
+                    Name = "영업이익률",
                     Criteria = "5.0% 이상",
                     ActualValue = opMargin != 0m ? $"{opMargin:F2}%" : (finDict.ContainsKey("영업이익률") ? $"{opMargin:F2}%" : "-"),
                     IsPassed = opPassed,
-                    Description = "[ 높을수록 마진 우수 ↑ ] 가격 결정력과 경제적 해자가 높은 고마진 비즈니스 건전성"
+                    Description = "높을수록 마진이 좋다. 가격 결정력과 제품 경쟁력이 높은 비즈니스 (연 5% 이상)"
                 });
 
                 // 4. 부채비율 (150% 이하)
@@ -465,11 +465,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "F",
-                    Name = "부채비율 [건전↓]",
+                    Name = "부채비율",
                     Criteria = "150.0% 이하",
                     ActualValue = debt > 0 ? $"{debt:F2}%" : (finDict.ContainsKey("부채비율") ? $"{debt:F2}%" : "-"),
                     IsPassed = debtPassed,
-                    Description = "[ 낮을수록 재무 안전 ↓ ] 빚이 적어 고금리 불황에도 부도 위험 없는 탄탄한 재무 구조"
+                    Description = "낮을수록 빚이 적어 안전하다. 고금리/불황에도 부도 위험 없는 탄탄한 재무 구조"
                 });
 
                 // 5. PER (20.0배 이하 적정 밸류 / 성장주 감안)
@@ -488,11 +488,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "G",
-                    Name = "PER [저평가↓]",
+                    Name = "PER",
                     Criteria = "20.0배 이하 (성장)",
                     ActualValue = per > 0 ? $"{per:F2}배" : "-",
                     IsPassed = perPassed,
-                    Description = "[ 낮을수록 저평가 안전마진 ↓ ] 벌어들이는 이익 대비 주가가 거품 없이 싼 상태 (성장주는 마진 반영)"
+                    Description = "낮을수록 저평가되어 좋다. 번 돈 대비 주가가 싼 상태 (성장주는 마진 감안 20배 이하)"
                 });
 
                 // 6. PBR (2.5배 이하)
@@ -511,11 +511,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "H",
-                    Name = "PBR [자산주↓]",
+                    Name = "PBR",
                     Criteria = "2.5배 이하",
                     ActualValue = pbr > 0 ? $"{pbr:F2}배" : "-",
                     IsPassed = pbrPassed,
-                    Description = "[ 낮을수록 자산가치 안전 ↓ ] 보유 자산 대비 주가가 청산가치에 가까워 하방 경직성 확보"
+                    Description = "낮을수록 자산가치 대비 싸다. 청산가치에 가까워 주가 하방이 단단하고 안전함"
                 });
 
                 // 7. 배당수익률 (2.0% ~ 20.0% 또는 고성장 ROE 재투자)
@@ -532,11 +532,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "I",
-                    Name = "배당수익률 [배당↑]",
+                    Name = "배당수익률",
                     Criteria = "2.0% 이상",
                     ActualValue = divActual,
                     IsPassed = divPassed,
-                    Description = "[ 높을수록 배당 방어력 ↑ ] 주가 하락 시 배당금이 쏠쏠한 쿠폰 안전판 (성장주는 재투자 ROE 평가)"
+                    Description = "높을수록 배당 방어력이 좋다. 주가 하락 시 배당금이 쏠쏠한 안전판 (성장주는 재투자 ROE 평가)"
                 });
 
                 // 8. 14일 RSI (미과열 및 눌림목/과매도 매수 유효 구간)
@@ -544,11 +544,11 @@ namespace GateHelper.StockAdvisor.Services
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "B",
-                    Name = "14일 RSI [미과열↓]",
+                    Name = "14일 RSI",
                     Criteria = "60.0 이하",
                     ActualValue = currentRsi > 0 ? $"{currentRsi:F1}" : "-",
                     IsPassed = rsiPassed,
-                    Description = "[ 낮을수록 과열 배제·바닥 ↓ ] 단기 과열 슈팅을 피하고 눌림목 및 과매도 구간에서 안전 진입"
+                    Description = "낮을수록 바닥권이라 좋다. 단기 과열 슈팅을 피하고 눌림목/과매도 구간에서 안전 진입"
                 });
 
                 // 통과 개수 계산

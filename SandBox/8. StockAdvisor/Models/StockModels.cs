@@ -848,6 +848,11 @@ namespace GateHelper.StockAdvisor.Models
                             info.TitleText = "[ AI 참모 최종 결론 : 눌림목 지지 안착 / 분할 추매 추천 ]";
                             info.GuideText = $"종합 우량(점수 {item.FinalScore}점) 및 지지선 안착 확인. 기존 물량 홀딩 및 매수가 부근 분할 추매 유효";
                             info.BuyPriceText = $"• 매수가: {buy1Str}{secBuyAppend}";
+                            info.BackColor = Color.FromArgb(16, 44, 28);
+                            info.ForeColor = Color.FromArgb(90, 255, 170);
+                            info.BorderColor = Color.FromArgb(40, 170, 90);
+                            info.ListBadgeColor = Color.FromArgb(0, 230, 118);
+                            info.CanBuy = true;
                         }
                     }
                     else

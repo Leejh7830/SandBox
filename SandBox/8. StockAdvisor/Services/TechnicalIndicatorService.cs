@@ -387,7 +387,7 @@ namespace GateHelper.StockAdvisor.Services
                     result.RiskScore = Math.Max(result.RiskScore, 9);
                 }
 
-                if (result.Rsi >= 70.0m)
+                if (result.Rsi >= 68.0m)
                 {
                     result.ExitTimingBadge = "RSI 과열 분할익절 (30~50%)";
                     result.ExitTimingGuide = $"14일 RSI({result.Rsi:F1}) 과열 슈팅 구간! 1차 목표가({result.RecommendedTargetPrice:N0}원) 도달 시 물량의 30~50%를 분할 매도하여 수익을 확정하세요.";

@@ -141,9 +141,9 @@ namespace GateHelper.StockAdvisor
 
         private void PopulateData()
         {
-            // 탭 1: 즉각 주의 / 리스크 경계 종목 (C, F 등급 또는 과열 RSI >= 70% 또는 손실률 <= -7%)
+            // 탭 1: 즉각 주의 / 리스크 경계 종목 (4점 이하·F등급·치명적 지뢰·과열 RSI >= 68.0·손실률 <= -7%)
             var alertItems = _items
-                .Where(x => x.Grade == PositionGrade.C || x.Grade == PositionGrade.F || x.Rsi >= 70m || x.ProfitRate <= -7m)
+                .Where(x => x.FinalScore <= 4 || x.Grade == PositionGrade.F || x.HasCriticalLandmine || x.Rsi >= 68.0m || x.ProfitRate <= -7m)
                 .OrderBy(x => x.Grade)
                 .ThenBy(x => x.ProfitRate)
                 .ToList();
@@ -225,7 +225,8 @@ namespace GateHelper.StockAdvisor
                 string actionStr = item.LastDiagnosis?.RecommendedAction;
                 if (string.IsNullOrEmpty(actionStr))
                 {
-                    actionStr = item.Rsi >= 70m ? "[과열주의] 추격매수 금지" : (item.FinalScore >= 8 ? "[골든] 보유 및 분할 진입" : "진단 대기");
+                    var verdict = StockVerdictHelper.Evaluate(item);
+                    actionStr = verdict.BadgeText;
                 }
 
                 string rateStr = item.IsWatchlist ? "[관심]" : $"{item.ProfitRate:+0.00;-0.00}%";
@@ -265,8 +266,8 @@ namespace GateHelper.StockAdvisor
                 if (landmineInfo.IsBold) lvi.SubItems[6].Font = BoldFont;
 
                 // RSI 색상 (SubItem 7)
-                if (item.Rsi >= 70m) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 80, 80);
-                else if (item.Rsi <= 30m && item.Rsi > 0) lvi.SubItems[7].ForeColor = Color.FromArgb(80, 180, 255);
+                if (item.Rsi >= 68.0m) lvi.SubItems[7].ForeColor = Color.FromArgb(255, 80, 80);
+                else if (item.Rsi <= 36.5m && item.Rsi > 0) lvi.SubItems[7].ForeColor = Color.FromArgb(80, 180, 255);
 
                 // 종합점수 (SubItem 8)
                 if (item.FinalScore >= 8) lvi.SubItems[8].ForeColor = Color.FromArgb(255, 215, 0);

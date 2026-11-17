@@ -205,8 +205,8 @@ namespace GateHelper.StockAdvisor
                     if (landmineInfo.IsBold) lvi.SubItems[9].Font = SubItemBoldFont;
 
                     // 10: 14일 RSI (위험 상태일 경우 과매도 반등 톤다운)
-                    if (item.Rsi >= 70m) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 80, 80);
-                    else if (item.Rsi <= 30m && item.Rsi > 0)
+                    if (item.Rsi >= 68.0m) lvi.SubItems[10].ForeColor = Color.FromArgb(255, 80, 80);
+                    else if (item.Rsi <= 36.5m && item.Rsi > 0)
                     {
                         lvi.SubItems[10].ForeColor = isDangerAction ? Color.FromArgb(120, 160, 190) : Color.FromArgb(80, 180, 255);
                     }

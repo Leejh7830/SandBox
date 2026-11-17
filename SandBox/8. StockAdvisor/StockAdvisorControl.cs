@@ -46,6 +46,8 @@ namespace GateHelper.StockAdvisor
         private Button _btnFilterAll;
         private Button _btnFilterHolding;
         private Button _btnFilterWatchlist;
+        private Button _btnFilterBuyOnly;
+        private Button _btnFilterUnsetOnly;
         private Label _lblFilterSummary;
         private StockFilterMode _filterMode = StockFilterMode.All;
         private ListView _lvStocks;

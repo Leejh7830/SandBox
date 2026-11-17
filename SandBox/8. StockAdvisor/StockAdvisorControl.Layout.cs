@@ -488,10 +488,14 @@ namespace GateHelper.StockAdvisor
             _btnFilterAll = CreateFilterTabButton("전체 (0)", StockFilterMode.All);
             _btnFilterHolding = CreateFilterTabButton("보유 (0)", StockFilterMode.HoldingOnly);
             _btnFilterWatchlist = CreateFilterTabButton("★ 관심 (0)", StockFilterMode.WatchlistOnly);
+            _btnFilterBuyOnly = CreateFilterTabButton("🟢 매수추천 (0)", StockFilterMode.BuyRecommendedOnly);
+            _btnFilterUnsetOnly = CreateFilterTabButton("⚠ 앱미설정 (0)", StockFilterMode.BrokerUnsetOnly);
 
             flpFilter.Controls.Add(_btnFilterAll);
             flpFilter.Controls.Add(_btnFilterHolding);
             flpFilter.Controls.Add(_btnFilterWatchlist);
+            flpFilter.Controls.Add(_btnFilterBuyOnly);
+            flpFilter.Controls.Add(_btnFilterUnsetOnly);
 
             _lblFilterSummary = new Label
             {
@@ -751,8 +755,11 @@ namespace GateHelper.StockAdvisor
             {
                 Text = text,
                 Tag = mode,
-                Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold),
-                Size = new Size(95, 26),
+                Font = new Font("Malgun Gothic", 8.4f, FontStyle.Bold),
+                AutoSize = true,
+                MinimumSize = new Size(76, 26),
+                Height = 26,
+                Padding = new Padding(6, 0, 6, 0),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = (mode == _filterMode) ? Color.FromArgb(18, 52, 74) : Color.FromArgb(24, 28, 38),
                 ForeColor = (mode == _filterMode) ? Color.FromArgb(0, 216, 255) : Color.FromArgb(140, 160, 185),

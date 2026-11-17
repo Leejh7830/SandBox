@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text.RegularExpressions;
@@ -203,9 +203,11 @@ namespace GateHelper.StockAdvisor.Models
     /// </summary>
     public enum StockFilterMode
     {
-        All,          // 전체 종목
-        HoldingOnly,  // 보유 종목 (수량 > 0)
-        WatchlistOnly // 🎯 관심 종목 (수량 == 0, 매수 타점 대기)
+        All,                // 전체 종목
+        HoldingOnly,        // 보유 종목 (수량 > 0)
+        WatchlistOnly,      // 🎯 관심 종목 (수량 == 0, 매수 타점 대기)
+        BuyRecommendedOnly, // 🟢 지금 매수추천 종목만 (CanBuy == true)
+        BrokerUnsetOnly     // ⚠ 보유 중 증권앱 주문 미설정 종목만
     }
 
     public enum OverallRiskLevel

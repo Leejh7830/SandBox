@@ -45,6 +45,8 @@ namespace GateHelper.StockAdvisor
             decimal totalBuy = 0m;
 
             int orderSetCount = 0;
+            int buyRecCount = 0;
+            int brokerUnsetCount = 0;
             foreach (var item in _portfolio.Items)
             {
                 if (item.IsBrokerOrderSet) orderSetCount++;
@@ -52,9 +54,11 @@ namespace GateHelper.StockAdvisor
                 else
                 {
                     holdingCount++;
+                    if (!item.IsBrokerOrderSet) brokerUnsetCount++;
                     totalEval += item.TotalEvalAmount;
                     totalBuy += item.TotalBuyAmount;
                 }
+                if (StockVerdictHelper.Evaluate(item).CanBuy) buyRecCount++;
             }
             foreach (var item in _portfolio.Items)
             {
@@ -65,6 +69,8 @@ namespace GateHelper.StockAdvisor
             if (_btnFilterAll != null) _btnFilterAll.Text = $"전체 ({totalCount})";
             if (_btnFilterHolding != null) _btnFilterHolding.Text = $"보유 ({holdingCount})";
             if (_btnFilterWatchlist != null) _btnFilterWatchlist.Text = $"★ 관심 ({watchlistCount})";
+            if (_btnFilterBuyOnly != null) _btnFilterBuyOnly.Text = $"🟢 매수추천 ({buyRecCount})";
+            if (_btnFilterUnsetOnly != null) _btnFilterUnsetOnly.Text = $"⚠ 앱미설정 ({brokerUnsetCount})";
             if (_lblFilterSummary != null) _lblFilterSummary.Text = $"보유 {holdingCount}종목 | 관심 {watchlistCount}종목 | 앱 주문설정 {orderSetCount}건";
             UpdateFilterButtonStyles();
 
@@ -87,13 +93,15 @@ namespace GateHelper.StockAdvisor
                     // 필터 모드 적용
                     if (_filterMode == StockFilterMode.HoldingOnly && item.IsWatchlist) continue;
                     if (_filterMode == StockFilterMode.WatchlistOnly && !item.IsWatchlist) continue;
+                    if (_filterMode == StockFilterMode.BrokerUnsetOnly && (item.IsWatchlist || item.IsBrokerOrderSet)) continue;
+
+                    // AI 참모 최종 결론 및 행동 판정 평가
+                    StockVerdictInfo verdict = StockVerdictHelper.Evaluate(item);
+                    if (_filterMode == StockFilterMode.BuyRecommendedOnly && !verdict.CanBuy) continue;
 
                     string rsiText = item.Rsi > 0 ? $"{item.Rsi:F1}" : "-";
                     string volText = item.VolumeRatio > 0 ? $"{item.VolumeRatio:F0}%" : "-";
                     string finalScoreText = item.FinalScore > 0 ? $"{item.FinalScore}점" : "-";
-
-                    // AI 참모 최종 결론 및 행동 판정 평가
-                    StockVerdictInfo verdict = StockVerdictHelper.Evaluate(item);
 
                     string gradeText = item.Grade.ToString();
                     var supplyInfo = SupplyHelper.GetSupplyInfo(item);
@@ -293,6 +301,8 @@ namespace GateHelper.StockAdvisor
             UpdateButtonTabStyle(_btnFilterAll, StockFilterMode.All);
             UpdateButtonTabStyle(_btnFilterHolding, StockFilterMode.HoldingOnly);
             UpdateButtonTabStyle(_btnFilterWatchlist, StockFilterMode.WatchlistOnly);
+            UpdateButtonTabStyle(_btnFilterBuyOnly, StockFilterMode.BuyRecommendedOnly);
+            UpdateButtonTabStyle(_btnFilterUnsetOnly, StockFilterMode.BrokerUnsetOnly);
         }
 
         private void UpdateButtonTabStyle(Button btn, StockFilterMode mode)

@@ -33,6 +33,7 @@ namespace GateHelper.StockAdvisor.Services
         {
             public decimal Rsi { get; set; } = 50m;
             public decimal VolumeRatio { get; set; } = 100m;
+            public decimal ProjectedVolumeRatio { get; set; } = 100m;
             public decimal Ma5 { get; set; } = 0m;
             public decimal Ma20 { get; set; } = 0m;
             public decimal Ma60 { get; set; } = 0m;
@@ -138,6 +139,21 @@ namespace GateHelper.StockAdvisor.Services
                     {
                         decimal avgVol = (decimal)prevSum / prevCount;
                         result.VolumeRatio = Math.Round(((decimal)candles[0].Volume / avgVol) * 100m, 1);
+
+                        // [장중 시간 보정 환산 거래량] 오전장에서도 평소 대비 페이스가 140% 이상 폭발하는지 정확히 포착 (09:00~15:30 = 390분)
+                        DateTime now = DateTime.Now;
+                        decimal timeFactor = 1.0m;
+                        if (now.DayOfWeek != DayOfWeek.Saturday && now.DayOfWeek != DayOfWeek.Sunday)
+                        {
+                            var t = now.TimeOfDay;
+                            if (t >= TimeSpan.FromHours(9) && t < TimeSpan.FromMinutes(15 * 60 + 30))
+                            {
+                                double elapsedMin = (t - TimeSpan.FromHours(9)).TotalMinutes;
+                                // 개장 극초반(20분 이내) 노이즈 왜곡 방지를 위해 최소 20분 보정
+                                timeFactor = (decimal)Math.Max(20.0, Math.Min(390.0, elapsedMin)) / 390m;
+                            }
+                        }
+                        result.ProjectedVolumeRatio = Math.Round(result.VolumeRatio / timeFactor, 1);
                     }
                 }
 

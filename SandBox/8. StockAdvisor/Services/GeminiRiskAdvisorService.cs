@@ -426,7 +426,31 @@ namespace GateHelper.StockAdvisor.Services
                 diag.SourceReliability = 3;
                 diag.PolicyImpact = 0; // 오프라인 룰 엔진은 정책 뉴스를 날조하지 않고 중립(0) 유지
 
-                if (profitRate <= -15m)
+                if (item.IsWatchlist || item.Quantity <= 0 || item.BuyPrice <= 0)
+                {
+                    // 미보유 관심 종목 전용 심층 요약 리포트 (평단가 언급 배제, 진입/지지선 관점)
+                    diag.Group = PositionGroup.GroupC;
+                    diag.TargetCutPrice = item.TargetStopPrice > 0 ? item.TargetStopPrice : Math.Round(item.CurrentPrice * 0.93m, 0);
+
+                    if (item.Rsi >= 68.0m)
+                    {
+                        diag.RecommendedAction = "[관망] 단기 과열 구간 - 20일선 눌림목 대기";
+                        diag.ReasonSummary = $"현재 RSI({item.Rsi:F1}) 과열 구간으로 추격 매수를 자제하세요. 20일 지지선({item.RecommendedBuyPrice:N0}원) 눌림목 조정 시 분할 진입이 유리합니다.";
+                    }
+                    else if (item.Rsi > 0m && item.Rsi <= 36.5m)
+                    {
+                        diag.RecommendedAction = item.ChangeRate <= -1.0m
+                            ? "[관망] 과매도 침체권 - 하락 멈춤 및 지지 확인 대기"
+                            : "[매수검토] 과매도 바닥권 - 소액 정찰대 분할 진입 유효";
+                        diag.ReasonSummary = $"현재 RSI({item.Rsi:F1}) 침체권이며 수급({item.MajorSupplyBadge})과 재무({item.LandmineBadge})가 포착되었습니다. {(item.ChangeRate <= -1.0m ? "당일 하락세가 멈추고 지지선 안착을 확인한 뒤 진입하세요." : $"손절 방어선({diag.TargetCutPrice:N0}원) 준수 조건으로 소액 분할 진입이 유효합니다.")}";
+                    }
+                    else
+                    {
+                        diag.RecommendedAction = "[관망] 관심 종목 - 지지선 및 수급 유입 모니터링";
+                        diag.ReasonSummary = $"현재 {item.MajorSupplyBadge} 수급 및 재무({item.LandmineBadge}) 상태입니다. 권고 진입가({item.RecommendedBuyPrice:N0}원) 부근 지지 안착 및 추세 전환 여부를 관찰하세요.";
+                    }
+                }
+                else if (profitRate <= -15m)
                 {
                     diag.Group = PositionGroup.GroupA;
                     diag.RecommendedAction = "[경보] 반등 시 비중 40~50% 축소 손절 권고";

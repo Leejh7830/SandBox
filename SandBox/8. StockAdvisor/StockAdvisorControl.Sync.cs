@@ -935,7 +935,10 @@ namespace GateHelper.StockAdvisor
                 var matchedItem = _portfolio?.Items?.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(normCode, StringComparison.OrdinalIgnoreCase));
                 if (matchedItem == null) { ShowMarketLeaderRadarDialog(code); return; }
 
-                if ((_filterMode == StockFilterMode.HoldingOnly && matchedItem.IsWatchlist) || (_filterMode == StockFilterMode.WatchlistOnly && !matchedItem.IsWatchlist))
+                if ((_filterMode == StockFilterMode.HoldingOnly && matchedItem.IsWatchlist) ||
+                    (_filterMode == StockFilterMode.WatchlistOnly && !matchedItem.IsWatchlist) ||
+                    (_filterMode == StockFilterMode.BuyRecommendedOnly && !StockVerdictHelper.Evaluate(matchedItem).CanBuy) ||
+                    (_filterMode == StockFilterMode.BrokerUnsetOnly && (matchedItem.IsWatchlist || matchedItem.IsBrokerOrderSet)))
                 {
                     SetFilterMode(StockFilterMode.All);
                 }

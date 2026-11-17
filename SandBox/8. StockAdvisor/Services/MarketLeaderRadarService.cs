@@ -36,6 +36,7 @@ namespace GateHelper.StockAdvisor.Services
         // [정밀 진단 여부 플래그] 지표 스캔이 완료된 종목만 true (미스캔 종목은 50.0 기본값이 아닌 '-' 미분석 표시)
         public bool IsScanned { get; set; } = false;
         public decimal Rsi { get; set; } = 0m;
+        public decimal VolumeRatio { get; set; } = 0m; // 5일 평균 대비 거래량 (%)
         public decimal Ma20 { get; set; } = 0m;
         public decimal Ma20DisparityRate { get; set; } = 0m; // 20일선 이격도 (%)
         public decimal SupportPrice { get; set; } = 0m;
@@ -179,6 +180,7 @@ namespace GateHelper.StockAdvisor.Services
 
                             item.IsScanned = true;
                             item.Rsi = ind.Rsi;
+                            item.VolumeRatio = ind.VolumeRatio;
                             item.Ma20 = ind.Ma20;
                             item.SupportPrice = ind.SupportPrice;
                             item.ChartScore = unified.ChartScore;
@@ -234,12 +236,12 @@ namespace GateHelper.StockAdvisor.Services
                                     item.PrimaryStrategyBadge = $"과매도 반등({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · RSI({item.Rsi:F1}) 침체 및 지지선({item.SupportPrice:N0}원) 안착 확인된 역발상 분할 매수존";
                                 }
-                                // 전략 3: 거래대금 폭발 (우량 주도주 + 당일 거래대금 500억 이상 + 양봉 돌파 + RSI < 68 단기 모멘텀 유효)
-                                else if (item.TradingValueRaw >= 50000000000L && item.ChangeRate >= 1.0m && item.ChangeRate <= 8.5m && item.Rsi < 68m)
+                                // 전략 3: 거래대금 폭발 (우량 주도주 + 당일 거래대금 500억 이상 + 5일 평균 거래량 대비 120% 이상 급증 + 양봉 돌파 + RSI < 68)
+                                else if (item.TradingValueRaw >= 50000000000L && item.VolumeRatio >= 120m && item.ChangeRate >= 1.0m && item.ChangeRate <= 8.5m && item.Rsi < 68m)
                                 {
                                     item.IsVolumeBreakout = true;
                                     item.PrimaryStrategyBadge = $"거래대금 폭발({item.FinalScore}점)";
-                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 거래대금({item.TradingValueText}) 대량 유입 돌파! 상승 모멘텀 유효";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 거래대금({item.TradingValueText}, 5일 평균 대비 {item.VolumeRatio:F0}%) 대량 유입 돌파! 상승 모멘텀 유효";
                                 }
                                 else if (verdict.CanBuy)
                                 {

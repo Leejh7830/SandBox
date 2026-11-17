@@ -979,6 +979,8 @@ namespace GateHelper.StockAdvisor
             string cmd = (rawText ?? string.Empty).Trim();
             if (string.IsNullOrEmpty(cmd)) return string.Empty;
 
+            var itemsSnapshot = _portfolio?.Items?.ToList() ?? new List<StockHoldingItem>();
+
             if (cmd.Equals("/help", StringComparison.OrdinalIgnoreCase) ||
                 cmd.Equals("/start", StringComparison.OrdinalIgnoreCase) ||
                 cmd == "/도움" || cmd == "도움" || cmd == "?")
@@ -992,12 +994,12 @@ namespace GateHelper.StockAdvisor
 
             if (cmd == "/잔고" || cmd == "잔고")
             {
-                var holdings = _portfolio.Items.Where(x => !x.IsWatchlist && x.Quantity > 0).ToList();
+                var holdings = itemsSnapshot.Where(x => !x.IsWatchlist && x.Quantity > 0).ToList();
                 decimal totalEval = holdings.Sum(x => x.TotalEvalAmount);
                 decimal totalBuy = holdings.Sum(x => x.TotalBuyAmount);
                 decimal totalPnl = totalEval - totalBuy;
                 decimal totalRate = totalBuy > 0 ? Math.Round(totalPnl / totalBuy * 100m, 2) : 0m;
-                decimal cash = _portfolio.DepositCash;
+                decimal cash = _portfolio?.DepositCash ?? 0m;
 
                 var lines = new List<string>
                 {
@@ -1019,7 +1021,7 @@ namespace GateHelper.StockAdvisor
 
             if (cmd == "/추천" || cmd == "추천")
             {
-                var picks = _portfolio.Items
+                var picks = itemsSnapshot
                     .Select(x => new { Item = x, Verdict = StockVerdictHelper.Evaluate(x) })
                     .Where(x => x.Verdict.CanBuy)
                     .OrderByDescending(x => x.Item.FinalScore)
@@ -1043,15 +1045,15 @@ namespace GateHelper.StockAdvisor
             if (cmd == "/체온" || cmd == "체온" || cmd == "/시장" || cmd == "시장")
             {
                 string thermo = _marketTemperature?.BadgeText ?? "체온 정보 수집 대기 중";
-                return $"🌡️ [실시간 시장 체온]\n• 현재 상태: {thermo}\n• 등록 종목: 보유 {_portfolio.Items.Count(x => !x.IsWatchlist)}개 / 관심 {_portfolio.Items.Count(x => x.IsWatchlist)}개";
+                return $"🌡️ [실시간 시장 체온]\n• 현재 상태: {thermo}\n• 등록 종목: 보유 {itemsSnapshot.Count(x => !x.IsWatchlist)}개 / 관심 {itemsSnapshot.Count(x => x.IsWatchlist)}개";
             }
 
             // 종목명 또는 종목코드 검색
             string query = cmd.TrimStart('/');
-            var matched = _portfolio.Items.FirstOrDefault(x =>
+            var matched = itemsSnapshot.FirstOrDefault(x =>
                 x.StockName.Equals(query, StringComparison.OrdinalIgnoreCase) ||
                 x.StockCode.TrimStart('0').Equals(query.TrimStart('0'), StringComparison.OrdinalIgnoreCase))
-                ?? _portfolio.Items.FirstOrDefault(x => x.StockName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
+                ?? itemsSnapshot.FirstOrDefault(x => x.StockName.IndexOf(query, StringComparison.OrdinalIgnoreCase) >= 0);
 
             if (matched == null)
             {

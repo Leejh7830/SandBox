@@ -139,8 +139,8 @@ namespace GateHelper.StockAdvisor
                 if (!this.Visible)
                 {
                     _kbSyncTimer?.Stop();
-                    // 실시간 가격 도달 감시 또는 주도주 레이더 자동 알림(초절전 백그라운드 모드)이 활성화되어 있으면 타이머 유지
-                    if (_portfolio == null || (!_portfolio.EnablePriceTouchAlert && !_portfolio.EnableLeaderRadarAutoAlert))
+                    // 실시간 가격 도달 감시, 레이더 자동 알림, 또는 텔레그램 모바일 푸시가 활성화되어 있으면 백그라운드 타이머 유지
+                    if (_portfolio == null || (!_portfolio.EnablePriceTouchAlert && !_portfolio.EnableLeaderRadarAutoAlert && !_portfolio.EnableMobilePushAlert))
                     {
                         _autoSyncTimer?.Stop();
                     }

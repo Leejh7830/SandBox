@@ -536,11 +536,10 @@ namespace GateHelper.StockAdvisor.Models
         // 계좌 보유 현금 (예수금, 원 단위 - 현금 vs 주식 비중 차트 분석용)
         public decimal DepositCash { get; set; } = 0m;
 
-        // 스마트폰 실시간 푸시 알림 설정 (텔레그램 봇 / 디스코드 웹훅)
+        // 스마트폰 실시간 푸시 알림 설정 (텔레그램 봇)
         public bool EnableMobilePushAlert { get; set; } = false;
         public string TelegramBotToken { get; set; } = string.Empty;
         public string TelegramChatId { get; set; } = string.Empty;
-        public string DiscordWebhookUrl { get; set; } = string.Empty;
     }
 
     public enum ToastAlertType

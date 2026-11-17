@@ -19,7 +19,6 @@ namespace GateHelper.StockAdvisor
         private CheckBox _chkEnableMobilePush;
         private TextBox _txtTelegramToken;
         private TextBox _txtTelegramChatId;
-        private TextBox _txtDiscordWebhook;
         private Button _btnDetectChatId;
         private Button _btnTestPush;
         private Button _btnScoreHelp;
@@ -40,8 +39,8 @@ namespace GateHelper.StockAdvisor
         private void InitializeComponent()
         {
             Text = "주식 리스크 참모 환경 설정 (StockAdvisor Options)";
-            ClientSize = new Size(640, 825);
-            MinimumSize = new Size(640, 825);
+            ClientSize = new Size(640, 790);
+            MinimumSize = new Size(640, 790);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -263,12 +262,12 @@ namespace GateHelper.StockAdvisor
             grpDocs.Controls.Add(lblHelpDesc);
             grpDocs.Controls.Add(_btnScoreHelp);
 
-            // 3-2. 그룹 3: 스마트폰 실시간 푸시 알림 설정 (텔레그램 / 디스코드)
+            // 3-2. 그룹 3: 스마트폰 실시간 푸시 알림 설정 (텔레그램 봇)
             var grpMobilePush = new GroupBox
             {
-                Text = "📱 스마트폰 실시간 푸시 알림 (텔레그램 봇 / 디스코드 웹훅)",
+                Text = "📱 스마트폰 실시간 푸시 알림 (텔레그램 봇)",
                 Location = new Point(5, 545),
-                Size = new Size(590, 175),
+                Size = new Size(590, 140),
                 ForeColor = Color.FromArgb(0, 230, 150),
                 Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
                 Padding = new Padding(14)
@@ -358,33 +357,20 @@ namespace GateHelper.StockAdvisor
                 try
                 {
                     string testMsg = "✅ [SandBox 주식 리스크 참모]\n스마트폰 실시간 알림 연동 테스트에 성공했습니다!";
-                    bool anySent = false;
-                    string errs = "";
-
-                    if (!string.IsNullOrWhiteSpace(_txtTelegramToken.Text) && !string.IsNullOrWhiteSpace(_txtTelegramChatId.Text))
+                    if (string.IsNullOrWhiteSpace(_txtTelegramToken.Text) || string.IsNullOrWhiteSpace(_txtTelegramChatId.Text))
                     {
-                        var tg = await MobilePushAlertService.SendTelegramAsync(_txtTelegramToken.Text, _txtTelegramChatId.Text, testMsg);
-                        if (tg.Ok) anySent = true;
-                        else errs += $"\n• 텔레그램 오류: {tg.Error}";
-                    }
-                    if (!string.IsNullOrWhiteSpace(_txtDiscordWebhook.Text))
-                    {
-                        var dc = await MobilePushAlertService.SendDiscordWebhookAsync(_txtDiscordWebhook.Text, testMsg);
-                        if (dc.Ok) anySent = true;
-                        else errs += $"\n• 디스코드 오류: {dc.Error}";
+                        MessageBox.Show("먼저 텔레그램 토큰을 입력하고 [내 ID 자동 찾기]를 눌러주세요.", "입력 필요", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        return;
                     }
 
-                    if (anySent && string.IsNullOrEmpty(errs))
+                    var tg = await MobilePushAlertService.SendTelegramAsync(_txtTelegramToken.Text, _txtTelegramChatId.Text, testMsg);
+                    if (tg.Ok)
                     {
-                        MessageBox.Show("휴대폰으로 테스트 알림을 발송했습니다! 스마트폰을 확인해 주세요.", "테스트 발송 성공", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    }
-                    else if (!anySent && string.IsNullOrEmpty(errs))
-                    {
-                        MessageBox.Show("먼저 텔레그램 토큰 + Chat ID(자동 찾기) 또는 디스코드 웹훅 URL을 입력하세요.", "입력 필요", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show("휴대폰 텔레그램으로 테스트 알림을 발송했습니다! 스마트폰을 확인해 주세요.", "테스트 발송 성공", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show($"발송 중 오류가 발생했습니다:{errs}", "발송 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show($"발송 중 오류가 발생했습니다:\n• 텔레그램 오류: {tg.Error}", "발송 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                 }
                 finally
@@ -394,34 +380,16 @@ namespace GateHelper.StockAdvisor
                 }
             };
 
-            var lblDcUrl = new Label
-            {
-                Text = "디스코드 웹훅:",
-                Location = new Point(16, 129),
-                Size = new Size(105, 22),
-                Font = new Font("Malgun Gothic", 8.8f),
-                ForeColor = Color.FromArgb(190, 205, 225)
-            };
-            _txtDiscordWebhook = new TextBox
-            {
-                Location = new Point(125, 126),
-                Size = new Size(445, 24),
-                BackColor = Color.FromArgb(28, 34, 48),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 8.8f)
-            };
-
             grpMobilePush.Controls.AddRange(new Control[]
             {
                 _chkEnableMobilePush, lblTgToken, _txtTelegramToken,
-                lblTgChat, _txtTelegramChatId, _btnDetectChatId, _btnTestPush,
-                lblDcUrl, _txtDiscordWebhook
+                lblTgChat, _txtTelegramChatId, _btnDetectChatId, _btnTestPush
             });
 
             // 4. 하단 버튼 바
             var pnlBottom = new Panel
             {
-                Location = new Point(5, 730),
+                Location = new Point(5, 695),
                 Size = new Size(590, 45)
             };
 
@@ -467,7 +435,6 @@ namespace GateHelper.StockAdvisor
             _chkEnableMobilePush.Checked = _portfolio.EnableMobilePushAlert;
             _txtTelegramToken.Text = _portfolio.TelegramBotToken ?? string.Empty;
             _txtTelegramChatId.Text = _portfolio.TelegramChatId ?? string.Empty;
-            _txtDiscordWebhook.Text = _portfolio.DiscordWebhookUrl ?? string.Empty;
         }
 
         private void SelectComboInterval(ComboBox cbo, int minutes, int defaultIndex)
@@ -511,7 +478,6 @@ namespace GateHelper.StockAdvisor
             _portfolio.EnableMobilePushAlert = _chkEnableMobilePush.Checked;
             _portfolio.TelegramBotToken = _txtTelegramToken.Text.Trim();
             _portfolio.TelegramChatId = _txtTelegramChatId.Text.Trim();
-            _portfolio.DiscordWebhookUrl = _txtDiscordWebhook.Text.Trim();
 
             OptionsChanged = true;
             DialogResult = DialogResult.OK;

@@ -117,37 +117,7 @@ namespace GateHelper.StockAdvisor.Services
         }
 
         /// <summary>
-        /// 디스코드 웹훅으로 메시지를 발송합니다.
-        /// </summary>
-        public static async Task<(bool Ok, string Error)> SendDiscordWebhookAsync(string webhookUrl, string text)
-        {
-            if (string.IsNullOrWhiteSpace(webhookUrl))
-            {
-                return (false, "디스코드 웹훅 URL이 비어 있습니다.");
-            }
-
-            try
-            {
-                var payload = new { content = text };
-                string json = JsonConvert.SerializeObject(payload);
-                using (var content = new StringContent(json, Encoding.UTF8, "application/json"))
-                {
-                    var resp = await _httpClient.PostAsync(webhookUrl.Trim(), content).ConfigureAwait(false);
-                    if (!resp.IsSuccessStatusCode)
-                    {
-                        return (false, $"HTTP {(int)resp.StatusCode}");
-                    }
-                }
-                return (true, string.Empty);
-            }
-            catch (Exception ex)
-            {
-                return (false, ex.Message);
-            }
-        }
-
-        /// <summary>
-        /// 실시간 주식 알림을 설정된 스마트폰 채널(텔레그램/디스코드)로 비동기 전송합니다.
+        /// 실시간 주식 알림을 설정된 텔레그램 봇으로 비동기 전송합니다.
         /// </summary>
         public static async Task DispatchStockAlertAsync(PortfolioData portfolio, StockAlertLogItem alertItem)
         {
@@ -171,11 +141,6 @@ namespace GateHelper.StockAdvisor.Services
                 if (!string.IsNullOrWhiteSpace(portfolio.TelegramBotToken) && !string.IsNullOrWhiteSpace(portfolio.TelegramChatId))
                 {
                     await SendTelegramAsync(portfolio.TelegramBotToken, portfolio.TelegramChatId, msg).ConfigureAwait(false);
-                }
-
-                if (!string.IsNullOrWhiteSpace(portfolio.DiscordWebhookUrl))
-                {
-                    await SendDiscordWebhookAsync(portfolio.DiscordWebhookUrl, msg).ConfigureAwait(false);
                 }
             }
             catch (Exception ex)

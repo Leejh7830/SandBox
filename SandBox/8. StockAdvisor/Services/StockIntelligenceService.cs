@@ -532,15 +532,20 @@ namespace GateHelper.StockAdvisor.Services
                 result.DividendYield = divYield;
                 bool isHighGrowth = (roe >= 15.0m && opMargin >= 10.0m);
                 bool divPassed = (divYield >= 2.0m && divYield <= 20.0m) || isHighGrowth;
-                string divActual = divYield > 0 ? $"{divYield:F2}%" : (isHighGrowth ? "성장재투자" : "-");
+                string divCriteria = isHighGrowth ? "2.0% 이상 (성장재투자)" : "2.0% 이상";
+                string divActual = divYield > 0 ? (isHighGrowth && divYield < 2.0m ? $"{divYield:F2}% (성장주)" : $"{divYield:F2}%") : (isHighGrowth ? "성장재투자" : "-");
+                string divDesc = isHighGrowth && divYield < 2.0m
+                    ? "높을수록 배당 방어력이 좋다. (ROE 15% & 영업이익률 10% 이상 고성장주는 이익을 배당 대신 사업에 재투자하므로 정상 통과 처리)"
+                    : "높을수록 배당 방어력이 좋다. 주가 하락 시 배당금이 쏠쏠한 안전판 (성장주는 재투자 ROE 평가)";
+
                 result.Items.Add(new GateHelper.StockAdvisor.Models.QuantFilterItem
                 {
                     Id = "I",
                     Name = "배당수익률",
-                    Criteria = "2.0% 이상",
+                    Criteria = divCriteria,
                     ActualValue = divActual,
                     IsPassed = divPassed,
-                    Description = "높을수록 배당 방어력이 좋다. 주가 하락 시 배당금이 쏠쏠한 안전판 (성장주는 재투자 ROE 평가)"
+                    Description = divDesc
                 });
 
                 // 8. 14일 RSI (미과열 및 눌림목/과매도 매수 유효 구간)

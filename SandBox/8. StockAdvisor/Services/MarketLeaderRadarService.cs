@@ -195,7 +195,7 @@ namespace GateHelper.StockAdvisor.Services
                                 item.Ma20DisparityRate = Math.Round((item.CurrentPrice - item.Ma20) / item.Ma20 * 100m, 1);
                             }
 
-                            // [단일 기준 안전 인터락]
+                            // [단일 기준 안전 인터락 및 3대 전략 정밀 분류]
                             // 1. 당일 급락(-4.0% 초과) 종목은 지지선 붕괴 위험(떨어지는 칼날)으로 레이더 추천 제외 및 급락주의 경보
                             if (item.ChangeRate <= -4.0m)
                             {
@@ -204,53 +204,52 @@ namespace GateHelper.StockAdvisor.Services
                                 item.PrimaryStrategyGuide = $"당일 급락({item.ChangeRate:+0.00;-0.00}%) 발생! 떨어지는 칼날 진입 금지 및 지지선 안착 확인 대기";
                                 item.CanBuy = false;
                             }
-                            // 2. 종목평가(StockEvaluatorDialog)에서 매수 승인(CanBuy == true, FinalScore >= 6, 지뢰 없음)을 받은 우량 종목만 전략 추천 및 매수가 부여
-                            else if (!verdict.CanBuy || item.HasCriticalLandmine || item.FinalScore <= 5)
+                            // 2. 치명적 지뢰(적자/CB 등)가 있거나 종합 5점 이하 C/F등급 종목은 매수 배제 및 리스크 경보
+                            else if (item.HasCriticalLandmine || item.FinalScore <= 5 || item.Grade == PositionGrade.C || item.Grade == PositionGrade.F)
                             {
                                 item.RecommendedBuyPrice = 0m;
-                                if (item.HasCriticalLandmine || item.Grade == PositionGrade.C || item.Grade == PositionGrade.F)
-                                {
-                                    item.PrimaryStrategyBadge = $"매수금지({item.FinalScore}점)";
-                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · {item.SupplyBadge}/{item.LandmineBadge} — 수급·재무 기준 미달로 매수 제외";
-                                }
-                                else
-                                {
-                                    item.PrimaryStrategyBadge = $"관망대기({item.FinalScore}점)";
-                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · {verdict.GuideText}";
-                                }
+                                item.PrimaryStrategyBadge = $"매수금지({item.FinalScore}점)";
+                                item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · {item.SupplyBadge}/{item.LandmineBadge} — 수급·재무 기준 미달로 매수 제외";
+                                item.CanBuy = false;
                             }
+                            // 3. 종합 6점 이상(B등급 이상) & 지뢰 없는 우량 주도주군 대상 3대 핵심 전략 포착
                             else
                             {
                                 item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
 
-                                // 전략 1: 골든 눌림목 (우량 매수 승인 + 20일선 부근 -4.0% ~ +3.5% 안착 + RSI 37~60 + 당일 하락폭 완만)
-                                if (item.ChangeRate >= -3.0m &&
-                                    item.Rsi >= 37m && item.Rsi <= 60m &&
-                                    item.Ma20DisparityRate >= -4.0m && item.Ma20DisparityRate <= 3.5m &&
+                                // 전략 1: 골든 눌림목 (우량 주도주 + 20일선 부근 -4.0% ~ +3.5% 지지 + RSI 35~62 안정권 + 차트 6점 이상)
+                                if (item.ChangeRate >= -3.5m &&
+                                    item.Rsi >= 35m && item.Rsi <= 62m &&
+                                    item.Ma20DisparityRate >= -4.5m && item.Ma20DisparityRate <= 3.5m &&
                                     item.ChartScore >= 6)
                                 {
                                     item.IsGoldenPullback = true;
                                     item.PrimaryStrategyBadge = $"골든 눌림목({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 20일선({item.Ma20:N0}원) 부근 지지 안착! 이상적 분할 진입존";
                                 }
-                                // 전략 2: 과매도 반등 (우량 매수 승인 + RSI 38 이하 침체권 + 지지선 유효 + 급락 아님)
+                                // 전략 2: 과매도 반등 (우량 주도주 + RSI 38 이하 침체권 + 차트 6점 이상 + 당일 급락 아님)
                                 else if (item.Rsi <= 38.0m && item.Rsi > 0m && item.ChartScore >= 6 && item.ChangeRate > -4.0m)
                                 {
                                     item.IsOversoldBounce = true;
                                     item.PrimaryStrategyBadge = $"과매도 반등({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · RSI({item.Rsi:F1}) 침체 및 지지선({item.SupportPrice:N0}원) 안착 확인된 역발상 분할 매수존";
                                 }
-                                // 전략 3: 거래대금 폭발 (우량 매수 승인 + 당일 거래대금 500억 이상 + 양봉 + RSI < 66 단기 모멘텀)
-                                else if (item.TradingValueRaw >= 50000000000L && item.ChangeRate >= 1.0m && item.ChangeRate <= 8.5m && item.Rsi < 66m)
+                                // 전략 3: 거래대금 폭발 (우량 주도주 + 당일 거래대금 500억 이상 + 양봉 돌파 + RSI < 68 단기 모멘텀 유효)
+                                else if (item.TradingValueRaw >= 50000000000L && item.ChangeRate >= 1.0m && item.ChangeRate <= 8.5m && item.Rsi < 68m)
                                 {
                                     item.IsVolumeBreakout = true;
                                     item.PrimaryStrategyBadge = $"거래대금 폭발({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 거래대금({item.TradingValueText}) 대량 유입 돌파! 상승 모멘텀 유효";
                                 }
-                                else
+                                else if (verdict.CanBuy)
                                 {
                                     item.PrimaryStrategyBadge = $"분할매수({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) 우량 · 1차 매수가({item.RecommendedBuyPrice:N0}원) 부근 분할 진입 유효";
+                                }
+                                else
+                                {
+                                    item.PrimaryStrategyBadge = $"관망대기({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · {verdict.GuideText}";
                                 }
                             }
                         }

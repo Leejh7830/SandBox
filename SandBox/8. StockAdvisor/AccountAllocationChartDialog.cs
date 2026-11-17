@@ -31,7 +31,8 @@ namespace GateHelper.StockAdvisor
         private Label _lblCashAdvice;
         private Label _lblSectorAlert;
         private ListView _lvSectors;
-        private TextBox _txtSectorDetail;
+        private Label _lblSectorDetailHeader;
+        private ListView _lvSectorStocks;
         private NumericUpDown _nudDepositCash;
 
         // 정적 캐시 팔레트 (Zero-Resource)
@@ -256,14 +257,17 @@ namespace GateHelper.StockAdvisor
             };
             pnlAlertBar.Controls.Add(_lblSectorAlert);
 
-            // 4. 하단 섹터별 상세 내역 테이블 + 선택 섹터 종목 상세
-            var splitBottom = new SplitContainer
+            // 4. 하단 섹터별 상세 내역 테이블 + 선택 섹터 종목 상세 표 (54% : 46% 고정 비율)
+            var tblBottom = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                SplitterDistance = 540,
-                BackColor = Color.FromArgb(16, 20, 28)
+                ColumnCount = 2,
+                RowCount = 1,
+                BackColor = Color.FromArgb(16, 20, 28),
+                Padding = new Padding(12, 4, 12, 4)
             };
+            tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54f));
+            tblBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46f));
 
             _lvSectors = new ListView
             {
@@ -275,13 +279,14 @@ namespace GateHelper.StockAdvisor
                 BackColor = Color.FromArgb(14, 18, 26),
                 ForeColor = Color.FromArgb(230, 235, 245),
                 BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Malgun Gothic", 9f)
+                Font = new Font("Malgun Gothic", 9f),
+                Margin = new Padding(0, 0, 6, 0)
             };
             _lvSectors.Columns.Add("업종 / 섹터", 170);
-            _lvSectors.Columns.Add("비중(주식내)", 82, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("평가금액", 108, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("평가손익", 108, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("종목수", 65, HorizontalAlignment.Center);
+            _lvSectors.Columns.Add("비중(주식)", 78, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("평가금액", 102, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("평가손익", 102, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("종목", 55, HorizontalAlignment.Center);
 
             _lvSectors.SelectedIndexChanged += (s, e) =>
             {
@@ -295,26 +300,45 @@ namespace GateHelper.StockAdvisor
             var pnlDetailBox = new Panel
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(20, 24, 36),
-                Padding = new Padding(12, 10, 12, 10)
+                BackColor = Color.FromArgb(18, 22, 32),
+                Margin = new Padding(6, 0, 0, 0)
             };
 
-            _txtSectorDetail = new TextBox
+            _lblSectorDetailHeader = new Label
+            {
+                Dock = DockStyle.Top,
+                Height = 28,
+                BackColor = Color.FromArgb(24, 30, 44),
+                ForeColor = Color.FromArgb(0, 216, 255),
+                Font = new Font("Malgun Gothic", 9f, FontStyle.Bold),
+                Padding = new Padding(8, 0, 8, 0),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Text = "좌측 섹터를 선택하면 구성 종목이 표시됩니다."
+            };
+
+            _lvSectorStocks = new ListView
             {
                 Dock = DockStyle.Fill,
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                BorderStyle = BorderStyle.None,
-                BackColor = Color.FromArgb(20, 24, 36),
-                ForeColor = Color.FromArgb(215, 230, 248),
-                Font = new Font("Malgun Gothic", 9f),
-                Text = "좌측 섹터 행을 클릭하면 해당 섹터에 속한 보유 종목 목록이 표시됩니다."
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = true,
+                MultiSelect = false,
+                BackColor = Color.FromArgb(14, 18, 26),
+                ForeColor = Color.FromArgb(230, 235, 245),
+                BorderStyle = BorderStyle.FixedSingle,
+                Font = new Font("Malgun Gothic", 9f)
             };
-            pnlDetailBox.Controls.Add(_txtSectorDetail);
+            _lvSectorStocks.Columns.Add("종목명", 145);
+            _lvSectorStocks.Columns.Add("수량", 55, HorizontalAlignment.Right);
+            _lvSectorStocks.Columns.Add("평가금액", 100, HorizontalAlignment.Right);
+            _lvSectorStocks.Columns.Add("평가손익", 100, HorizontalAlignment.Right);
+            _lvSectorStocks.Columns.Add("수익률", 70, HorizontalAlignment.Right);
 
-            splitBottom.Panel1.Controls.Add(_lvSectors);
-            splitBottom.Panel2.Controls.Add(pnlDetailBox);
+            pnlDetailBox.Controls.Add(_lvSectorStocks);
+            pnlDetailBox.Controls.Add(_lblSectorDetailHeader);
+
+            tblBottom.Controls.Add(_lvSectors, 0, 0);
+            tblBottom.Controls.Add(pnlDetailBox, 1, 0);
 
             // 5. 하단 닫기 푸터
             var pnlFooter = new Panel
@@ -339,7 +363,7 @@ namespace GateHelper.StockAdvisor
             btnClose.Click += (s, e) => this.Close();
             pnlFooter.Controls.Add(btnClose);
 
-            this.Controls.Add(splitBottom);
+            this.Controls.Add(tblBottom);
             this.Controls.Add(pnlAlertBar);
             this.Controls.Add(tblCharts);
             this.Controls.Add(pnlTop);
@@ -470,18 +494,28 @@ namespace GateHelper.StockAdvisor
 
             decimal pnl = s.EvalAmount - s.BuyAmount;
             decimal pnlRate = s.BuyAmount > 0 ? Math.Round(pnl / s.BuyAmount * 100m, 2) : 0m;
-            var lines = new List<string>
-            {
-                $"【 {s.SectorName} 】  비중: {s.SharePercent:F1}%",
-                $"• 평가금: {s.EvalAmount:N0}원  |  손익: {pnl:+#,##0;-#,##0;0}원 ({pnlRate:+0.00;-0.00}%)",
-                "──────────────────────────────────"
-            };
+            _lblSectorDetailHeader.Text = $"■ {s.SectorName} ({s.SharePercent:F1}%)  |  손익: {pnl:+#,##0;-#,##0;0}원 ({pnlRate:+0.00;-0.00}%)";
+            _lblSectorDetailHeader.ForeColor = s.Color;
 
+            _lvSectorStocks.BeginUpdate();
+            _lvSectorStocks.Items.Clear();
             foreach (var itm in s.Items.OrderByDescending(x => x.TotalEvalAmount))
             {
-                lines.Add($"• {itm.StockName} ({itm.Quantity}주) : {itm.TotalEvalAmount:N0}원 ({itm.ProfitRate:+0.00;-0.00}%)");
+                decimal itemPnl = itm.ProfitAmount;
+                var lvi = new ListViewItem(itm.StockName);
+                lvi.UseItemStyleForSubItems = false;
+                lvi.SubItems.Add($"{itm.Quantity:N0}주");
+                lvi.SubItems.Add($"{itm.TotalEvalAmount:N0}원");
+
+                var subPnl = lvi.SubItems.Add($"{itemPnl:+#,##0;-#,##0;0}원");
+                var subRate = lvi.SubItems.Add($"{itm.ProfitRate:+0.00;-0.00}%");
+                Color c = itemPnl > 0 ? Color.FromArgb(255, 100, 110) : (itemPnl < 0 ? Color.FromArgb(95, 175, 255) : Color.LightGray);
+                subPnl.ForeColor = c;
+                subRate.ForeColor = c;
+
+                _lvSectorStocks.Items.Add(lvi);
             }
-            _txtSectorDetail.Text = string.Join(Environment.NewLine, lines);
+            _lvSectorStocks.EndUpdate();
         }
 
         private class SectorSlice

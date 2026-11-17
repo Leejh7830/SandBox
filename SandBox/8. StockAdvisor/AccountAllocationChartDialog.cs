@@ -282,11 +282,19 @@ namespace GateHelper.StockAdvisor
                 Font = new Font("Malgun Gothic", 9f),
                 Margin = new Padding(0, 0, 6, 0)
             };
-            _lvSectors.Columns.Add("업종 / 섹터", 170);
-            _lvSectors.Columns.Add("비중(주식)", 78, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("평가금액", 102, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("평가손익", 102, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("종목", 55, HorizontalAlignment.Center);
+            _lvSectors.Columns.Add("업종 / 섹터", 160);
+            _lvSectors.Columns.Add("비중(주식)", 76, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("평가금액", 96, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("평가손익", 96, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("종목", 52, HorizontalAlignment.Center);
+            _lvSectors.SizeChanged += (s, e) =>
+            {
+                int fixedW = 76 + 96 + 96 + 52 + 4;
+                if (_lvSectors.ClientSize.Width > fixedW + 90)
+                {
+                    _lvSectors.Columns[0].Width = _lvSectors.ClientSize.Width - fixedW;
+                }
+            };
 
             _lvSectors.SelectedIndexChanged += (s, e) =>
             {
@@ -328,11 +336,19 @@ namespace GateHelper.StockAdvisor
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Malgun Gothic", 9f)
             };
-            _lvSectorStocks.Columns.Add("종목명", 145);
-            _lvSectorStocks.Columns.Add("수량", 55, HorizontalAlignment.Right);
-            _lvSectorStocks.Columns.Add("평가금액", 100, HorizontalAlignment.Right);
-            _lvSectorStocks.Columns.Add("평가손익", 100, HorizontalAlignment.Right);
-            _lvSectorStocks.Columns.Add("수익률", 70, HorizontalAlignment.Right);
+            _lvSectorStocks.Columns.Add("종목명", 130);
+            _lvSectorStocks.Columns.Add("수량", 48, HorizontalAlignment.Right);
+            _lvSectorStocks.Columns.Add("평가금액", 86, HorizontalAlignment.Right);
+            _lvSectorStocks.Columns.Add("평가손익", 86, HorizontalAlignment.Right);
+            _lvSectorStocks.Columns.Add("수익률", 62, HorizontalAlignment.Right);
+            _lvSectorStocks.SizeChanged += (s, e) =>
+            {
+                int fixedW = 48 + 86 + 86 + 62 + 4;
+                if (_lvSectorStocks.ClientSize.Width > fixedW + 70)
+                {
+                    _lvSectorStocks.Columns[0].Width = _lvSectorStocks.ClientSize.Width - fixedW;
+                }
+            };
 
             pnlDetailBox.Controls.Add(_lvSectorStocks);
             pnlDetailBox.Controls.Add(_lblSectorDetailHeader);

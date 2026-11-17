@@ -97,6 +97,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblAccountSummary;
         private Label _lblLastUpdated;
         private Timer _kbSyncTimer;
+        private Timer _telegramPollTimer;
 
         // 비동기 작업 및 UI 이벤트 플래그
         private bool _isAiDiagnosing = false;
@@ -127,6 +128,7 @@ namespace GateHelper.StockAdvisor
 
             SetupKbSyncTimer();
             SetupAutoSyncTimers();
+            SetupTelegramPollTimer();
             _ = RefreshMarketThermometerAsync();
             _ = RefreshEarningsScheduleAsync();
 

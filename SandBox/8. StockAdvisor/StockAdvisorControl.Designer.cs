@@ -13,6 +13,8 @@ namespace GateHelper.StockAdvisor
                 _autoSyncTimer?.Dispose();
                 _kbSyncTimer?.Stop();
                 _kbSyncTimer?.Dispose();
+                _telegramPollTimer?.Stop();
+                _telegramPollTimer?.Dispose();
                 if (components != null)
                 {
                     components.Dispose();

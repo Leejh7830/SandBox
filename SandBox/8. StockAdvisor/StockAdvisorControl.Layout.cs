@@ -536,16 +536,16 @@ namespace GateHelper.StockAdvisor
                 AutoEllipsis = true
             };
 
-            // 2. AI 참모 최종 결론 바 (0.1초 직관 배지 + 1줄 행동 지침)
+            // 2. AI 참모 최종 결론 바 (0.1초 직관 배지 + 행동 지침 — 3줄 이상 시에도 잘림 방지 64px 확보)
             _lblFinalVerdict = new Label
             {
                 Text = "[ AI 참모 최종 결론 : 좌측 목록에서 종목을 선택하세요 ]\n종목을 선택하시면 단일화된 최종 행동 결론이 표시됩니다.",
-                Font = new Font("Malgun Gothic", 9.2f, FontStyle.Bold),
+                Font = new Font("Malgun Gothic", 8.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 220, 90),
                 BackColor = Color.FromArgb(36, 32, 20),
                 BorderStyle = BorderStyle.FixedSingle,
                 Dock = DockStyle.Top,
-                Height = 48,
+                Height = 64,
                 Padding = new Padding(8, 4, 8, 4),
                 TextAlign = ContentAlignment.MiddleLeft
             };

@@ -201,6 +201,8 @@ namespace GateHelper.StockAdvisor
             mnuKeyStock.Click += (s, e) => ShowKeyStockSummaryDialog();
             var mnuPanicExit = new ToolStripMenuItem("비상 탈출 (패닉셀 방어) 시뮬레이터");
             mnuPanicExit.Click += (s, e) => ShowPanicExitDialog();
+            var mnuOrderCompare = new ToolStripMenuItem("MTS/HTS 자동청산(익절·손절) 설정 대조기");
+            mnuOrderCompare.Click += (s, e) => ShowBrokerOrderComparisonDialog();
             var mnuImport = new ToolStripMenuItem("증권사 계좌 잔고 가져오기 (엑셀/CSV)");
             mnuImport.Click += (s, e) => ShowImportPortfolioDialog();
             var mnuKbSec = new ToolStripMenuItem("KB증권 Open API 실시간 잔고 연동 설정");
@@ -210,6 +212,7 @@ namespace GateHelper.StockAdvisor
 
             cmsMoreTools.Items.Add(mnuKeyStock);
             cmsMoreTools.Items.Add(mnuPanicExit);
+            cmsMoreTools.Items.Add(mnuOrderCompare);
             cmsMoreTools.Items.Add(new ToolStripSeparator());
             cmsMoreTools.Items.Add(mnuImport);
             cmsMoreTools.Items.Add(mnuKbSec);

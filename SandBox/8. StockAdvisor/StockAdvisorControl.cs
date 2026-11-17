@@ -749,6 +749,14 @@ namespace GateHelper.StockAdvisor
             using (var dlg = new PanicExitDialog(_portfolio.Items)) { if (dlg.ShowDialog(this) == DialogResult.OK && dlg.ExecutionCompleted) { SavePortfolio(); UpdateUi(); } }
         }
 
+        private void ShowBrokerOrderComparisonDialog()
+        {
+            using (var dlg = new BrokerOrderComparisonDialog(_portfolio))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
         private void ShowScoreHelpDialog() { using (var dlg = new StockScoreHelpDialog()) dlg.ShowDialog(this); }
 
         private void ShowEarningsRadarDialog() { using (var dlg = new EarningsRadarDialog(_portfolio.Items)) dlg.ShowDialog(this); }

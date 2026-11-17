@@ -284,6 +284,10 @@ namespace GateHelper.StockAdvisor.Services
                             int rScore = matchedItem?.RiskScore ?? 5;
                             // 4대 통합 팩터: 차트 30% + 수급재무 25% + 뉴스 25% + 손익비 20%
                             int fScore = (int)Math.Round((cScore * 0.30) + (sfScore * 0.25) + (nScore * 0.25) + (rScore * 0.20), MidpointRounding.AwayFromZero);
+                            if (matchedItem != null && matchedItem.HasCriticalLandmine)
+                            {
+                                fScore = Math.Min(fScore, 2);
+                            }
                             fScore = Math.Max(1, Math.Min(10, fScore));
 
                             string timingWarn = string.Empty;
@@ -293,8 +297,8 @@ namespace GateHelper.StockAdvisor.Services
                                 matchedItem.FinalScore = fScore;
                                 timingWarn = matchedItem.TimingWarning;
 
-                                // 과열 안전벨트: RSI 70 이상인 경우 액션에 과열 경고 강제 추가
-                                if (matchedItem.Rsi >= 70.0m && !act.Contains("과열"))
+                                // 과열 안전벨트: RSI 68 이상인 경우 액션에 과열 경고 강제 추가
+                                if (matchedItem.Rsi >= 68.0m && !act.Contains("과열"))
                                 {
                                     act = "[과열주의] 추격매수 금지! " + act;
                                     posGroup = PositionGroup.GroupB; // 과열 상태에서는 신규 매수 금지(GroupC 배제)
@@ -465,6 +469,10 @@ namespace GateHelper.StockAdvisor.Services
                 int nScore = item.NewsScore > 0 ? item.NewsScore : 5;
 
                 int fScore = (int)Math.Round((cScore * 0.30) + (sfScore * 0.25) + (nScore * 0.25) + (rScore * 0.20), MidpointRounding.AwayFromZero);
+                if (item.HasCriticalLandmine)
+                {
+                    fScore = Math.Min(fScore, 2);
+                }
                 fScore = Math.Max(1, Math.Min(10, fScore));
 
                 item.NewsScore = nScore;
@@ -478,8 +486,8 @@ namespace GateHelper.StockAdvisor.Services
                 diag.Grade = GradeHelper.CalculateGrade(fScore, item.Rsi, item.ChangeRate);
                 diag.TimingWarning = item.TimingWarning;
 
-                // RSI 과열 안전벨트 적용
-                if (item.Rsi >= 70.0m && !diag.RecommendedAction.Contains("과열"))
+                // RSI 과열 안전벨트 적용 (전 모듈 단일 기준: RSI 68.0 이상)
+                if (item.Rsi >= 68.0m && !diag.RecommendedAction.Contains("과열"))
                 {
                     diag.RecommendedAction = "[과열주의] 추격매수 금지! " + diag.RecommendedAction;
                 }

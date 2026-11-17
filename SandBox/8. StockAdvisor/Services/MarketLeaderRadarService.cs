@@ -43,6 +43,7 @@ namespace GateHelper.StockAdvisor.Services
         public decimal RecommendedBuyPrice { get; set; } = 0m;
         public int ChartScore { get; set; } = 0;
         public int SupplyFinanceScore { get; set; } = 0;
+        public int RiskScore { get; set; } = 0;
         public int FinalScore { get; set; } = 0;
         public PositionGrade Grade { get; set; } = PositionGrade.B;
         public bool HasCriticalLandmine { get; set; } = false;
@@ -185,6 +186,7 @@ namespace GateHelper.StockAdvisor.Services
                             item.SupportPrice = ind.SupportPrice;
                             item.ChartScore = unified.ChartScore;
                             item.SupplyFinanceScore = unified.SupplyFinanceScore;
+                            item.RiskScore = unified.RiskScore;
                             item.FinalScore = unified.FinalScore;
                             item.Grade = unified.Grade;
                             item.HasCriticalLandmine = intel.HasCriticalLandmine;
@@ -219,9 +221,9 @@ namespace GateHelper.StockAdvisor.Services
                             {
                                 item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
 
-                                // 전략 1: 골든 눌림목 (우량 주도주 + 20일선 부근 -4.0% ~ +3.5% 지지 + RSI 35~62 안정권 + 차트 6점 이상)
-                                if (item.ChangeRate >= -3.5m &&
-                                    item.Rsi >= 35m && item.Rsi <= 62m &&
+                                // 전략 1: 골든 눌림목 (우량 주도주 + 20일선 부근 -4.5% ~ +3.5% 지지 + RSI 36.5 초과 ~ 60.0 이하 + 차트 6점 이상)
+                                if (item.ChangeRate > -4.0m &&
+                                    item.Rsi > 36.5m && item.Rsi <= 60.0m &&
                                     item.Ma20DisparityRate >= -4.5m && item.Ma20DisparityRate <= 3.5m &&
                                     item.ChartScore >= 6)
                                 {
@@ -229,8 +231,8 @@ namespace GateHelper.StockAdvisor.Services
                                     item.PrimaryStrategyBadge = $"골든 눌림목({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 20일선({item.Ma20:N0}원) 부근 지지 안착! 이상적 분할 진입존";
                                 }
-                                // 전략 2: 과매도 반등 (우량 주도주 + RSI 38 이하 침체권 + 차트 6점 이상 + 당일 급락 아님)
-                                else if (item.Rsi <= 38.0m && item.Rsi > 0m && item.ChartScore >= 6 && item.ChangeRate > -4.0m)
+                                // 전략 2: 과매도 반등 (우량 주도주 + RSI 36.5 이하 침체권 + 손익비 7점 이상 + 당일 급락 아님 — 메인 화면과 100% 동일 기준)
+                                else if (item.Rsi <= 36.5m && item.Rsi > 0m && item.RiskScore >= 7 && item.ChangeRate > -4.0m)
                                 {
                                     item.IsOversoldBounce = true;
                                     item.PrimaryStrategyBadge = $"과매도 반등({item.FinalScore}점)";

@@ -238,7 +238,7 @@ namespace GateHelper.StockAdvisor.Services
                 // 7. 타이밍 안전벨트 뱃지 & 경고 판정 (주도주 레이더와 100% 동일한 단일 기준 일치화)
                 decimal ma20Disp = result.Ma20 > 0 ? ((currentPrice - result.Ma20) / result.Ma20 * 100m) : 0m;
 
-                if (result.Rsi >= 70.0m)
+                if (result.Rsi >= 68.0m)
                 {
                     result.TimingBadge = "과열(추격금지)";
                     result.TimingWarning = $"[단기 과열] RSI({result.Rsi:F1}) 과열 구간 진입! 신규 매수 금지, 20일선 눌림목까지 대기 권고";
@@ -248,7 +248,7 @@ namespace GateHelper.StockAdvisor.Services
                     result.TimingBadge = "과매도 반등";
                     result.TimingWarning = $"[과매도 반등] RSI({result.Rsi:F1}) 침체권. 20일 지지선 확인 후 역발상 분할 매수 유효";
                 }
-                else if (result.ChartScore >= 6 && ma20Disp >= -4.5m && ma20Disp <= 3.5m && result.Rsi >= 36.5m && result.Rsi <= 60m)
+                else if (result.ChartScore >= 6 && ma20Disp >= -4.5m && ma20Disp <= 3.5m && result.Rsi > 36.5m && result.Rsi <= 60.0m)
                 {
                     // 주도주 레이더와 동일한 유연한 '골든 눌림목' 조건 (차트 6점 이상 + 20일선 이격 -4.5%~+3.5% 안착)
                     result.TimingBadge = "골든 눌림목";
@@ -284,7 +284,7 @@ namespace GateHelper.StockAdvisor.Services
                     result.EntryTimingBadge = "추격매수 금지 (대기)";
                     result.EntryTimingGuide = $"현재가 과열권! 지금 사지 말고 20일선 눌림목({result.RecommendedBuyPrice:N0}원) 도달 시 진입 권고";
                 }
-                else if (result.Rsi <= 36.5m && result.Rsi > 0m && result.ChartScore >= 6)
+                else if (result.Rsi <= 36.5m && result.Rsi > 0m && result.RiskScore >= 7)
                 {
                     // 과매도 반등: 현재가가 이미 지지선 부근이거나 침체권이므로 현재가 또는 지지선 안착가를 1차 매수가로 부여 (절대 현재가 초과 금지)
                     decimal entryBase = (result.SupportPrice > 0 && result.SupportPrice <= currentPrice)

@@ -31,7 +31,7 @@ namespace GateHelper.StockAdvisor
         private Label _lblCashAdvice;
         private Label _lblSectorAlert;
         private ListView _lvSectors;
-        private Label _lblSectorDetail;
+        private TextBox _txtSectorDetail;
         private NumericUpDown _nudDepositCash;
 
         // 정적 캐시 팔레트 (Zero-Resource)
@@ -157,7 +157,7 @@ namespace GateHelper.StockAdvisor
 
             _lblCashAdvice = new Label
             {
-                Font = new Font("Malgun Gothic", 9f),
+                Font = new Font("Malgun Gothic", 8.6f),
                 ForeColor = Color.FromArgb(200, 220, 240),
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft
@@ -261,7 +261,7 @@ namespace GateHelper.StockAdvisor
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 580,
+                SplitterDistance = 540,
                 BackColor = Color.FromArgb(16, 20, 28)
             };
 
@@ -277,10 +277,10 @@ namespace GateHelper.StockAdvisor
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Malgun Gothic", 9f)
             };
-            _lvSectors.Columns.Add("업종 / 섹터", 160);
-            _lvSectors.Columns.Add("비중(주식내)", 85, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("평가금액", 110, HorizontalAlignment.Right);
-            _lvSectors.Columns.Add("평가손익", 110, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("업종 / 섹터", 170);
+            _lvSectors.Columns.Add("비중(주식내)", 82, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("평가금액", 108, HorizontalAlignment.Right);
+            _lvSectors.Columns.Add("평가손익", 108, HorizontalAlignment.Right);
             _lvSectors.Columns.Add("종목수", 65, HorizontalAlignment.Center);
 
             _lvSectors.SelectedIndexChanged += (s, e) =>
@@ -296,17 +296,22 @@ namespace GateHelper.StockAdvisor
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(20, 24, 36),
-                Padding = new Padding(12, 8, 12, 8)
+                Padding = new Padding(12, 10, 12, 10)
             };
 
-            _lblSectorDetail = new Label
+            _txtSectorDetail = new TextBox
             {
                 Dock = DockStyle.Fill,
+                Multiline = true,
+                ReadOnly = true,
+                ScrollBars = ScrollBars.Vertical,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.FromArgb(20, 24, 36),
+                ForeColor = Color.FromArgb(215, 230, 248),
                 Font = new Font("Malgun Gothic", 9f),
-                ForeColor = Color.FromArgb(210, 225, 245),
                 Text = "좌측 섹터 행을 클릭하면 해당 섹터에 속한 보유 종목 목록이 표시됩니다."
             };
-            pnlDetailBox.Controls.Add(_lblSectorDetail);
+            pnlDetailBox.Controls.Add(_txtSectorDetail);
 
             splitBottom.Panel1.Controls.Add(_lvSectors);
             splitBottom.Panel2.Controls.Add(pnlDetailBox);
@@ -351,25 +356,25 @@ namespace GateHelper.StockAdvisor
 
             _lblTopSummary.Text = $"총 자산: {_totalAssetAmount:N0}원  |  주식 평가금: {_stockEvalAmount:N0}원 ({stockPct:F1}%)  |  보유 현금(예수금): {_cashAmount:N0}원 ({cashPct:F1}%)";
 
-            // 시장 체온 연동 현금 방어력 진단
+            // 시장 체온 연동 현금 방어력 진단 (체온 문구 중복 제거 및 1줄 피팅)
             string advice;
             Color adviceColor;
             if (_thermoScore <= 34.0m)
             {
                 if (cashPct >= 30m)
                 {
-                    advice = $"🛡️ [시장 체온: {_thermoBadgeText}] 공포장 권장 현금 비중(30%↑)을 충족 중입니다! 현재 현금 {cashPct:F1}%로 저점 분할 매수 여력이 매우 안전합니다.";
+                    advice = $"🛡️ [{_thermoBadgeText}] 공포장 권장 현금(30%↑) 충족! 현재 현금 {cashPct:F1}%로 방어력 매우 안전";
                     adviceColor = Color.FromArgb(0, 230, 118);
                 }
                 else
                 {
-                    advice = $"⚠ [시장 체온: {_thermoBadgeText}] 공포 구간에서는 현금 30% 이상 확보를 권장합니다. (현재 현금 {cashPct:F1}% — 무리한 추격 매수 자제)";
+                    advice = $"⚠ [{_thermoBadgeText}] 공포장 권장 현금(30%↑) 미달 (현재 {cashPct:F1}% — 추격 매수 자제)";
                     adviceColor = Color.FromArgb(255, 190, 60);
                 }
             }
             else
             {
-                advice = $"💡 [시장 체온: {_thermoBadgeText}] 현재 현금 비중 {cashPct:F1}% ({_cashAmount:N0}원) · 주식 비중 {stockPct:F1}% ({_stockEvalAmount:N0}원) 운용 중";
+                advice = $"💡 [{_thermoBadgeText}] 현금 {cashPct:F1}% ({_cashAmount:N0}원) · 주식 {stockPct:F1}% ({_stockEvalAmount:N0}원) 운용 중";
                 adviceColor = Color.FromArgb(180, 215, 245);
             }
             _lblCashAdvice.Text = advice;
@@ -412,11 +417,17 @@ namespace GateHelper.StockAdvisor
             decimal topSectorPct = _sectorSlices.Count > 0 ? _sectorSlices[0].SharePercent : 0m;
             _pnlSectorChart.SetData(sectorDonutSlices, $"1위 {topSectorPct:F1}%", topSectorName);
 
-            // 3) 섹터 쏠림 경보
-            if (_sectorSlices.Count > 0 && topSectorPct >= 40m)
+            // 3) 섹터 쏠림 경보 (지수/배당 ETF가 1위인 경우는 자체 분산이므로 정상 분산 안내)
+            bool isTopEtf = topSectorName.Contains("ETF");
+            if (_sectorSlices.Count > 0 && topSectorPct >= 40m && !isTopEtf)
             {
                 _lblSectorAlert.Text = $"⚠ [섹터 집중 경보] '{topSectorName}' 비중이 {topSectorPct:F1}%로 높습니다! 신규 진입 시 타 섹터 분산 투자를 권장합니다.";
                 _lblSectorAlert.ForeColor = Color.FromArgb(255, 175, 75);
+            }
+            else if (_sectorSlices.Count > 0 && isTopEtf)
+            {
+                _lblSectorAlert.Text = $"✔ [지수/배당 ETF 중심 분산] '{topSectorName}'({topSectorPct:F1}%)을 핵심 축으로 안정적으로 분산되어 있습니다.";
+                _lblSectorAlert.ForeColor = Color.FromArgb(0, 230, 118);
             }
             else if (_sectorSlices.Count > 0)
             {
@@ -439,7 +450,7 @@ namespace GateHelper.StockAdvisor
                 lvi.ForeColor = s.Color;
                 lvi.SubItems.Add($"{s.SharePercent:F1}%");
                 lvi.SubItems.Add($"{s.EvalAmount:N0}원");
-                lvi.SubItems.Add($"{pnl:+N0;-N0;0}원");
+                lvi.SubItems.Add($"{pnl:+#,##0;-#,##0;0}원");
                 lvi.SubItems.Add($"{s.Items.Count}종목");
                 lvi.Tag = s;
                 _lvSectors.Items.Add(lvi);
@@ -461,15 +472,16 @@ namespace GateHelper.StockAdvisor
             decimal pnlRate = s.BuyAmount > 0 ? Math.Round(pnl / s.BuyAmount * 100m, 2) : 0m;
             var lines = new List<string>
             {
-                $"【 {s.SectorName} 】  비중: {s.SharePercent:F1}%  |  평가금: {s.EvalAmount:N0}원  |  합산 손익: {pnl:+N0;-N0;0}원 ({pnlRate:+0.00;-0.00}%)",
-                "────────────────────────────────────────────"
+                $"【 {s.SectorName} 】  비중: {s.SharePercent:F1}%",
+                $"• 평가금: {s.EvalAmount:N0}원  |  손익: {pnl:+#,##0;-#,##0;0}원 ({pnlRate:+0.00;-0.00}%)",
+                "──────────────────────────────────"
             };
 
             foreach (var itm in s.Items.OrderByDescending(x => x.TotalEvalAmount))
             {
-                lines.Add($"• {itm.StockName} ({itm.Quantity}주)  |  평가: {itm.TotalEvalAmount:N0}원  |  수익률: {itm.ProfitRate:+0.00;-0.00}%");
+                lines.Add($"• {itm.StockName} ({itm.Quantity}주) : {itm.TotalEvalAmount:N0}원 ({itm.ProfitRate:+0.00;-0.00}%)");
             }
-            _lblSectorDetail.Text = string.Join("\n", lines);
+            _txtSectorDetail.Text = string.Join(Environment.NewLine, lines);
         }
 
         private class SectorSlice
@@ -501,8 +513,8 @@ namespace GateHelper.StockAdvisor
             private string _centerSub = string.Empty;
 
             private static readonly Font TitleFont = new Font("Malgun Gothic", 9.5f, FontStyle.Bold);
-            private static readonly Font CenterBigFont = new Font("Malgun Gothic", 11.5f, FontStyle.Bold);
-            private static readonly Font CenterSubFont = new Font("Malgun Gothic", 8.5f);
+            private static readonly Font CenterBigFont = new Font("Malgun Gothic", 9.8f, FontStyle.Bold);
+            private static readonly Font CenterSubFont = new Font("Malgun Gothic", 8.0f);
             private static readonly Font LegendFont = new Font("Malgun Gothic", 8.5f);
             private static readonly Brush CenterBgBrush = new SolidBrush(Color.FromArgb(18, 22, 32));
             private static readonly Brush EmptyRingBrush = new SolidBrush(Color.FromArgb(35, 42, 58));
@@ -545,10 +557,10 @@ namespace GateHelper.StockAdvisor
                 // 1. 상단 타이틀
                 TextRenderer.DrawText(g, _title, TitleFont, new Point(12, 8), Color.FromArgb(0, 216, 255));
 
-                int diameter = Math.Min(this.Height - 52, 185);
+                int diameter = Math.Min(this.Height - 46, 200);
                 if (diameter < 80) return;
 
-                var rectOuter = new Rectangle(20, 38, diameter, diameter);
+                var rectOuter = new Rectangle(18, 36, diameter, diameter);
                 decimal total = _slices.Sum(x => x.Value);
 
                 if (total <= 0)
@@ -567,8 +579,8 @@ namespace GateHelper.StockAdvisor
                     }
                 }
 
-                // 도넛 내부 구멍
-                int innerOffset = (int)(diameter * 0.28);
+                // 도넛 내부 구멍 (지름의 56% 확보하여 중앙 텍스트 잘림 원천 방지)
+                int innerOffset = (int)(diameter * 0.22);
                 var rectInner = new Rectangle(
                     rectOuter.X + innerOffset,
                     rectOuter.Y + innerOffset,
@@ -577,9 +589,9 @@ namespace GateHelper.StockAdvisor
                 g.FillEllipse(CenterBgBrush, rectInner);
 
                 // 중앙 텍스트
-                var fmtFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis;
-                var rectCenterBig = new Rectangle(rectInner.X, rectInner.Y + rectInner.Height / 2 - 18, rectInner.Width, 22);
-                var rectCenterSub = new Rectangle(rectInner.X, rectInner.Y + rectInner.Height / 2 + 4, rectInner.Width, 18);
+                var fmtFlags = TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPadding | TextFormatFlags.EndEllipsis;
+                var rectCenterBig = new Rectangle(rectInner.X + 2, rectInner.Y + rectInner.Height / 2 - 17, rectInner.Width - 4, 20);
+                var rectCenterSub = new Rectangle(rectInner.X + 2, rectInner.Y + rectInner.Height / 2 + 4, rectInner.Width - 4, 16);
                 TextRenderer.DrawText(g, _centerBig, CenterBigFont, rectCenterBig, Color.White, fmtFlags);
                 TextRenderer.DrawText(g, _centerSub, CenterSubFont, rectCenterSub, Color.FromArgb(160, 180, 210), fmtFlags);
 

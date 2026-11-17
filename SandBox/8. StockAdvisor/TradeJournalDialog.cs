@@ -239,7 +239,7 @@ namespace GateHelper.StockAdvisor
             decimal totalProfit = _entries.Sum(x => x.RealizedProfit);
             decimal avgRate = totalCount > 0 ? Math.Round(_entries.Average(x => x.ProfitRate), 2) : 0m;
 
-            _lblStatsMain.Text = $"누적 매매: {totalCount}건 ({winCount}승 {totalCount - winCount}패)  |  전체 승률: {winRate:F1}%  |  누적 실현손익: {totalProfit:+N0;-N0;0}원  |  평균 수익률: {avgRate:+0.00;-0.00;0.00}%";
+            _lblStatsMain.Text = $"누적 매매: {totalCount}건 ({winCount}승 {totalCount - winCount}패)  |  전체 승률: {winRate:F1}%  |  누적 실현손익: {totalProfit:+#,##0;-#,##0;0}원  |  평균 수익률: {avgRate:+0.00;-0.00;0.00}%";
             _lblStatsMain.ForeColor = totalProfit >= 0 ? Color.FromArgb(0, 230, 118) : Color.FromArgb(255, 110, 120);
 
             // 전략별 승률 요약
@@ -273,7 +273,7 @@ namespace GateHelper.StockAdvisor
                 lvi.SubItems.Add($"{item.BuyPrice:N0}");
                 lvi.SubItems.Add($"{item.SellPrice:N0}");
 
-                var subProfit = lvi.SubItems.Add($"{item.RealizedProfit:+N0;-N0;0}원");
+                var subProfit = lvi.SubItems.Add($"{item.RealizedProfit:+#,##0;-#,##0;0}원");
                 var subRate = lvi.SubItems.Add($"{item.ProfitRate:+0.00;-0.00;0.00}%");
                 Color pnlColor = item.RealizedProfit > 0
                     ? Color.FromArgb(255, 100, 110)

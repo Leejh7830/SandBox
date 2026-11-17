@@ -116,8 +116,8 @@ namespace GateHelper.StockAdvisor
                         var ind = indTask.Result;
                         var intel = intelTask.Result;
 
-                        // [사용자 요청 1] 앱주문 설정(IsBrokerOrderSet)된 종목의 AI 권고 익절가/손절가 변동 감지 및 알림
-                        if (item.IsBrokerOrderSet && !item.IsWatchlist)
+                        // [사용자 요청 1] 앱주문 설정(IsBrokerOrderSet)된 종목의 AI 권고 익절가/손절가 변동 감지 및 알림 (알림 거부 종목 제외)
+                        if (item.IsBrokerOrderSet && !item.IsWatchlist && !item.IsAlertMuted)
                         {
                             decimal oldTarget = item.RecommendedTargetPrice > 0 ? item.RecommendedTargetPrice : item.ResistancePrice;
                             decimal newTarget = ind.RecommendedTargetPrice > 0 ? ind.RecommendedTargetPrice : ind.ResistancePrice;
@@ -647,7 +647,7 @@ namespace GateHelper.StockAdvisor
 
             foreach (var item in _portfolio.Items.ToList())
             {
-                if (item.CurrentPrice <= 0 || !item.IsPriceScrapeSuccess) continue;
+                if (item.CurrentPrice <= 0 || !item.IsPriceScrapeSuccess || item.IsAlertMuted) continue;
 
                 var verdict = StockVerdictHelper.Evaluate(item);
 

@@ -29,7 +29,9 @@ namespace GateHelper.StockAdvisor
         private Label _lblRiskSummary;
         private Button _btnRefresh;
 
-        private FlowLayoutPanel _pnlFilterBar;
+        private Panel _pnlFilterBar;
+        private FlowLayoutPanel _flpTabButtons;
+        private ComboBox _cboStockFilter;
         private ListView _lvNews;
         private TextBox _txtDetailPreview;
         private Label _lblDetailTitle;
@@ -65,63 +67,63 @@ namespace GateHelper.StockAdvisor
             this.Font = new Font("Malgun Gothic", 9f, FontStyle.Regular);
             this.ShowIcon = false;
 
-            // 1. 상단 글로벌 인텔 헤더 바
+            // 1. 상단 글로벌 인텔 헤더 바 (56px 콤팩트 슬림화 - 뉴스테이블 공간 최대 확보)
             _pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 88,
+                Height = 56,
                 BackColor = Color.FromArgb(22, 28, 38),
-                Padding = new Padding(14, 10, 14, 8)
+                Padding = new Padding(12, 6, 12, 6)
             };
 
             var lblHeaderTitle = new Label
             {
-                Text = "⚡ GLOBAL MACRO & PORTFOLIO NEWS INTEL (실시간 수집)",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                Text = "⚡ MACRO NEWS",
+                Font = new Font("Segoe UI", 9.2f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(0, 230, 255),
-                Location = new Point(14, 8),
+                Location = new Point(12, 8),
                 AutoSize = true
             };
 
             _lblNvdaStatus = new Label
             {
-                Text = "엔비디아 (NVDA): 수집 대기",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                Text = "NVDA: 대기",
+                Font = new Font("Segoe UI", 8.8f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(255, 100, 110),
-                Location = new Point(14, 34),
+                Location = new Point(135, 8),
                 AutoSize = true
             };
 
             _lblSoxStatus = new Label
             {
-                Text = "필라델피아 반도체 (.SOX): 수집 대기",
-                Font = new Font("Segoe UI", 9f),
+                Text = "반도체(.SOX): 대기",
+                Font = new Font("Segoe UI", 8.8f),
                 ForeColor = Color.FromArgb(200, 210, 230),
-                Location = new Point(270, 34),
+                Location = new Point(310, 8),
                 AutoSize = true
             };
 
             _lblNasdaqStatus = new Label
             {
-                Text = "나스닥 (.IXIC): 수집 대기",
-                Font = new Font("Segoe UI", 9f),
+                Text = "나스닥: 대기",
+                Font = new Font("Segoe UI", 8.8f),
                 ForeColor = Color.FromArgb(200, 210, 230),
-                Location = new Point(530, 34),
+                Location = new Point(510, 8),
                 AutoSize = true
             };
 
             _lblRiskSummary = new Label
             {
                 Text = "• 시장 핵심 요약: 엔비디아 실시간 주가 변동 및 미-중 반도체 정책 뉴스 모니터링 중",
-                Font = new Font("Malgun Gothic", 8.5f),
+                Font = new Font("Malgun Gothic", 8.25f),
                 ForeColor = Color.FromArgb(170, 185, 205),
-                Location = new Point(14, 58),
+                Location = new Point(12, 32),
                 AutoSize = true
             };
 
-            _btnRefresh = CreateNeonButton("↻ 실시간 갱신", Color.FromArgb(0, 215, 255), 110, 32);
+            _btnRefresh = CreateNeonButton("↻ 실시간 갱신", Color.FromArgb(0, 215, 255), 105, 28);
             _btnRefresh.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            _btnRefresh.Location = new Point(_pnlHeader.Width - 130, 14);
+            _btnRefresh.Location = new Point(_pnlHeader.Width - 120, 12);
             _btnRefresh.Click += async (s, e) => await RefreshDataAsync();
 
             _pnlHeader.Controls.Add(lblHeaderTitle);
@@ -131,15 +133,39 @@ namespace GateHelper.StockAdvisor
             _pnlHeader.Controls.Add(_lblRiskSummary);
             _pnlHeader.Controls.Add(_btnRefresh);
 
-            // 2. 필터 버튼 툴바 (보유 종목에 맞춰 유동적 동적 생성)
-            _pnlFilterBar = new FlowLayoutPanel
+            // 2. 필터 바 (단일 1줄 40px 고정: 좌측 4대 탭 + 우측 종목 드롭다운 콤보박스)
+            // [사용자 요청 4] 종목이 많아도 절대 아래로 늘어나지 않고 뉴스테이블 공간을 100% 온전히 보존
+            _pnlFilterBar = new Panel
             {
                 Dock = DockStyle.Top,
-                AutoSize = true,
-                MinimumSize = new Size(0, 44),
+                Height = 40,
                 BackColor = Color.FromArgb(18, 22, 32),
-                Padding = new Padding(10, 6, 10, 6)
+                Padding = new Padding(8, 5, 8, 5)
             };
+
+            _flpTabButtons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                WrapContents = false,
+                BackColor = Color.Transparent,
+                Margin = new Padding(0)
+            };
+
+            _cboStockFilter = new ComboBox
+            {
+                Dock = DockStyle.Right,
+                Width = 230,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                BackColor = Color.FromArgb(24, 30, 42),
+                ForeColor = Color.FromArgb(230, 240, 255),
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Malgun Gothic", 9f),
+                Cursor = Cursors.Hand
+            };
+
+            _pnlFilterBar.Controls.Add(_flpTabButtons);
+            _pnlFilterBar.Controls.Add(_cboStockFilter);
 
             BuildFilterButtons();
 
@@ -248,63 +274,82 @@ namespace GateHelper.StockAdvisor
 
         private void BuildFilterButtons()
         {
-            _pnlFilterBar.Controls.Clear();
+            if (_flpTabButtons == null) return;
+            _flpTabButtons.Controls.Clear();
             _filterButtons.Clear();
 
-            // 1. 전체 종합 (Default)
+            // 1. 핵심 4대 고정 탭 버튼 (상단 1줄 고정)
             AddFilterButton("ALL", "🌐 전체 종합", Color.FromArgb(0, 230, 255), true);
 
-            // 2. 내 보유종목 전체 모아보기 (보유종목이 있을 경우)
             if (_userHoldings.Count > 0)
             {
-                AddFilterButton("MY_HOLDINGS", "★ 내 보유종목 모아보기", Color.FromArgb(255, 215, 0));
+                AddFilterButton("MY_HOLDINGS", "★ 내 보유종목", Color.FromArgb(255, 215, 0));
             }
 
-            // 3. 글로벌 매크로 대표 엔비디아
-            AddFilterButton("NVDA.O", "🟢 엔비디아 (NVDA)", Color.FromArgb(80, 230, 140));
+            AddFilterButton("NVDA.O", "🟢 엔비디아(NVDA)", Color.FromArgb(80, 230, 140));
+            AddFilterButton("BIS", "📜 미 BIS 수출통제", Color.FromArgb(255, 190, 80));
 
-            // 4. 사용자 보유 종목별 개별 필터 버튼 동적 생성 (수익/손실 상태 직관적 컬러링 반영)
-            var addedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-            foreach (var h in _userHoldings)
+            // 2. 우측 개별 종목 선택 드롭다운 콤보박스 (종목이 100개여도 높이 0px 증가)
+            if (_cboStockFilter != null)
             {
-                if (string.IsNullOrWhiteSpace(h.StockCode)) continue;
-                if (addedCodes.Add(h.StockCode))
+                _cboStockFilter.Items.Clear();
+                _cboStockFilter.Items.Add(new CboStockFilterItem { Code = "ALL", Text = "🔍 개별 종목 필터 선택 (전체)" });
+
+                var addedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var h in _userHoldings)
                 {
-                    Color btnColor;
-                    string icon;
-                    if (h.ProfitRate > 0)
+                    if (string.IsNullOrWhiteSpace(h.StockCode)) continue;
+                    if (addedCodes.Add(h.StockCode))
                     {
-                        btnColor = Color.FromArgb(255, 100, 110); // 수익: 붉은 네온
-                        icon = "🔴";
+                        string icon = h.ProfitRate > 0 ? "🔴" : (h.ProfitRate < 0 ? "🔵" : "⚪");
+                        string rateStr = h.BuyPrice > 0 ? $" ({h.ProfitRate:+0.0;-0.0}%)" : "";
+                        string label = $"{icon} {h.StockName}{rateStr} [{h.StockCode}]";
+                        _cboStockFilter.Items.Add(new CboStockFilterItem { Code = h.StockCode, Text = label });
                     }
-                    else if (h.ProfitRate < 0)
-                    {
-                        btnColor = Color.FromArgb(85, 160, 255);  // 손실: 푸른 네온
-                        icon = "🔵";
-                    }
-                    else
-                    {
-                        btnColor = Color.FromArgb(180, 195, 215); // 보합/신규: 실버
-                        icon = "⚪";
-                    }
-
-                    string rateStr = h.BuyPrice > 0 ? $" ({h.ProfitRate:+0.0;-0.0}%)" : "";
-                    string label = $"{icon} {h.StockName}{rateStr}";
-                    AddFilterButton(h.StockCode, label, btnColor);
                 }
-            }
 
-            // 5. 미 BIS 수출통제
-            AddFilterButton("BIS", "📜 미 BIS 수출통제 (Federal Register)", Color.FromArgb(255, 190, 80));
+                _cboStockFilter.SelectedIndex = 0;
+                _cboStockFilter.SelectedIndexChanged += (s, e) =>
+                {
+                    if (_cboStockFilter.SelectedItem is CboStockFilterItem sel)
+                    {
+                        if (sel.Code == "ALL")
+                        {
+                            _currentFilter = "ALL";
+                            ResetFilterButtonStyles("ALL");
+                        }
+                        else
+                        {
+                            _currentFilter = sel.Code;
+                            // 콤보박스 선택 시 상단 탭 버튼 선택 해제
+                            foreach (var b in _filterButtons)
+                            {
+                                b.BackColor = Color.FromArgb(22, 28, 38);
+                                b.Font = new Font(b.Font, FontStyle.Regular);
+                            }
+                        }
+                        ApplyFilterToListView();
+                    }
+                };
+            }
+        }
+
+        private void ResetFilterButtonStyles(string activeTag)
+        {
+            foreach (var b in _filterButtons)
+            {
+                bool sel = (string)b.Tag == activeTag;
+                b.BackColor = sel ? Color.FromArgb(35, 55, 80) : Color.FromArgb(22, 28, 38);
+                b.Font = new Font(b.Font, sel ? FontStyle.Bold : FontStyle.Regular);
+            }
         }
 
         private void AddFilterButton(string tag, string text, Color color, bool isDefault = false)
         {
-            var btn = CreateNeonButton(text, color, 0, 30);
+            var btn = CreateNeonButton(text, color, 0, 28);
             btn.Tag = tag;
             btn.AutoSize = true;
-            btn.Margin = new Padding(3, 2, 4, 2);
+            btn.Margin = new Padding(2, 1, 4, 1);
 
             if (isDefault)
             {
@@ -315,17 +360,16 @@ namespace GateHelper.StockAdvisor
             btn.Click += (s, e) =>
             {
                 _currentFilter = tag;
-                foreach (var b in _filterButtons)
+                if (_cboStockFilter != null && _cboStockFilter.Items.Count > 0)
                 {
-                    bool sel = (string)b.Tag == tag;
-                    b.BackColor = sel ? Color.FromArgb(35, 55, 80) : Color.FromArgb(22, 28, 38);
-                    b.Font = new Font(b.Font, sel ? FontStyle.Bold : FontStyle.Regular);
+                    _cboStockFilter.SelectedIndex = 0; // 콤보박스 초기화
                 }
+                ResetFilterButtonStyles(tag);
                 ApplyFilterToListView();
             };
 
             _filterButtons.Add(btn);
-            _pnlFilterBar.Controls.Add(btn);
+            _flpTabButtons.Controls.Add(btn);
         }
 
         private Button CreateNeonButton(string text, Color neonColor, int width = 0, int height = 32)
@@ -508,5 +552,12 @@ namespace GateHelper.StockAdvisor
                 MessageBox.Show("브라우저를 열지 못했습니다: " + ex.Message, "오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
+    }
+
+    internal class CboStockFilterItem
+    {
+        public string Code { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public override string ToString() => Text;
     }
 }

@@ -354,6 +354,11 @@ namespace GateHelper.StockAdvisor.Models
         public decimal LastDiagnosedStopPrice { get; set; } = 0m;
 
         /// <summary>
+        /// 해당 종목의 실시간 가격 도달 및 타점 변동 알림(토스트) 수신 거부(Mute) 여부 (영구 저장)
+        /// </summary>
+        public bool IsAlertMuted { get; set; } = false;
+
+        /// <summary>
         /// 미니 캔들 차트용 최근 20일 일봉 데이터 캐시 (런타임 메모리 유지, 0-IO)
         /// </summary>
         [JsonIgnore]

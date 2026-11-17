@@ -391,6 +391,15 @@ namespace GateHelper.StockAdvisor
                 }
             };
 
+            var mnuToggleAlertMute = new ToolStripMenuItem("🔕 실시간 알림 끄기 (Mute)");
+            mnuToggleAlertMute.Click += (s, e) =>
+            {
+                if (_lvStocks.SelectedItems.Count > 0 && _lvStocks.SelectedItems[0].Tag is StockHoldingItem selItm)
+                {
+                    SetStockAlertMuted(selItm.StockCode, !selItm.IsAlertMuted);
+                }
+            };
+
             var mnuAdd = new ToolStripMenuItem("새 종목 추가 (Insert)");
             mnuAdd.Click += (s, e) => ShowAddStockDialog();
             var mnuEdit = new ToolStripMenuItem("종목 정보 수정 ([수정])");
@@ -401,6 +410,7 @@ namespace GateHelper.StockAdvisor
             mnuNaver.Click += (s, e) => OpenNaverFinanceWeb();
 
             ctx.Items.Add(mnuToggleOrder);
+            ctx.Items.Add(mnuToggleAlertMute);
             ctx.Items.Add(new ToolStripSeparator());
             ctx.Items.Add(mnuAdd);
             ctx.Items.Add(new ToolStripSeparator());
@@ -425,15 +435,23 @@ namespace GateHelper.StockAdvisor
 
                 bool hasSelection = _lvStocks.SelectedItems.Count > 0;
                 mnuToggleOrder.Enabled = hasSelection;
+                mnuToggleAlertMute.Enabled = hasSelection;
                 if (hasSelection && _lvStocks.SelectedItems[0].Tag is StockHoldingItem selItm)
                 {
                     mnuToggleOrder.Text = selItm.IsBrokerOrderSet
                         ? "✓ 증권앱 주문 설정됨 (체크 해제)"
                         : (selItm.IsWatchlist ? "증권앱 예약매수 걸림으로 체크" : "증권앱 자동청산 걸림으로 체크");
+
+                    mnuToggleAlertMute.Text = selItm.IsAlertMuted
+                        ? $"🔔 [{selItm.StockName}] 실시간 알림 다시 켜기"
+                        : $"🔕 [{selItm.StockName}] 실시간 알림 끄기 (Mute)";
+                    mnuToggleAlertMute.ForeColor = selItm.IsAlertMuted ? Color.FromArgb(0, 220, 120) : Color.FromArgb(255, 120, 130);
                 }
                 else
                 {
                     mnuToggleOrder.Text = "증권앱 주문 설정 (체크박스 토글)";
+                    mnuToggleAlertMute.Text = "🔕 실시간 가격 알림 끄기 (Mute)";
+                    mnuToggleAlertMute.ForeColor = SystemColors.ControlText;
                 }
 
                 mnuEdit.Enabled = hasSelection;

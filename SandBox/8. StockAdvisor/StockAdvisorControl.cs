@@ -508,7 +508,9 @@ namespace GateHelper.StockAdvisor
                     code => SelectAndFocusStock(code),
                     existingCodes,
                     AddStockToWatchlist,
-                    (code, owner) => ShowStockEvaluatorDialog(code, owner)))
+                    (code, owner) => ShowStockEvaluatorDialog(code, owner),
+                    (code, mute) => SetStockAlertMuted(code, mute),
+                    code => IsStockAlertMuted(code)))
                 {
                     Form parent = this.FindForm();
                     if (parent != null) dlg.ShowDialog(parent);
@@ -520,6 +522,28 @@ namespace GateHelper.StockAdvisor
             catch (Exception ex)
             {
                 LogManager.LogException(ex, LogManager.Level.Warning, "StockAdvisorControl.ShowAlertHistoryDialog");
+            }
+        }
+
+        public bool IsStockAlertMuted(string stockCode)
+        {
+            if (string.IsNullOrWhiteSpace(stockCode)) return false;
+            string norm = stockCode.TrimStart('0');
+            var match = _portfolio.Items.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(norm, StringComparison.OrdinalIgnoreCase));
+            return match != null && match.IsAlertMuted;
+        }
+
+        public void SetStockAlertMuted(string stockCode, bool isMuted)
+        {
+            if (string.IsNullOrWhiteSpace(stockCode)) return;
+            string norm = stockCode.TrimStart('0');
+            var match = _portfolio.Items.FirstOrDefault(x => x.StockCode.TrimStart('0').Equals(norm, StringComparison.OrdinalIgnoreCase));
+            if (match != null)
+            {
+                match.IsAlertMuted = isMuted;
+                SavePortfolio();
+                string status = isMuted ? "알림 끄기(Mute)가 설정되었습니다." : "알림이 다시 활성화되었습니다.";
+                ToastNotification.Show($"[{match.StockName}]\n실시간 가격 및 타점 {status}", "알림 설정", ToastIcon.Info);
             }
         }
 

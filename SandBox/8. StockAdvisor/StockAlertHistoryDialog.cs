@@ -17,6 +17,8 @@ namespace GateHelper.StockAdvisor
         private readonly HashSet<string> _existingCodes;
         private readonly Action<string, string, decimal> _onAddWatchlist;
         private readonly Func<string, Form, bool> _onEvaluateStock;
+        private readonly Action<string, bool> _onToggleMuteStock;
+        private readonly Func<string, bool> _isStockMutedFunc;
 
         private ListView _lvHistory;
         private Label _lblSummary;
@@ -38,7 +40,9 @@ namespace GateHelper.StockAdvisor
             Action<string> onSelectStock = null,
             HashSet<string> existingCodes = null,
             Action<string, string, decimal> onAddWatchlist = null,
-            Func<string, Form, bool> onEvaluateStock = null)
+            Func<string, Form, bool> onEvaluateStock = null,
+            Action<string, bool> onToggleMuteStock = null,
+            Func<string, bool> isStockMutedFunc = null)
         {
             _history = history ?? new List<StockAlertLogItem>();
             _existingCodes = existingCodes != null
@@ -46,6 +50,8 @@ namespace GateHelper.StockAdvisor
                 : new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             _onAddWatchlist = onAddWatchlist;
             _onEvaluateStock = onEvaluateStock;
+            _onToggleMuteStock = onToggleMuteStock;
+            _isStockMutedFunc = isStockMutedFunc;
 
             this.Text = "가격 도달 알림 기록 내역 (Price Alert History)";
             this.Size = new Size(1000, 520);
@@ -226,7 +232,7 @@ namespace GateHelper.StockAdvisor
 
             _lblFooterGuide = new Label
             {
-                Text = "[안내] 항목을 더블클릭하면 [종목 평가] 창으로 이동하며, [+ 담기] 클릭 시 관심종목에 등록됩니다.",
+                Text = "[안내] 항목 우클릭 시 실시간 알림 끄기(Mute) 및 1건 삭제 가능 | 더블클릭 시 [종목 평가] 이동 | [+ 담기] 관심 등록",
                 Font = new Font("Malgun Gothic", 8.8f),
                 ForeColor = Color.FromArgb(190, 215, 245),
                 Dock = DockStyle.Fill,
@@ -263,12 +269,114 @@ namespace GateHelper.StockAdvisor
             _btnClear.FlatAppearance.BorderColor = Color.FromArgb(140, 50, 60);
             _btnClear.Click += (s, e) =>
             {
+                if (_history == null || _history.Count == 0) return;
+
+                var dr = MessageBox.Show(
+                    "누적된 실시간 가격 및 타점 알림 기록을 모두 삭제하시겠습니까?\n(삭제 후에는 복구할 수 없습니다.)",
+                    "알림 기록 전체 비우기",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+                if (dr != DialogResult.Yes) return;
+
                 lock (_history)
                 {
                     _history.Clear();
                 }
                 LoadHistoryItems();
             };
+
+            // [사용자 요청 3] 알림 기록 리스트뷰 우클릭 컨텍스트 메뉴 (종목별 알림 끄기 Mute, 개별 삭제 등)
+            var ctxAlert = new ContextMenuStrip();
+            var mnuMuteStock = new ToolStripMenuItem("🚫 이 종목 실시간 알림 끄기 (Mute)");
+            var mnuDeleteSingle = new ToolStripMenuItem("❌ 선택한 알림 기록 1건 삭제");
+            var mnuSep = new ToolStripSeparator();
+            var mnuEval = new ToolStripMenuItem("🔍 종목 AI 즉시 진단 열기");
+            var mnuAddWatch = new ToolStripMenuItem("⭐ 관심 종목 등록 (+담기)");
+
+            ctxAlert.Items.Add(mnuMuteStock);
+            ctxAlert.Items.Add(mnuDeleteSingle);
+            ctxAlert.Items.Add(mnuSep);
+            ctxAlert.Items.Add(mnuEval);
+            ctxAlert.Items.Add(mnuAddWatch);
+
+            ctxAlert.Opening += (s, e) =>
+            {
+                if (_lvHistory.SelectedItems.Count == 0)
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                var itm = _lvHistory.SelectedItems[0].Tag as StockAlertLogItem;
+                if (itm == null || string.IsNullOrWhiteSpace(itm.StockCode))
+                {
+                    e.Cancel = true;
+                    return;
+                }
+
+                bool isMuted = _isStockMutedFunc != null && _isStockMutedFunc(itm.StockCode);
+                string cleanName = (itm.StockName ?? "").Replace("★레이더 ", "").Replace("★", "").Trim();
+
+                if (isMuted)
+                {
+                    mnuMuteStock.Text = $"🔔 [{cleanName}] 실시간 알림 다시 켜기";
+                    mnuMuteStock.ForeColor = Color.FromArgb(0, 230, 118);
+                }
+                else
+                {
+                    mnuMuteStock.Text = $"🚫 [{cleanName}] 실시간 알림 끄기 (Mute)";
+                    mnuMuteStock.ForeColor = Color.FromArgb(255, 120, 130);
+                }
+
+                string normCode = itm.StockCode.TrimStart('0');
+                bool alreadyIn = _existingCodes.Contains(normCode);
+                mnuAddWatch.Enabled = !alreadyIn;
+                mnuAddWatch.Text = alreadyIn ? $"⭐ [{cleanName}] 이미 등록됨" : $"⭐ [{cleanName}] 관심 종목 등록 (+담기)";
+            };
+
+            mnuMuteStock.Click += (s, e) =>
+            {
+                if (_lvHistory.SelectedItems.Count == 0) return;
+                var itm = _lvHistory.SelectedItems[0].Tag as StockAlertLogItem;
+                if (itm == null || string.IsNullOrWhiteSpace(itm.StockCode)) return;
+
+                bool isMuted = _isStockMutedFunc != null && _isStockMutedFunc(itm.StockCode);
+                bool nextMute = !isMuted;
+                _onToggleMuteStock?.Invoke(itm.StockCode, nextMute);
+            };
+
+            mnuDeleteSingle.Click += (s, e) =>
+            {
+                if (_lvHistory.SelectedItems.Count == 0) return;
+                var itm = _lvHistory.SelectedItems[0].Tag as StockAlertLogItem;
+                if (itm != null)
+                {
+                    lock (_history)
+                    {
+                        _history.Remove(itm);
+                    }
+                    LoadHistoryItems();
+                }
+            };
+
+            mnuEval.Click += (s, e) =>
+            {
+                if (_lvHistory.SelectedItems.Count == 0) return;
+                var itm = _lvHistory.SelectedItems[0].Tag as StockAlertLogItem;
+                if (itm != null && !string.IsNullOrWhiteSpace(itm.StockCode))
+                {
+                    if (_onEvaluateStock != null) _onEvaluateStock(itm.StockCode, this);
+                }
+            };
+
+            mnuAddWatch.Click += (s, e) =>
+            {
+                if (_lvHistory.SelectedItems.Count == 0) return;
+                AddAlertItemToWatchlist(_lvHistory.SelectedItems[0]);
+            };
+
+            _lvHistory.ContextMenuStrip = ctxAlert;
 
             pnlFooter.Controls.Add(_lblFooterGuide);
             pnlFooter.Controls.Add(_btnClear);

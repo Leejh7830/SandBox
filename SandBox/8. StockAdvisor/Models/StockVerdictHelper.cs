@@ -72,25 +72,27 @@ namespace GateHelper.StockAdvisor.Models
             // 2. 판정 로직 분기
             // [급락 경보 인터락] 당일 -4.0%를 초과하여 급락 중인 종목은 지지선 붕괴 위험이 크므로 매수 배제 및 급락주의 경보
             bool isSharpDrop = item.ChangeRate <= -4.0m;
+            bool isHeld = item.Quantity > 0;
+            bool isStopBreached = isHeld && stopPrice > 0 && item.CurrentPrice > 0 && item.CurrentPrice <= stopPrice;
 
-            // [매수 승인 판정 우선 계산] 종합 6점 이상(B등급 이상)에 수급 양호하고 지뢰가 없으면 객관적 우량 매수 승인
-            // (RSI 58 이상 상승 구간은 뒤쪽에서 [보유홀딩]으로 분리되므로 isBuy 자체는 6~7점 우량 팩터 전체에 대해 true 유지)
+            // 과매도 반등: RSI 36.5 이하 침체권 + 손익비/안전 우수(RiskScore >= 7) + 악재/지뢰 없음 + 단기 급락(-4% 초과) 아님
+            bool isOversold = item.Rsi <= 36.5m && item.Rsi > 0m && item.RiskScore >= 7 && !item.HasCriticalLandmine && !isSharpDrop;
+
+            // [매수 승인 판정 우선 계산] 종합 6점 이상(B등급 이상)에 지뢰가 없고 급락이 아닐 때
+            // (과매도 반등 요건 충족 시 역배열로 인한 차트 5점 캡 예외 인정하여 레이더와 100% 일치)
             bool isBuy = (item.Grade == PositionGrade.A || item.FinalScore >= 7 ||
-                         (item.Grade == PositionGrade.B && item.FinalScore >= 6 && item.ChartScore >= 6 && item.SupplyFinanceScore >= 5))
+                         (item.FinalScore >= 6 && ((item.ChartScore >= 6 && item.SupplyFinanceScore >= 5) || isOversold)))
                          && !item.HasCriticalLandmine && !isSharpDrop;
 
-            // [회피/비중축소 인터락] C/F등급, 종합 4점 이하, 또는 치명적 지뢰 발생 시.
-            // (종합 6점 이상 B등급 우량 종목은 과거 텍스트나 일시적 RSI 상승으로 인해 절대 비중축소/매수금지로 왜곡되지 않음)
-            bool isAvoid = (item.Grade == PositionGrade.C || item.Grade == PositionGrade.F ||
-                           item.FinalScore <= 4 || item.HasCriticalLandmine) ||
+            // [회피/비중축소 인터락]
+            // 1. 종합 4점 이하(F등급 및 하위 C등급), 치명적 지뢰 발생, 또는 보유 종목 손절 방어선 실제 이탈 시
+            // 2. 6점 미만 종목에서 AI 심층진단이 명시적 손절/축소/경보를 권고한 경우
+            // (지뢰가 없는 5점 중립 C등급 종목은 빨간 경고 대신 노란색 [관망]으로 합리적 분류)
+            bool isAvoid = (item.Grade == PositionGrade.F || item.FinalScore <= 4 || item.HasCriticalLandmine || isStopBreached) ||
                            (item.FinalScore < 6 && item.LastDiagnosis != null &&
                            (item.LastDiagnosis.RecommendedAction.Contains("손절") || item.LastDiagnosis.RecommendedAction.Contains("축소") || item.LastDiagnosis.RecommendedAction.Contains("경보")));
 
             bool isOverheat = item.Rsi >= 68.0m || (item.TimingBadge != null && item.TimingBadge.Contains("과열"));
-
-            // 과매도 반등: RSI 36.5 이하 침체권 + 손익비/안전 우수 + 악재/지뢰 없음 + 단기 급락(-4% 초과) 아님
-            bool isOversold = item.Rsi <= 36.5m && item.Rsi > 0m && item.RiskScore >= 7 && !item.HasCriticalLandmine && !isSharpDrop;
-            bool isHeld = item.Quantity > 0;
 
             if (isSharpDrop)
             {
@@ -129,6 +131,10 @@ namespace GateHelper.StockAdvisor.Models
                     else if (item.HasCriticalLandmine)
                     {
                         info.GuideText = "재무/공시 지뢰(적자/CB 등) 탐지! 손실 고착화 방지를 위해 조속한 비중 축소 및 리스크 정리 권고";
+                    }
+                    else if (isStopBreached)
+                    {
+                        info.GuideText = $"현재가가 손절 방어선({stopPrice:N0}원)을 이탈했습니다! 추가 하락 방지를 위해 원칙에 따른 비중 축소/손절 권고";
                     }
                     else
                     {

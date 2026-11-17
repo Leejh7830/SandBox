@@ -208,12 +208,19 @@ namespace GateHelper.StockAdvisor.Services
                                 item.PrimaryStrategyGuide = $"당일 급락({item.ChangeRate:+0.00;-0.00}%) 발생! 떨어지는 칼날 진입 금지 및 지지선 안착 확인 대기";
                                 item.CanBuy = false;
                             }
-                            // 2. 치명적 지뢰(적자/CB 등)가 있거나 종합 5점 이하 C/F등급 종목은 매수 배제 및 리스크 경보
-                            else if (item.HasCriticalLandmine || item.FinalScore <= 5 || item.Grade == PositionGrade.C || item.Grade == PositionGrade.F)
+                            // 2. 치명적 지뢰(적자/CB 등)가 있거나 종합 4점 이하(F·하위 C등급)는 매수금지, 지뢰 없는 5점 중립은 관망대기
+                            else if (item.HasCriticalLandmine || item.FinalScore <= 4 || item.Grade == PositionGrade.F)
                             {
                                 item.RecommendedBuyPrice = 0m;
                                 item.PrimaryStrategyBadge = $"매수금지({item.FinalScore}점)";
                                 item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · {item.SupplyBadge}/{item.LandmineBadge} — 수급·재무 기준 미달로 매수 제외";
+                                item.CanBuy = false;
+                            }
+                            else if (item.FinalScore <= 5 || item.Grade == PositionGrade.C)
+                            {
+                                item.RecommendedBuyPrice = 0m;
+                                item.PrimaryStrategyBadge = $"관망대기({item.FinalScore}점)";
+                                item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급, 중립) · 방향성 탐색 중으로 추가 점수 개선 확인 전까지 관망";
                                 item.CanBuy = false;
                             }
                             // 3. 종합 6점 이상(B등급 이상) & 지뢰 없는 우량 주도주군 대상 3대 핵심 전략 포착

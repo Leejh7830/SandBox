@@ -532,6 +532,9 @@ namespace GateHelper.StockAdvisor.Models
 
         // 주도주 매수 레이더 종목(관심 미등록 포함)이 AI 권고 매수가 도달 시 자동 토스트 알림 활성화 (기본 true)
         public bool EnableLeaderRadarAutoAlert { get; set; } = true;
+
+        // 계좌 보유 현금 (예수금, 원 단위 - 현금 vs 주식 비중 차트 분석용)
+        public decimal DepositCash { get; set; } = 0m;
     }
 
     public enum ToastAlertType

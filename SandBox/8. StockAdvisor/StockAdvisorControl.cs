@@ -783,6 +783,24 @@ namespace GateHelper.StockAdvisor
             }
         }
 
+        private void ShowAccountAllocationChartDialog()
+        {
+            string thermoBadge = _marketTemperature?.BadgeText ?? "체온 36.5℃ [정상]";
+            decimal thermoTemp = _marketTemperature?.Temperature ?? 36.5m;
+            using (var dlg = new AccountAllocationChartDialog(_portfolio, thermoBadge, thermoTemp, () => SavePortfolio()))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private void ShowTradeJournalDialog()
+        {
+            using (var dlg = new TradeJournalDialog(_portfolio?.Items))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
         private void ShowScoreHelpDialog() { using (var dlg = new StockScoreHelpDialog()) dlg.ShowDialog(this); }
 
         private void ShowEarningsRadarDialog() { using (var dlg = new EarningsRadarDialog(_portfolio.Items)) dlg.ShowDialog(this); }

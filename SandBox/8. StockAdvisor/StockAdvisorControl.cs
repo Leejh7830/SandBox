@@ -620,6 +620,10 @@ namespace GateHelper.StockAdvisor
                 }
             }
             SaveAlertHistory();
+            if (_portfolio != null && _portfolio.EnableMobilePushAlert)
+            {
+                _ = MobilePushAlertService.DispatchStockAlertAsync(_portfolio, item);
+            }
             if (this.IsHandleCreated && !this.IsDisposed)
             {
                 this.BeginInvoke(new Action(UpdateAlertHistoryButtonText));

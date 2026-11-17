@@ -16,6 +16,12 @@ namespace GateHelper.StockAdvisor
         private ComboBox _cboAiInterval;
         private CheckBox _chkEnablePriceAlert;
         private CheckBox _chkEnableLeaderRadarAlert;
+        private CheckBox _chkEnableMobilePush;
+        private TextBox _txtTelegramToken;
+        private TextBox _txtTelegramChatId;
+        private TextBox _txtDiscordWebhook;
+        private Button _btnDetectChatId;
+        private Button _btnTestPush;
         private Button _btnScoreHelp;
         private Button _btnKbSetting;
         private Button _btnGeminiSetting;
@@ -34,8 +40,8 @@ namespace GateHelper.StockAdvisor
         private void InitializeComponent()
         {
             Text = "주식 리스크 참모 환경 설정 (StockAdvisor Options)";
-            ClientSize = new Size(640, 645);
-            MinimumSize = new Size(640, 645);
+            ClientSize = new Size(640, 825);
+            MinimumSize = new Size(640, 825);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -257,10 +263,165 @@ namespace GateHelper.StockAdvisor
             grpDocs.Controls.Add(lblHelpDesc);
             grpDocs.Controls.Add(_btnScoreHelp);
 
+            // 3-2. 그룹 3: 스마트폰 실시간 푸시 알림 설정 (텔레그램 / 디스코드)
+            var grpMobilePush = new GroupBox
+            {
+                Text = "📱 스마트폰 실시간 푸시 알림 (텔레그램 봇 / 디스코드 웹훅)",
+                Location = new Point(5, 545),
+                Size = new Size(590, 175),
+                ForeColor = Color.FromArgb(0, 230, 150),
+                Font = new Font("Malgun Gothic", 9.5f, FontStyle.Bold),
+                Padding = new Padding(14)
+            };
+
+            _chkEnableMobilePush = new CheckBox
+            {
+                Text = "실시간 가격·타점 알림 발생 시 내 스마트폰으로 즉시 푸시 전송",
+                Location = new Point(16, 26),
+                Size = new Size(460, 24),
+                Font = new Font("Malgun Gothic", 9f),
+                ForeColor = Color.FromArgb(235, 245, 255),
+                Cursor = Cursors.Hand
+            };
+
+            var lblTgToken = new Label
+            {
+                Text = "텔레그램 토큰:",
+                Location = new Point(16, 60),
+                Size = new Size(105, 22),
+                Font = new Font("Malgun Gothic", 8.8f),
+                ForeColor = Color.FromArgb(190, 205, 225)
+            };
+            _txtTelegramToken = new TextBox
+            {
+                Location = new Point(125, 57),
+                Size = new Size(445, 24),
+                BackColor = Color.FromArgb(28, 34, 48),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 8.8f)
+            };
+
+            var lblTgChat = new Label
+            {
+                Text = "내 채팅방 ID:",
+                Location = new Point(16, 94),
+                Size = new Size(105, 22),
+                Font = new Font("Malgun Gothic", 8.8f),
+                ForeColor = Color.FromArgb(190, 205, 225)
+            };
+            _txtTelegramChatId = new TextBox
+            {
+                Location = new Point(125, 91),
+                Size = new Size(165, 24),
+                BackColor = Color.FromArgb(28, 34, 48),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 8.8f)
+            };
+
+            _btnDetectChatId = CreateButton("🔍 내 ID 자동 찾기", Color.FromArgb(18, 48, 72), Color.FromArgb(0, 195, 255), Color.FromArgb(180, 240, 255));
+            _btnDetectChatId.Location = new Point(298, 90);
+            _btnDetectChatId.Size = new Size(135, 27);
+            _btnDetectChatId.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
+            _btnDetectChatId.Click += async (s, e) =>
+            {
+                _btnDetectChatId.Enabled = false;
+                _btnDetectChatId.Text = "탐색 중...";
+                try
+                {
+                    var res = await MobilePushAlertService.DetectTelegramChatIdAsync(_txtTelegramToken.Text);
+                    if (res.Ok)
+                    {
+                        _txtTelegramChatId.Text = res.ChatId;
+                        MessageBox.Show($"[{res.DisplayName}] 님의 채팅방 ID({res.ChatId})를 자동으로 찾았습니다!\n이제 우측 [테스트 발송]을 눌러 휴대폰 수신을 확인해보세요.",
+                            "Chat ID 탐지 성공", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show(res.Error, "Chat ID 탐지 실패", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                finally
+                {
+                    _btnDetectChatId.Enabled = true;
+                    _btnDetectChatId.Text = "🔍 내 ID 자동 찾기";
+                }
+            };
+
+            _btnTestPush = CreateButton("🔔 테스트 발송", Color.FromArgb(20, 56, 40), Color.FromArgb(0, 220, 130), Color.FromArgb(190, 255, 220));
+            _btnTestPush.Location = new Point(440, 90);
+            _btnTestPush.Size = new Size(130, 27);
+            _btnTestPush.Font = new Font("Malgun Gothic", 8.5f, FontStyle.Bold);
+            _btnTestPush.Click += async (s, e) =>
+            {
+                _btnTestPush.Enabled = false;
+                _btnTestPush.Text = "발송 중...";
+                try
+                {
+                    string testMsg = "✅ [SandBox 주식 리스크 참모]\n스마트폰 실시간 알림 연동 테스트에 성공했습니다!";
+                    bool anySent = false;
+                    string errs = "";
+
+                    if (!string.IsNullOrWhiteSpace(_txtTelegramToken.Text) && !string.IsNullOrWhiteSpace(_txtTelegramChatId.Text))
+                    {
+                        var tg = await MobilePushAlertService.SendTelegramAsync(_txtTelegramToken.Text, _txtTelegramChatId.Text, testMsg);
+                        if (tg.Ok) anySent = true;
+                        else errs += $"\n• 텔레그램 오류: {tg.Error}";
+                    }
+                    if (!string.IsNullOrWhiteSpace(_txtDiscordWebhook.Text))
+                    {
+                        var dc = await MobilePushAlertService.SendDiscordWebhookAsync(_txtDiscordWebhook.Text, testMsg);
+                        if (dc.Ok) anySent = true;
+                        else errs += $"\n• 디스코드 오류: {dc.Error}";
+                    }
+
+                    if (anySent && string.IsNullOrEmpty(errs))
+                    {
+                        MessageBox.Show("휴대폰으로 테스트 알림을 발송했습니다! 스마트폰을 확인해 주세요.", "테스트 발송 성공", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    }
+                    else if (!anySent && string.IsNullOrEmpty(errs))
+                    {
+                        MessageBox.Show("먼저 텔레그램 토큰 + Chat ID(자동 찾기) 또는 디스코드 웹훅 URL을 입력하세요.", "입력 필요", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                    else
+                    {
+                        MessageBox.Show($"발송 중 오류가 발생했습니다:{errs}", "발송 오류", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                finally
+                {
+                    _btnTestPush.Enabled = true;
+                    _btnTestPush.Text = "🔔 테스트 발송";
+                }
+            };
+
+            var lblDcUrl = new Label
+            {
+                Text = "디스코드 웹훅:",
+                Location = new Point(16, 129),
+                Size = new Size(105, 22),
+                Font = new Font("Malgun Gothic", 8.8f),
+                ForeColor = Color.FromArgb(190, 205, 225)
+            };
+            _txtDiscordWebhook = new TextBox
+            {
+                Location = new Point(125, 126),
+                Size = new Size(445, 24),
+                BackColor = Color.FromArgb(28, 34, 48),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 8.8f)
+            };
+
+            grpMobilePush.Controls.AddRange(new Control[]
+            {
+                _chkEnableMobilePush, lblTgToken, _txtTelegramToken,
+                lblTgChat, _txtTelegramChatId, _btnDetectChatId, _btnTestPush,
+                lblDcUrl, _txtDiscordWebhook
+            });
+
             // 4. 하단 버튼 바
             var pnlBottom = new Panel
             {
-                Location = new Point(5, 550),
+                Location = new Point(5, 730),
                 Size = new Size(590, 45)
             };
 
@@ -281,6 +442,7 @@ namespace GateHelper.StockAdvisor
 
             // 메인 패널에 배치
             pnlMain.Controls.Add(pnlBottom);
+            pnlMain.Controls.Add(grpMobilePush);
             pnlMain.Controls.Add(grpDocs);
             pnlMain.Controls.Add(grpSync);
             pnlMain.Controls.Add(lblSubtitle);
@@ -301,6 +463,11 @@ namespace GateHelper.StockAdvisor
 
             _chkEnablePriceAlert.Checked = _portfolio.EnablePriceTouchAlert;
             _chkEnableLeaderRadarAlert.Checked = _portfolio.EnableLeaderRadarAutoAlert;
+
+            _chkEnableMobilePush.Checked = _portfolio.EnableMobilePushAlert;
+            _txtTelegramToken.Text = _portfolio.TelegramBotToken ?? string.Empty;
+            _txtTelegramChatId.Text = _portfolio.TelegramChatId ?? string.Empty;
+            _txtDiscordWebhook.Text = _portfolio.DiscordWebhookUrl ?? string.Empty;
         }
 
         private void SelectComboInterval(ComboBox cbo, int minutes, int defaultIndex)
@@ -340,6 +507,11 @@ namespace GateHelper.StockAdvisor
 
             _portfolio.EnablePriceTouchAlert = _chkEnablePriceAlert.Checked;
             _portfolio.EnableLeaderRadarAutoAlert = _chkEnableLeaderRadarAlert.Checked;
+
+            _portfolio.EnableMobilePushAlert = _chkEnableMobilePush.Checked;
+            _portfolio.TelegramBotToken = _txtTelegramToken.Text.Trim();
+            _portfolio.TelegramChatId = _txtTelegramChatId.Text.Trim();
+            _portfolio.DiscordWebhookUrl = _txtDiscordWebhook.Text.Trim();
 
             OptionsChanged = true;
             DialogResult = DialogResult.OK;

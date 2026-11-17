@@ -409,9 +409,9 @@ namespace GateHelper.StockAdvisor
 
             var mnuAdd = new ToolStripMenuItem("새 종목 추가 (Insert)");
             mnuAdd.Click += (s, e) => ShowAddStockDialog();
-            var mnuEdit = new ToolStripMenuItem("종목 정보 수정 ([수정])");
+            var mnuEdit = new ToolStripMenuItem("종목 정보 수정");
             mnuEdit.Click += (s, e) => EditSelectedStock();
-            var mnuDelete = new ToolStripMenuItem("종목 삭제 ([삭제])");
+            var mnuDelete = new ToolStripMenuItem("종목 삭제");
             mnuDelete.Click += (s, e) => DeleteSelectedStock();
             var mnuNaver = new ToolStripMenuItem("네이버 증권 웹페이지 열기");
             mnuNaver.Click += (s, e) => OpenNaverFinanceWeb();

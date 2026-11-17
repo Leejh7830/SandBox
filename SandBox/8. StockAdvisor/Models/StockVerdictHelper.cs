@@ -169,25 +169,31 @@ namespace GateHelper.StockAdvisor.Models
             }
             else if (isOverheat)
             {
-                info.Type = ActionVerdictType.TakeProfit;
                 if (isHeld)
                 {
+                    info.Type = ActionVerdictType.TakeProfit;
                     info.BadgeText = "과열주의";
                     info.TitleText = "[ AI 참모 최종 결론 : 단기 과열 구간 / 분할 익절 및 수익 확정 권고 ]";
                     info.GuideText = "단기 과열 슈팅 구간! 욕심을 줄이고 보유 물량의 30~50%를 분할 매도하여 수익을 확정하세요.";
                     info.BuyPriceText = $"• 매수가: [추격 금지] (20일 눌림목 대기선: {buy1Str} 도달 시에만 검토)";
+                    info.BackColor = Color.FromArgb(16, 32, 54);
+                    info.ForeColor = Color.FromArgb(100, 215, 255);
+                    info.BorderColor = Color.FromArgb(50, 130, 210);
+                    info.ListBadgeColor = Color.FromArgb(70, 190, 255);
                 }
                 else
                 {
-                    info.BadgeText = "과열주의";
-                    info.TitleText = "[ AI 참모 최종 결론 : 단기 과열 주의 / 추격 매수 절대 금지 ]";
-                    info.GuideText = "단기 과열 슈팅 구간! 지금 사면 상투 물림 위험. 20일선 눌림목 도달 시까지 매수 금지";
+                    // [사용자 요청] 미보유 종목의 단기 과열 시 타이밍 안전벨트는 '과열(추격금지)', 최종 액션은 '관망'으로 통일
+                    info.Type = ActionVerdictType.HoldOrWatch;
+                    info.BadgeText = "관망";
+                    info.TitleText = "[ AI 참모 최종 결론 : 단기 과열 구간 / 추격 매수 금지 및 관망 ]";
+                    info.GuideText = "단기 과열 슈팅 구간! 지금 사면 상투 물림 위험. 20일선 눌림목 도달 시까지 관망 유지";
                     info.BuyPriceText = $"• 매수가: [추격 금지] (20일 눌림목 대기선: {buy1Str} 도달 시에만 검토)";
+                    info.BackColor = Color.FromArgb(36, 32, 20);
+                    info.ForeColor = Color.FromArgb(255, 220, 90);
+                    info.BorderColor = Color.FromArgb(170, 140, 40);
+                    info.ListBadgeColor = Color.FromArgb(240, 200, 80);
                 }
-                info.BackColor = Color.FromArgb(16, 32, 54);
-                info.ForeColor = Color.FromArgb(100, 215, 255);
-                info.BorderColor = Color.FromArgb(50, 130, 210);
-                info.ListBadgeColor = Color.FromArgb(70, 190, 255);
                 info.CanBuy = false;
             }
             else if (isBuy)

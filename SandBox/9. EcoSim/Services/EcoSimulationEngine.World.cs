@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GateHelper.EcoSim.Models;
 
@@ -56,6 +56,123 @@ namespace GateHelper.EcoSim.Services
                     _campfires[i] = cf;
                 }
             }
+        }
+
+        private void UpdateHouses()
+        {
+            for (int i = _houses.Count - 1; i >= 0; i--)
+            {
+                var h = _houses[i];
+                if (h.Owner1Id > 0 && FindOrganismById(h.Owner1Id) == null) h.Owner1Id = 0;
+                if (h.Owner2Id > 0 && FindOrganismById(h.Owner2Id) == null) h.Owner2Id = 0;
+
+                if (h.IsComplete)
+                {
+                    h.RemainingTicks--;
+                }
+
+                if (h.RemainingTicks <= 0 || h.Hp <= 0f)
+                {
+                    ClearHouseOwners(h.Id);
+                    int last = _houses.Count - 1;
+                    _houses[i] = _houses[last];
+                    _houses.RemoveAt(last);
+                }
+                else
+                {
+                    _houses[i] = h;
+                }
+            }
+        }
+
+        private void ClearHouseOwners(int houseId)
+        {
+            for (int i = 0; i < _organisms.Count; i++)
+            {
+                if (_organisms[i].HouseId == houseId) _organisms[i].HouseId = 0;
+            }
+        }
+
+        public int FindHouseIndexById(int houseId)
+        {
+            if (houseId <= 0) return -1;
+            for (int i = 0; i < _houses.Count; i++)
+            {
+                if (_houses[i].Id == houseId) return i;
+            }
+            return -1;
+        }
+
+        public int FindHouseAt(float x, float y, float extraRadius = 10f)
+        {
+            for (int i = 0; i < _houses.Count; i++)
+            {
+                var h = _houses[i];
+                float dx = h.X - x;
+                float dy = h.Y - y;
+                float r = 24f + extraRadius;
+                if (dx * dx + dy * dy <= r * r) return h.Id;
+            }
+            return -1;
+        }
+
+        private int FindNearestHouse(float x, float y, float maxRadius)
+        {
+            int bestIdx = -1;
+            float bestDistSq = maxRadius * maxRadius;
+            for (int i = 0; i < _houses.Count; i++)
+            {
+                var h = _houses[i];
+                float dx = h.X - x;
+                float dy = h.Y - y;
+                float d2 = dx * dx + dy * dy;
+                if (d2 <= bestDistSq)
+                {
+                    bestDistSq = d2;
+                    bestIdx = i;
+                }
+            }
+            return bestIdx;
+        }
+
+        private int FindNearestUnfinishedHouse(float x, float y, float maxRadius)
+        {
+            int bestIdx = -1;
+            float bestDistSq = maxRadius * maxRadius;
+            for (int i = 0; i < _houses.Count; i++)
+            {
+                var h = _houses[i];
+                if (h.IsComplete) continue;
+                float dx = h.X - x;
+                float dy = h.Y - y;
+                float d2 = dx * dx + dy * dy;
+                if (d2 <= bestDistSq)
+                {
+                    bestDistSq = d2;
+                    bestIdx = i;
+                }
+            }
+            return bestIdx;
+        }
+
+        private int FindNearestRockIndex(float x, float y)
+        {
+            int bestIdx = -1;
+            float bestDistSq = float.MaxValue;
+            for (int i = 0; i < _terrains.Count; i++)
+            {
+                var t = _terrains[i];
+                if (t.IsWater) continue;
+                float dx = t.X - x;
+                float dy = t.Y - y;
+                float d2 = dx * dx + dy * dy;
+                if (d2 < bestDistSq)
+                {
+                    bestDistSq = d2;
+                    bestIdx = i;
+                }
+            }
+            return bestIdx;
         }
 
         private int FindCampfireByGroupId(int groupId)

@@ -115,6 +115,43 @@ namespace GateHelper.EcoSim.Models
     }
 
     /// <summary>
+    /// 인간 2인이 공동 소유하며 겨울 월동 및 회복 보너스를 제공하는 오두막(집).
+    /// </summary>
+    public struct HouseSite
+    {
+        public int Id;
+        public float X;
+        public float Y;
+        public float Radius;
+        public float Hp;
+        public float MaxHp;
+        public int RemainingTicks;
+        public int MaxTicks;
+        public int BuildProgress;
+        public int BuildTarget;
+        public int Owner1Id;
+        public int Owner2Id;
+
+        public bool IsComplete => BuildProgress >= BuildTarget;
+
+        public HouseSite(int id, float x, float y, float radius, float maxHp, int maxTicks, int owner1Id)
+        {
+            Id = id;
+            X = x;
+            Y = y;
+            Radius = radius;
+            Hp = maxHp;
+            MaxHp = maxHp;
+            RemainingTicks = maxTicks;
+            MaxTicks = maxTicks;
+            BuildProgress = 25;
+            BuildTarget = 100;
+            Owner1Id = owner1Id;
+            Owner2Id = 0;
+        }
+    }
+
+    /// <summary>
     /// 생태계 명예의 전당(역대 최고 기록 및 현재 생존 전설 개체) 집계 데이터.
     /// </summary>
     public sealed class EcoHallOfFame

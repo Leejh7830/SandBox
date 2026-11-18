@@ -16,6 +16,7 @@ namespace GateHelper.EcoSim.Controls
         private EcoSimulationEngine _engine;
         private EcoToolMode _toolMode = EcoToolMode.Inspect;
         private int _selectedOrganismId = -1;
+        private int _selectedHouseId = -1;
         private bool _isMouseDown;
         private int _lastWeatherTick = -1;
         private float _playerCameraZoom = 1.85f;
@@ -32,6 +33,7 @@ namespace GateHelper.EcoSim.Controls
         private readonly WeatherParticle[] _weatherParticles = new WeatherParticle[24];
 
         public event Action<int> OrganismSelected;
+        public event Action<int> HouseSelected;
         public event Action WorldMutatedByUser;
 
         public EcoViewportControl()
@@ -156,8 +158,28 @@ namespace GateHelper.EcoSim.Controls
             {
                 if (!isInitialClick) return;
                 var found = _engine.FindOrganismAt(wx, wy, 14f);
-                _selectedOrganismId = found != null ? found.Id : -1;
-                OrganismSelected?.Invoke(_selectedOrganismId);
+                if (found != null)
+                {
+                    _selectedOrganismId = found.Id;
+                    _selectedHouseId = -1;
+                    OrganismSelected?.Invoke(_selectedOrganismId);
+                }
+                else
+                {
+                    int houseId = _engine.FindHouseAt(wx, wy, 14f);
+                    if (houseId > 0)
+                    {
+                        _selectedOrganismId = -1;
+                        _selectedHouseId = houseId;
+                        HouseSelected?.Invoke(_selectedHouseId);
+                    }
+                    else
+                    {
+                        _selectedOrganismId = -1;
+                        _selectedHouseId = -1;
+                        OrganismSelected?.Invoke(-1);
+                    }
+                }
                 Invalidate();
             }
             else if (_toolMode == EcoToolMode.DropFood)
@@ -319,6 +341,28 @@ namespace GateHelper.EcoSim.Controls
                 {
                     DrawMiniHpBar(g, cfx, cfy + spriteSize * 0.5f + 2f, 24f, 3f, cf.RemainingTicks / (float)cf.MaxTicks, EcoRenderCache.CampfireCoreBrush);
                 }
+            }
+
+            // 0.7 인간 오두막(집) 렌더링
+            var houses = _engine.Houses;
+            for (int i = 0; i < houses.Count; i++)
+            {
+                var h = houses[i];
+                if (h.X + h.Radius < viewLeft || h.X - h.Radius > viewRight ||
+                    h.Y + h.Radius < viewTop || h.Y - h.Radius > viewBottom) continue;
+                float hx = (h.X - viewLeft) * sx;
+                float hy = (h.Y - viewTop) * sy;
+                float hrx = h.Radius * sx;
+                float hry = h.Radius * sy;
+                g.FillEllipse(EcoRenderCache.HouseZoneBrush, hx - hrx, hy - hry, hrx * 2f, hry * 2f);
+                g.DrawEllipse(EcoRenderCache.HouseZonePen, hx - hrx, hy - hry, hrx * 2f, hry * 2f);
+                if (h.Id == _selectedHouseId)
+                {
+                    g.DrawEllipse(EcoRenderCache.SelectionPen, hx - 22f, hy - 22f, 44f, 44f);
+                }
+                g.DrawImage(EcoRenderCache.HouseSprite, hx - 18f, hy - 18f, 36f, 36f);
+                float ratio = h.IsComplete ? (h.Hp / Math.Max(1f, h.MaxHp)) : (h.BuildProgress / (float)Math.Max(1, h.BuildTarget));
+                DrawMiniHpBar(g, hx, hy + 20f, 32f, 3.5f, ratio, h.IsComplete ? EcoRenderCache.HouseHpBrush : EcoRenderCache.PlayerTagBrush);
             }
 
             // 1. 먹이 렌더링 (새싹 스프라이트 + 뷰포트 컬링)

@@ -10,6 +10,7 @@ namespace GateHelper.EcoSim
         private Panel _topBar;
         private Panel _sidePanel;
         private EcoViewportControl _viewport;
+        private EcoTechTreeControl _techTree;
         private EcoChartControl _chart;
 
         private Button _btnPlayPause;
@@ -33,6 +34,7 @@ namespace GateHelper.EcoSim
         private Button _btnPlayerMode;
         private Button _btnBgm;
         private Button _btnHallOfFame;
+        private Button _btnTechTree;
         private Button _btnHelp;
 
         private BufferedLabel _lblStatsSummary;
@@ -178,6 +180,11 @@ namespace GateHelper.EcoSim
             _btnHallOfFame.FlatAppearance.BorderSize = 1;
             _btnHallOfFame.FlatAppearance.BorderColor = Color.FromArgb(202, 138, 4);
 
+            _btnTechTree = CreateBarButton("📜 기술", 68, Color.FromArgb(30, 58, 138));
+            _btnTechTree.Dock = DockStyle.Right;
+            _btnTechTree.FlatAppearance.BorderSize = 1;
+            _btnTechTree.FlatAppearance.BorderColor = Color.FromArgb(59, 130, 246);
+
             _btnHelp = CreateBarButton("? 도움말", 72, Color.FromArgb(30, 41, 59));
             _btnHelp.Dock = DockStyle.Right;
             _btnHelp.FlatAppearance.BorderSize = 1;
@@ -197,6 +204,7 @@ namespace GateHelper.EcoSim
             _topBar.Controls.Add(_btnPlayerMode);
             _topBar.Controls.Add(_btnBgm);
             _topBar.Controls.Add(_btnHallOfFame);
+            _topBar.Controls.Add(_btnTechTree);
             _topBar.Controls.Add(_btnHelp);
 
             // 2. 우측 사이드바 (통계, 그래프, 개체 DNA 인스펙터)
@@ -309,12 +317,18 @@ namespace GateHelper.EcoSim
             _sidePanel.Controls.Add(_lblEventStatus);
             _sidePanel.Controls.Add(_lblStatsSummary);
 
-            // 3. 메인 뷰포트
+            // 3. 메인 뷰포트 & 기술 트리 탭
             _viewport = new EcoViewportControl
             {
                 Dock = DockStyle.Fill
             };
+            _techTree = new EcoTechTreeControl
+            {
+                Dock = DockStyle.Fill,
+                Visible = false
+            };
 
+            Controls.Add(_techTree);
             Controls.Add(_viewport);
             Controls.Add(_sidePanel);
             Controls.Add(_topBar);
@@ -366,7 +380,9 @@ namespace GateHelper.EcoSim
         {
             private int _meatCount;
             private int _woodCount;
+            private int _stoneCount;
             private bool _isPlayerHuman;
+            private bool _houseUnlocked;
             private int _hoveredSlot = -1;
             private readonly ToolTip _toolTip;
 
@@ -425,7 +441,12 @@ namespace GateHelper.EcoSim
                 {
                     _toolTip.SetToolTip(this, $"나뭇가지 ({_woodCount}/{Services.EcoSimulationEngine.MaxInventoryStack})\n5개 보유 시 [F] 키로 모닥불 건설 (AI는 겨울에 자동 건설)");
                 }
-                else if (hit >= 2)
+                else if (hit == 2)
+                {
+                    string lockNote = _houseUnlocked ? "보유 시 [B] 키 또는 협동으로 집 건설" : "(3년차 정착기 도달 시 집 해금)";
+                    _toolTip.SetToolTip(this, $"돌 ({_stoneCount}/{Services.EcoSimulationEngine.MaxInventoryStack})\n나뭇가지 {Services.EcoSimulationEngine.HouseWoodCost} + 돌 {Services.EcoSimulationEngine.HouseStoneCost} {lockNote}");
+                }
+                else if (hit >= 3)
                 {
                     _toolTip.SetToolTip(this, "빈 슬롯\n추후 업데이트용 여분 칸");
                 }
@@ -442,13 +463,15 @@ namespace GateHelper.EcoSim
                 _toolTip.SetToolTip(this, string.Empty);
             }
 
-            public void SetState(bool visible, int meatCount, int woodCount, bool isPlayerHuman)
+            public void SetState(bool visible, int meatCount, int woodCount, int stoneCount, bool isPlayerHuman, bool houseUnlocked)
             {
                 if (Visible != visible) Visible = visible;
-                if (_meatCount == meatCount && _woodCount == woodCount && _isPlayerHuman == isPlayerHuman) return;
+                if (_meatCount == meatCount && _woodCount == woodCount && _stoneCount == stoneCount && _isPlayerHuman == isPlayerHuman && _houseUnlocked == houseUnlocked) return;
                 _meatCount = meatCount;
                 _woodCount = woodCount;
+                _stoneCount = stoneCount;
                 _isPlayerHuman = isPlayerHuman;
+                _houseUnlocked = houseUnlocked;
                 if (visible) Invalidate();
             }
 
@@ -467,11 +490,12 @@ namespace GateHelper.EcoSim
                 const float headerH = 20f;
 
                 bool canBuildFire = _woodCount >= Services.EcoSimulationEngine.CampfireWoodCost;
-                string title = (_isPlayerHuman && canBuildFire) ? "[F] 불!" : "가방 (3×2)";
+                bool canBuildHouse = _houseUnlocked && _woodCount >= Services.EcoSimulationEngine.HouseWoodCost && _stoneCount >= Services.EcoSimulationEngine.HouseStoneCost;
+                string title = (_isPlayerHuman && canBuildHouse) ? "[B] 집!" : ((_isPlayerHuman && canBuildFire) ? "[F] 불!" : "가방 (3×2)");
                 g.DrawString(
                     title,
                     Rendering.EcoRenderCache.BoldSmallFont,
-                    canBuildFire ? Rendering.EcoRenderCache.LegendStarBrush : Rendering.EcoRenderCache.TextMutedBrush,
+                    (canBuildFire || canBuildHouse) ? Rendering.EcoRenderCache.LegendStarBrush : Rendering.EcoRenderCache.TextMutedBrush,
                     padX,
                     padTop);
 
@@ -485,7 +509,7 @@ namespace GateHelper.EcoSim
                         float sy = gridTop + r * (slotSize + gap);
 
                         g.FillRectangle(Rendering.EcoRenderCache.InvSlotBgBrush, sx, sy, slotSize, slotSize);
-                        Pen border = (idx == 1 && canBuildFire)
+                        Pen border = ((idx == 1 && canBuildFire) || (idx == 2 && canBuildHouse))
                             ? Rendering.EcoRenderCache.InvSlotReadyPen
                             : Rendering.EcoRenderCache.InvSlotBorderPen;
                         g.DrawRectangle(border, sx, sy, slotSize, slotSize);
@@ -499,6 +523,11 @@ namespace GateHelper.EcoSim
                         {
                             g.DrawImage(Rendering.EcoRenderCache.WoodSprite, sx + 5f, sy + 4f, 24f, 24f);
                             g.DrawString(_woodCount.ToString(), Rendering.EcoRenderCache.BoldSmallFont, Rendering.EcoRenderCache.TextPrimaryBrush, sx + 19f, sy + 19f);
+                        }
+                        else if (idx == 2 && _stoneCount > 0)
+                        {
+                            g.DrawImage(Rendering.EcoRenderCache.StoneSprite, sx + 5f, sy + 4f, 24f, 24f);
+                            g.DrawString(_stoneCount.ToString(), Rendering.EcoRenderCache.BoldSmallFont, Rendering.EcoRenderCache.TextPrimaryBrush, sx + 19f, sy + 19f);
                         }
                     }
                 }

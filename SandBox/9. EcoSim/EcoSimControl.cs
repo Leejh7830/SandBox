@@ -23,6 +23,7 @@ namespace GateHelper.EcoSim
         private bool _isPaused;
         private int _speedMultiplier = 1;
         private int _selectedOrganismId = -1;
+        private int _selectedHouseId = -1;
         private int _uiRefreshCounter;
 
         public EcoSimControl()
@@ -32,6 +33,7 @@ namespace GateHelper.EcoSim
             _engine = new EcoSimulationEngine();
             _bgmService = new EcoBgmService();
             _viewport.BindEngine(_engine);
+            _techTree.BindEngine(_engine);
             _chart.SetHistory(_engine.History);
 
             _simTimer = new Timer { Interval = 33 };
@@ -74,6 +76,7 @@ namespace GateHelper.EcoSim
             _btnPlayerMode.Click += (s, e) => TogglePlayerMode();
             _btnBgm.Click += (s, e) => ToggleBgm();
             _btnHallOfFame.Click += (s, e) => ShowHallOfFameDialog();
+            _btnTechTree.Click += (s, e) => ToggleTechTreeTab();
             _btnHelp.Click += (s, e) => ShowHelpDialog();
 
             _chkShelters.CheckedChanged += (s, e) =>
@@ -103,6 +106,13 @@ namespace GateHelper.EcoSim
             _viewport.OrganismSelected += id =>
             {
                 _selectedOrganismId = id;
+                _selectedHouseId = -1;
+                RefreshInspectorLabel();
+            };
+            _viewport.HouseSelected += houseId =>
+            {
+                _selectedHouseId = houseId;
+                _selectedOrganismId = -1;
                 RefreshInspectorLabel();
             };
             _viewport.WorldMutatedByUser += () => RefreshUiLabels();
@@ -156,7 +166,7 @@ namespace GateHelper.EcoSim
             {
                 Keys k = keyData & Keys.KeyCode;
                 if (k == Keys.Up || k == Keys.Down || k == Keys.Left || k == Keys.Right ||
-                    k == Keys.W || k == Keys.A || k == Keys.S || k == Keys.D || k == Keys.Space || k == Keys.F)
+                    k == Keys.W || k == Keys.A || k == Keys.S || k == Keys.D || k == Keys.Space || k == Keys.F || k == Keys.B)
                 {
                     return true;
                 }
@@ -179,8 +189,9 @@ namespace GateHelper.EcoSim
             if (IsKeyDown(Keys.Down) || IsKeyDown(Keys.S)) dy += 1f;
             bool space = IsKeyDown(Keys.Space);
             bool buildFire = IsKeyDown(Keys.F);
+            bool buildHouse = IsKeyDown(Keys.B);
 
-            _engine.SetPlayerInput(dx, dy, space, buildFire);
+            _engine.SetPlayerInput(dx, dy, space, buildFire, buildHouse);
         }
 
         private static bool IsKeyDown(Keys key) => (GetAsyncKeyState((int)key) & 0x8000) != 0;
@@ -311,8 +322,20 @@ namespace GateHelper.EcoSim
             {
                 _uiRefreshCounter = 0;
                 _chart.Invalidate();
+                if (_techTree.Visible) _techTree.Invalidate();
                 RefreshUiLabels();
             }
+        }
+
+        private void ToggleTechTreeTab()
+        {
+            bool showTech = !_techTree.Visible;
+            _techTree.Visible = showTech;
+            _viewport.Visible = !showTech;
+            _btnTechTree.Text = showTech ? "🗺 생태계" : "📜 기술";
+            _btnTechTree.BackColor = showTech ? Color.FromArgb(217, 119, 6) : Color.FromArgb(30, 58, 138);
+            if (showTech) _techTree.Invalidate();
+            else _viewport.Invalidate();
         }
 
         private void TogglePause()
@@ -382,8 +405,9 @@ namespace GateHelper.EcoSim
             float avgPreySpd = hist.Count > 0 ? hist[hist.Count - 1].AvgPreySpeed : 0f;
             float avgPredSpd = hist.Count > 0 ? hist[hist.Count - 1].AvgPredatorSpeed : 0f;
 
+            int year = _engine.TickCount / 880;
             string nextStats =
-                $"틱: {_engine.TickCount:N0}   |   최고 세대: {_engine.MaxGeneration}세대\n" +
+                $"틱: {_engine.TickCount:N0} ({year}년 · {_engine.CurrentEraLabel})  |  최고: {_engine.MaxGeneration}세대\n" +
                 $"초식: {_engine.PreyCount} (속도 {avgPreySpd:F2})  |  육식: {_engine.PredatorCount} (속도 {avgPredSpd:F2})\n" +
                 $"곰: {_engine.BearCount}마리   |   인간: {_engine.HumanCount}명\n" +
                 $"식물 먹이: {_engine.Foods.Count}개   |   배속: {_speedMultiplier}x";
@@ -431,6 +455,7 @@ namespace GateHelper.EcoSim
             bool bagVisible = false;
             int bagMeat = 0;
             int bagWood = 0;
+            int bagStone = 0;
             bool bagPlayerHuman = false;
 
             if (_engine.IsPlayerMode)
@@ -443,6 +468,7 @@ namespace GateHelper.EcoSim
                     bagVisible = true;
                     bagMeat = p.MeatCount;
                     bagWood = p.WoodCount;
+                    bagStone = p.StoneCount;
                     bagPlayerHuman = true;
                 }
                 string expLine = _engine.PlayerStage >= 5
@@ -460,9 +486,33 @@ namespace GateHelper.EcoSim
                     $"──────────────\n" +
                     $"{_engine.PlayerNotice}";
             }
+            else if (_selectedHouseId >= 0)
+            {
+                int hIdx = _engine.FindHouseIndexById(_selectedHouseId);
+                if (hIdx < 0)
+                {
+                    nextInspector = $"오두막 #{_selectedHouseId}\n상태: 수명 만료 또는 파괴됨";
+                }
+                else
+                {
+                    var h = _engine.Houses[hIdx];
+                    string stateStr = h.IsComplete ? "완공" : $"공사중 ({h.BuildProgress}%)";
+                    float remYears = h.RemainingTicks / 880f;
+                    string o1 = h.Owner1Id > 0 ? $"#{h.Owner1Id}" : "없음";
+                    string o2 = h.Owner2Id > 0 ? $"#{h.Owner2Id}" : "빈 자리";
+                    nextInspector =
+                        $"🏠 오두막 #{h.Id} ({stateStr})\n" +
+                        $"내구도: {h.Hp:F0} / {h.MaxHp:F0}\n" +
+                        $"남은 수명: {remYears:F1}년 ({h.RemainingTicks}틱)\n" +
+                        $"집주인 1: {o1}  |  집주인 2: {o2}\n" +
+                        $"──────────────\n" +
+                        $"겨울 월동 · 회복 +0.55/틱\n" +
+                        $"대사 소모 45% · 번식 완화";
+                }
+            }
             else if (_selectedOrganismId < 0)
             {
-                nextInspector = "뷰포트에서 개체를 클릭하면\n유전자(속도/시야/크기)와\n세대 정보를 추적합니다.";
+                nextInspector = "뷰포트에서 개체·집을 클릭하면\n유전자(DNA) 또는 집 정보를\n추적합니다.";
             }
             else
             {
@@ -486,6 +536,7 @@ namespace GateHelper.EcoSim
                         bagVisible = true;
                         bagMeat = org.MeatCount;
                         bagWood = org.WoodCount;
+                        bagStone = org.StoneCount;
                     }
                     int ageYears = org.AgeTicks / 880;
                     nextInspector =
@@ -501,7 +552,7 @@ namespace GateHelper.EcoSim
                 }
             }
 
-            _inventoryBag.SetState(bagVisible, bagMeat, bagWood, bagPlayerHuman);
+            _inventoryBag.SetState(bagVisible, bagMeat, bagWood, bagStone, bagPlayerHuman, _engine.IsHouseAgeUnlocked);
 
             if (_lblInspector.Text != nextInspector)
             {

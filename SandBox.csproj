@@ -327,6 +327,9 @@
     <Compile Include="SandBox\9. EcoSim\Controls\EcoViewportControl.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="SandBox\9. EcoSim\Controls\EcoTechTreeControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="SandBox\9. EcoSim\Controls\EcoChartControl.cs">
       <SubType>Component</SubType>
     </Compile>

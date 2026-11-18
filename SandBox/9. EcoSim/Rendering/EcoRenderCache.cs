@@ -23,6 +23,8 @@ namespace GateHelper.EcoSim.Rendering
         public static readonly SolidBrush ToastBgBrush = new SolidBrush(Color.FromArgb(220, 30, 41, 59));
         public static readonly SolidBrush InvBagBgBrush = new SolidBrush(Color.FromArgb(215, 15, 23, 42));
         public static readonly SolidBrush InvSlotBgBrush = new SolidBrush(Color.FromArgb(235, 30, 41, 59));
+        public static readonly SolidBrush HouseZoneBrush = new SolidBrush(Color.FromArgb(26, 217, 119, 6));
+        public static readonly SolidBrush HouseHpBrush = new SolidBrush(Color.FromArgb(245, 158, 11));
         public static readonly SolidBrush DisasterLightningBrush = new SolidBrush(Color.FromArgb(38, 250, 204, 21));
         public static readonly SolidBrush DisasterColdBrush = new SolidBrush(Color.FromArgb(35, 125, 211, 252));
         public static readonly SolidBrush DisasterRainBrush = new SolidBrush(Color.FromArgb(35, 74, 222, 128));
@@ -64,6 +66,7 @@ namespace GateHelper.EcoSim.Rendering
         public static readonly Pen ToastBorderPen = new Pen(Color.FromArgb(250, 204, 21), 1.5f);
         public static readonly Pen InvSlotBorderPen = new Pen(Color.FromArgb(180, 71, 85, 105), 1.2f);
         public static readonly Pen InvSlotReadyPen = new Pen(Color.FromArgb(220, 251, 146, 60), 1.6f);
+        public static readonly Pen HouseZonePen = new Pen(Color.FromArgb(120, 217, 119, 6), 1.5f) { DashStyle = DashStyle.Dash };
         public static readonly Pen DisasterLightningPen = new Pen(Color.FromArgb(190, 250, 204, 21), 2.2f);
         public static readonly Pen DisasterColdPen = new Pen(Color.FromArgb(170, 125, 211, 252), 2.0f);
         public static readonly Pen DisasterRainPen = new Pen(Color.FromArgb(170, 74, 222, 128), 2.0f);
@@ -112,6 +115,8 @@ namespace GateHelper.EcoSim.Rendering
         public static readonly Bitmap RockSprite = CreateRockSprite();
         public static readonly Bitmap PondSprite = CreatePondSprite();
         public static readonly Bitmap ShelterSprite = CreateShelterSprite();
+        public static readonly Bitmap StoneSprite = CreateStoneSprite();
+        public static readonly Bitmap HouseSprite = CreateHouseSprite();
 
         private static Bitmap CreateFoodSprite()
         {
@@ -450,6 +455,62 @@ namespace GateHelper.EcoSim.Rendering
 
                 g.FillEllipse(bushDark, 38, 36, 20, 18);
                 g.FillEllipse(bushLight, 41, 38, 13, 12);
+            }
+            return bmp;
+        }
+
+        private static Bitmap CreateStoneSprite()
+        {
+            var bmp = new Bitmap(24, 24);
+            using (var g = Graphics.FromImage(bmp))
+            using (var baseBrush = new SolidBrush(Color.FromArgb(100, 116, 139)))
+            using (var lightBrush = new SolidBrush(Color.FromArgb(148, 163, 184)))
+            using (var darkPen = new Pen(Color.FromArgb(51, 65, 85), 1.3f))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                var pts = new[]
+                {
+                    new PointF(5f, 16f),
+                    new PointF(4f, 10f),
+                    new PointF(10f, 5f),
+                    new PointF(18f, 6f),
+                    new PointF(20f, 13f),
+                    new PointF(15f, 19f),
+                    new PointF(8f, 19f)
+                };
+                g.FillPolygon(baseBrush, pts);
+                g.FillPolygon(lightBrush, new[] { new PointF(10f, 5f), new PointF(18f, 6f), new PointF(15f, 12f), new PointF(8f, 11f) });
+                g.DrawPolygon(darkPen, pts);
+            }
+            return bmp;
+        }
+
+        private static Bitmap CreateHouseSprite()
+        {
+            var bmp = new Bitmap(48, 48);
+            using (var g = Graphics.FromImage(bmp))
+            using (var wallBrush = new SolidBrush(Color.FromArgb(180, 120, 68)))
+            using (var roofBrush = new SolidBrush(Color.FromArgb(185, 28, 28)))
+            using (var roofHighlight = new SolidBrush(Color.FromArgb(220, 38, 38)))
+            using (var doorBrush = new SolidBrush(Color.FromArgb(69, 39, 18)))
+            using (var windowBrush = new SolidBrush(Color.FromArgb(253, 224, 71)))
+            using (var outlinePen = new Pen(Color.FromArgb(41, 24, 12), 1.6f))
+            {
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                // 통나무 벽체
+                g.FillRectangle(wallBrush, 10, 22, 28, 20);
+                g.DrawRectangle(outlinePen, 10, 22, 28, 20);
+
+                // 지붕 삼각형
+                var roofPts = new[] { new PointF(24f, 6f), new PointF(42f, 23f), new PointF(6f, 23f) };
+                g.FillPolygon(roofBrush, roofPts);
+                g.FillPolygon(roofHighlight, new[] { new PointF(24f, 6f), new PointF(24f, 23f), new PointF(6f, 23f) });
+                g.DrawPolygon(outlinePen, roofPts);
+
+                // 문 & 따뜻한 불빛 창문
+                g.FillRectangle(doorBrush, 20, 30, 8, 12);
+                g.FillRectangle(windowBrush, 13, 26, 5, 5);
+                g.FillRectangle(windowBrush, 30, 26, 5, 5);
             }
             return bmp;
         }

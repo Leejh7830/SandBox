@@ -367,7 +367,32 @@ namespace GateHelper.EcoSim.Services
                 }
                 else
                 {
-                    // 사냥감이 없으면 배고플 때 잡식성으로 풀(열매) 섭취
+                    int targetHouseIdx = FindNearestHouse(bear.X, bear.Y, bear.Dna.Vision * 0.85f);
+                    if (targetHouseIdx >= 0)
+                    {
+                        var h = _houses[targetHouseIdx];
+                        SteerToward(bear, h.X, h.Y, 1.0f);
+                        float dx = h.X - bear.X;
+                        float dy = h.Y - bear.Y;
+                        if (dx * dx + dy * dy <= (bear.Dna.Size + 24f) * (bear.Dna.Size + 24f))
+                        {
+                            h.Hp -= bear.IsAlphaBoss ? 36f : 20f;
+                            if (h.Hp <= 0f)
+                            {
+                                ClearHouseOwners(h.Id);
+                                int last = _houses.Count - 1;
+                                _houses[targetHouseIdx] = _houses[last];
+                                _houses.RemoveAt(last);
+                            }
+                            else
+                            {
+                                _houses[targetHouseIdx] = h;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // 사냥감이 없으면 배고플 때 잡식성으로 풀(열매) 섭취
                     if (isHungry)
                     {
                         _foodGrid.QueryRadius(bear.X, bear.Y, bear.Dna.Vision * 0.8f, _queryBuffer);
@@ -409,6 +434,7 @@ namespace GateHelper.EcoSim.Services
                     {
                         Wander(bear);
                     }
+                }
                 }
             }
 
@@ -616,6 +642,21 @@ namespace GateHelper.EcoSim.Services
                     }
                 }
             }
+            else if (isWinter && human.HouseId > 0 && FindHouseIndexById(human.HouseId) >= 0)
+            {
+                var myHouse = _houses[FindHouseIndexById(human.HouseId)];
+                float dx = myHouse.X - human.X;
+                float dy = myHouse.Y - human.Y;
+                if (dx * dx + dy * dy > 22f * 22f)
+                {
+                    SteerToward(human, myHouse.X, myHouse.Y, 0.95f);
+                }
+                else
+                {
+                    human.Vx *= 0.65f;
+                    human.Vy *= 0.65f;
+                }
+            }
             else if (isWinter && myCampIdx >= 0)
             {
                 var cf = _campfires[myCampIdx];
@@ -640,11 +681,46 @@ namespace GateHelper.EcoSim.Services
             }
             else
             {
-                Wander(human);
-                if (isWinter)
+                // 비전투 중 공사 중인 집이 있으면 협동 건축하러 이동
+                int buildIdx = !isWinter ? FindNearestUnfinishedHouse(human.X, human.Y, 280f) : -1;
+                if (buildIdx >= 0)
                 {
-                    human.Vx *= 0.72f;
-                    human.Vy *= 0.72f;
+                    var bh = _houses[buildIdx];
+                    SteerToward(human, bh.X, bh.Y, 0.96f);
+                }
+                else if (IsStoneAgeUnlocked && !isWinter && human.MeatCount >= 1 && human.Energy >= human.MaxEnergy * 0.65f && human.StoneCount < 12)
+                {
+                    // 식량·체력 여유가 있으면 가끔 주변 바위로 돌 채집
+                    int rockIdx = FindNearestRockIndex(human.X, human.Y);
+                    if (rockIdx >= 0)
+                    {
+                        var rk = _terrains[rockIdx];
+                        float dx = rk.X - human.X;
+                        float dy = rk.Y - human.Y;
+                        float wantR = rk.Radius + human.Dna.Size + 8f;
+                        if (dx * dx + dy * dy > wantR * wantR)
+                        {
+                            SteerToward(human, rk.X, rk.Y, 0.88f);
+                        }
+                        else
+                        {
+                            human.Vx *= 0.7f;
+                            human.Vy *= 0.7f;
+                        }
+                    }
+                    else
+                    {
+                        Wander(human);
+                    }
+                }
+                else
+                {
+                    Wander(human);
+                    if (isWinter)
+                    {
+                        human.Vx *= 0.72f;
+                        human.Vy *= 0.72f;
+                    }
                 }
             }
 
@@ -653,21 +729,33 @@ namespace GateHelper.EcoSim.Services
             if (target == null)
             {
                 TryGatherWood(human);
+                TryGatherStone(human);
+                AssistNearbyUnfinishedHouse(human);
             }
 
             bool nearCampfire = FindNearestCampfire(human.X, human.Y, 72f) >= 0;
-            float humanSeasonCost = GetSeasonMetabolicMultiplier() * (nearCampfire ? 0.70f : 1.0f);
+            bool inHouse = IsInsideCompletedHouse(human);
+            float shelterMult = inHouse ? 0.45f : (nearCampfire ? 0.70f : 1.0f);
+            float humanSeasonCost = GetSeasonMetabolicMultiplier() * shelterMult;
             human.Energy -= human.Dna.ComputeMetabolicCost(EcoSpecies.Human) * humanSeasonCost;
 
-            if (nearCampfire && human.Energy > 0f)
+            if (inHouse && human.Energy > 0f)
+            {
+                human.Energy = Math.Min(human.MaxEnergy, human.Energy + 0.55f);
+            }
+            else if (nearCampfire && human.Energy > 0f)
             {
                 human.Energy = Math.Min(human.MaxEnergy, human.Energy + 0.35f);
             }
 
-            TryConsumeMeatForRecovery(human, nearCampfire, false);
+            TryConsumeMeatForRecovery(human, nearCampfire || inHouse, false);
 
-            // 겨울에만 나뭇가지가 충분히 모이면 거점 모닥불 설치 (봄/여름/가을엔 비축)
-            if (isWinter && human.WoodCount >= CampfireWoodCost)
+            // 정착기(3년차+) 해금 후 돌+나뭇가지 충분 & 집 없으면 집 착공 / 겨울엔 모닥불 건설
+            if (IsHouseAgeUnlocked && human.HouseId == 0 && human.WoodCount >= HouseWoodCost && human.StoneCount >= HouseStoneCost)
+            {
+                TryStartHouse(human, false);
+            }
+            else if (IsCampfireAgeUnlocked && isWinter && human.WoodCount >= CampfireWoodCost)
             {
                 TryBuildCampfireWithWood(human, false);
             }
@@ -678,7 +766,8 @@ namespace GateHelper.EcoSim.Services
                 return;
             }
 
-            if (human.Energy >= _config.HumanReproduceThreshold &&
+            float reproThreshold = inHouse ? _config.HumanReproduceThreshold * 0.85f : _config.HumanReproduceThreshold;
+            if (human.Energy >= reproThreshold &&
                 HumanCount < 4 &&
                 (_organisms.Count + _pendingOffspring.Count) < _config.MaxOrganismCount)
             {
@@ -688,7 +777,7 @@ namespace GateHelper.EcoSim.Services
 
         private bool TryBuildCampfireWithWood(Organism human, bool isPlayer)
         {
-            if (human.WoodCount < CampfireWoodCost || _campfires.Count >= MaxCampfires) return false;
+            if (!IsCampfireAgeUnlocked || human.WoodCount < CampfireWoodCost || _campfires.Count >= MaxCampfires) return false;
             if (FindNearestCampfire(human.X, human.Y, 150f) >= 0) return false;
 
             human.WoodCount -= CampfireWoodCost;
@@ -732,6 +821,85 @@ namespace GateHelper.EcoSim.Services
             if (isPlayer)
             {
                 PlayerNotice = "🍖 고기를 먹어 에너지를 회복했습니다! (+85)";
+            }
+        }
+
+        private bool TryStartHouse(Organism human, bool isPlayer)
+        {
+            if (!IsHouseAgeUnlocked || human.WoodCount < HouseWoodCost || human.StoneCount < HouseStoneCost || _houses.Count >= MaxHouses) return false;
+            if (FindNearestHouse(human.X, human.Y, 160f) >= 0) return false;
+
+            human.WoodCount -= HouseWoodCost;
+            human.StoneCount -= HouseStoneCost;
+            int id = _nextHouseId++;
+            var house = new HouseSite(id, human.X, human.Y, 44f, 350f, HouseDurationTicks, human.Id);
+            _houses.Add(house);
+            human.HouseId = id;
+            if (isPlayer)
+            {
+                PlayerNotice = "🏠 집 건축을 시작했습니다! 동료가 도우면 빠르게 완공됩니다.";
+            }
+            return true;
+        }
+
+        private void AssistNearbyUnfinishedHouse(Organism human)
+        {
+            for (int i = 0; i < _houses.Count; i++)
+            {
+                var h = _houses[i];
+                float dx = h.X - human.X;
+                float dy = h.Y - human.Y;
+                if (dx * dx + dy * dy > 60f * 60f) continue;
+
+                // 2번째 집주인 빈자리 배정
+                if (h.Owner2Id == 0 && h.Owner1Id != human.Id && human.HouseId == 0)
+                {
+                    h.Owner2Id = human.Id;
+                    human.HouseId = h.Id;
+                }
+
+                if (!h.IsComplete)
+                {
+                    h.BuildProgress = Math.Min(h.BuildTarget, h.BuildProgress + 2);
+                    if (h.IsComplete && human.IsPlayer)
+                    {
+                        PlayerNotice = "🏠 오두막 완공! 집 안에서는 겨울 보온 및 회복 보너스를 받습니다.";
+                    }
+                }
+                _houses[i] = h;
+                break;
+            }
+        }
+
+        private bool IsInsideCompletedHouse(Organism human)
+        {
+            for (int i = 0; i < _houses.Count; i++)
+            {
+                var h = _houses[i];
+                if (!h.IsComplete) continue;
+                float dx = h.X - human.X;
+                float dy = h.Y - human.Y;
+                if (dx * dx + dy * dy <= h.Radius * h.Radius) return true;
+            }
+            return false;
+        }
+
+        private void TryGatherStone(Organism human)
+        {
+            if (!IsStoneAgeUnlocked || human.GatherCooldown > 0 || human.StoneCount >= MaxInventoryStack) return;
+            for (int i = 0; i < _terrains.Count; i++)
+            {
+                var t = _terrains[i];
+                if (t.IsWater) continue;
+                float gatherR = t.Radius + human.Dna.Size + 10f;
+                float dx = t.X - human.X;
+                float dy = t.Y - human.Y;
+                if (dx * dx + dy * dy <= gatherR * gatherR)
+                {
+                    human.StoneCount = Math.Min(MaxInventoryStack, human.StoneCount + 1);
+                    human.GatherCooldown = 28;
+                    break;
+                }
             }
         }
 

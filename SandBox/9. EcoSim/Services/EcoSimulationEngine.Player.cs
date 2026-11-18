@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using GateHelper.EcoSim.Models;
 
@@ -94,12 +94,13 @@ namespace GateHelper.EcoSim.Services
             PlayerPerkSummary = "특성: 없음";
         }
 
-        public void SetPlayerInput(float moveX, float moveY, bool skillPressed, bool buildCampfirePressed = false)
+        public void SetPlayerInput(float moveX, float moveY, bool skillPressed, bool buildCampfirePressed = false, bool buildHousePressed = false)
         {
             _playerInputX = moveX;
             _playerInputY = moveY;
             if (skillPressed) _playerSkillPressed = true;
             if (buildCampfirePressed) _playerBuildCampfirePressed = true;
+            if (buildHousePressed) _playerBuildHousePressed = true;
         }
 
         public void StartPlayerMode()
@@ -355,21 +356,46 @@ namespace GateHelper.EcoSim.Services
                 }
             }
 
-            // 3-2. 플레이어 인간: 모닥불 건설(F) & 모닥불 보온/고기 회복
+            // 3-2. 플레이어 인간: 돌 채집, 모닥불(F)/집(B) 건설 & 보온/고기 회복
             bool buildFirePressed = _playerBuildCampfirePressed;
             _playerBuildCampfirePressed = false;
+            bool buildHousePressed = _playerBuildHousePressed;
+            _playerBuildHousePressed = false;
             bool playerNearCampfire = false;
+            bool playerInHouse = false;
             if (player.Species == EcoSpecies.Human)
             {
+                TryGatherStone(player);
+                AssistNearbyUnfinishedHouse(player);
+
                 if (buildFirePressed)
                 {
-                    if (player.WoodCount < CampfireWoodCost)
+                    if (!IsCampfireAgeUnlocked)
+                        PlayerNotice = "⏳ 모닥불 건설은 1년차(880틱)에 해금됩니다!";
+                    else if (player.WoodCount < CampfireWoodCost)
                         PlayerNotice = $"모닥불 건설에 나뭇가지 {CampfireWoodCost}개가 필요합니다. (보유: {player.WoodCount})";
                     else if (!TryBuildCampfireWithWood(player, true))
                         PlayerNotice = "주변에 이미 모닥불이 있거나 최대 개수에 도달했습니다.";
                 }
+                if (buildHousePressed)
+                {
+                    if (!IsHouseAgeUnlocked)
+                    {
+                        int remYears = Math.Max(1, (HouseUnlockTicks - TickCount + 879) / 880);
+                        PlayerNotice = $"⏳ 집 건설은 3년차(정착기)에 해금됩니다! (남은 기간: 약 {remYears}년)";
+                    }
+                    else if (player.WoodCount < HouseWoodCost || player.StoneCount < HouseStoneCost)
+                        PlayerNotice = $"집 건설에 나뭇가지 {HouseWoodCost} + 돌 {HouseStoneCost}이 필요합니다.";
+                    else if (!TryStartHouse(player, true))
+                        PlayerNotice = "주변에 다른 집이 있거나 최대 집 수에 도달했습니다.";
+                }
                 playerNearCampfire = FindNearestCampfire(player.X, player.Y, 72f) >= 0;
-                if (playerNearCampfire && player.Energy > 0f)
+                playerInHouse = IsInsideCompletedHouse(player);
+                if (playerInHouse && player.Energy > 0f)
+                {
+                    player.Energy = Math.Min(player.MaxEnergy, player.Energy + 0.55f);
+                }
+                else if (playerNearCampfire && player.Energy > 0f)
                 {
                     player.Energy = Math.Min(player.MaxEnergy, player.Energy + 0.35f);
                 }
@@ -377,11 +403,12 @@ namespace GateHelper.EcoSim.Services
 
             // 4. 생존 대사 & 생존 경험치
             float drainMult = inLen > 0.01f ? 0.82f : 0.35f;
-            if (playerNearCampfire) drainMult *= 0.65f;
+            if (playerInHouse) drainMult *= 0.45f;
+            else if (playerNearCampfire) drainMult *= 0.65f;
             player.Energy -= player.Dna.ComputeMetabolicCost(player.Species) * drainMult;
             if (player.Species == EcoSpecies.Human)
             {
-                TryConsumeMeatForRecovery(player, playerNearCampfire, true);
+                TryConsumeMeatForRecovery(player, playerNearCampfire || playerInHouse, true);
             }
             if (player.Energy <= 0f)
             {

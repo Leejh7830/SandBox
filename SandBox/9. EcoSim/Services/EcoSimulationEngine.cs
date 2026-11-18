@@ -19,6 +19,7 @@ namespace GateHelper.EcoSim.Services
         private readonly List<HunterShot> _hunterShots = new List<HunterShot>(32);
         private readonly List<TerrainObstacle> _terrains = new List<TerrainObstacle>(8);
         private readonly List<CampfireSite> _campfires = new List<CampfireSite>(4);
+        private readonly List<HouseSite> _houses = new List<HouseSite>(4);
         private readonly List<EcoStatsSnapshot> _history = new List<EcoStatsSnapshot>(256);
 
         private readonly SpatialGrid _organismGrid;
@@ -40,6 +41,7 @@ namespace GateHelper.EcoSim.Services
         public IReadOnlyList<HunterShot> HunterShots => _hunterShots;
         public IReadOnlyList<TerrainObstacle> Terrains => _terrains;
         public IReadOnlyList<CampfireSite> Campfires => _campfires;
+        public IReadOnlyList<HouseSite> Houses => _houses;
         public EcoHallOfFame HallOfFame { get; } = new EcoHallOfFame();
         public IReadOnlyList<EcoAchievement> Achievements => _achievements;
         public string AchievementToastText { get; private set; } = "";
@@ -99,12 +101,25 @@ namespace GateHelper.EcoSim.Services
         public const int CampfireWoodCost = 5;
         private const int MaxCampfires = 3;
         private const int CampfireDurationTicks = 480;
+        public const int CampfireUnlockTicks = 880; // 1년차 도달 시 모닥불 해금
+        public bool IsCampfireAgeUnlocked => TickCount >= CampfireUnlockTicks;
+        public const int StoneUnlockTicks = 1760; // 2년차 도달 시 석기 채집 해금
+        public bool IsStoneAgeUnlocked => TickCount >= StoneUnlockTicks;
+        public const int HouseUnlockTicks = 2640; // 3년차 도달 시 정착기(집) 해금
+        public bool IsHouseAgeUnlocked => TickCount >= HouseUnlockTicks;
+        public string CurrentEraLabel => IsHouseAgeUnlocked ? "정착기" : "원시기";
+        public const int HouseWoodCost = 6;
+        public const int HouseStoneCost = 4;
+        private const int MaxHouses = 3;
+        private const int HouseDurationTicks = 2640; // 3년(880틱 * 3)
         private int _nextCampfireGroupId = 1;
+        private int _nextHouseId = 1;
 
         private float _playerInputX;
         private float _playerInputY;
         private bool _playerSkillPressed;
         private bool _playerBuildCampfirePressed;
+        private bool _playerBuildHousePressed;
         private int _alphaBossCooldown;
         private bool _freezeWinterSeason;
 
@@ -126,6 +141,7 @@ namespace GateHelper.EcoSim.Services
             _hunterShots.Clear();
             _terrains.Clear();
             _campfires.Clear();
+            _houses.Clear();
             _history.Clear();
             HallOfFame.Reset();
 
@@ -143,6 +159,7 @@ namespace GateHelper.EcoSim.Services
             CurrentSeason = EcoSeason.Spring;
             _freezeWinterSeason = false;
             _nextCampfireGroupId = 1;
+            _nextHouseId = 1;
             AlphaBossId = -1;
             _alphaBossCooldown = 0;
             BossSwipeTicks = 0;
@@ -216,6 +233,7 @@ namespace GateHelper.EcoSim.Services
             _organisms.Clear();
             _foods.Clear();
             _campfires.Clear();
+            _houses.Clear();
             _history.Clear();
             _nextOrganismId = 1;
 
@@ -349,10 +367,30 @@ namespace GateHelper.EcoSim.Services
         public void Step()
         {
             TickCount++;
+            if (TickCount == CampfireUnlockTicks)
+            {
+                AchievementToastText = "★ 기술 해금: [모닥불] 건설 가능!";
+                AchievementToastTicks = 110;
+            }
+            else if (TickCount == StoneUnlockTicks)
+            {
+                AchievementToastText = "★ 기술 해금: [석기 채집] 돌 채취 가능!";
+                AchievementToastTicks = 110;
+            }
+            else if (TickCount == HouseUnlockTicks)
+            {
+                AchievementToastText = "★ 새 시대 [정착기]: 집(오두막) 건설 해금!";
+                AchievementToastTicks = 130;
+                if (IsPlayerMode)
+                {
+                    PlayerNotice = "🏠 3년 경과! [정착기] 도래 — 이제 [B] 키로 집을 지을 수 있습니다!";
+                }
+            }
             UpdateSeason();
             UpdateComposts();
             UpdateHunterShots();
             UpdateCampfires();
+            UpdateHouses();
             UpdateRandomDisasters();
             if (BossSwipeTicks > 0) BossSwipeTicks--;
             if (AchievementToastTicks > 0) AchievementToastTicks--;

@@ -23,7 +23,9 @@ namespace GateHelper.EcoSim.Models
         public int Kills { get; set; }
         public int MeatCount { get; set; }
         public int WoodCount { get; set; }
+        public int StoneCount { get; set; }
         public int CampfireGroupId { get; set; }
+        public int HouseId { get; set; }
         public int AttackCooldown { get; set; }
         public int GatherCooldown { get; set; }
         public int EatingTicks { get; set; }

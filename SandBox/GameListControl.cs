@@ -75,6 +75,14 @@ namespace GateHelper
             }
         }
 
+        private void GL_btnSelectEcoSim_Click(object sender, EventArgs e)
+        {
+            if (this.ParentForm is SandBox sb)
+            {
+                sb.SwitchToGame("EcoSim");
+            }
+        }
+
         private void GL_btnOptions_Click(object sender, EventArgs e)
         {
             using (var dlg = new OptionForm())

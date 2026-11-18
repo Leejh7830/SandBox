@@ -311,6 +311,29 @@
       <DependentUpon>StockAdvisorControl.cs</DependentUpon>
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="SandBox\9. EcoSim\Models\EcoConfig.cs" />
+    <Compile Include="SandBox\9. EcoSim\Models\Genome.cs" />
+    <Compile Include="SandBox\9. EcoSim\Models\Organism.cs" />
+    <Compile Include="SandBox\9. EcoSim\Models\FoodPellet.cs" />
+    <Compile Include="SandBox\9. EcoSim\Models\EcoStatsSnapshot.cs" />
+    <Compile Include="SandBox\9. EcoSim\Models\EcoWorldElements.cs" />
+    <Compile Include="SandBox\9. EcoSim\Services\SpatialGrid.cs" />
+    <Compile Include="SandBox\9. EcoSim\Services\EcoSimulationEngine.cs" />
+    <Compile Include="SandBox\9. EcoSim\Services\EcoBgmService.cs" />
+    <Compile Include="SandBox\9. EcoSim\Rendering\EcoRenderCache.cs" />
+    <Compile Include="SandBox\9. EcoSim\Controls\EcoViewportControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="SandBox\9. EcoSim\Controls\EcoChartControl.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="SandBox\9. EcoSim\EcoSimControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\9. EcoSim\EcoSimControl.Layout.cs">
+      <DependentUpon>EcoSimControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="SandBox\OptionForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -368,6 +391,18 @@
       <DependentUpon>SandBox.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="SandBox\8. StockAdvisor\Resources\stock_master.json" />
+    <Content Include="SandBox\9. EcoSim\Resources\Medieval Vol. 2 1 (Loop).wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SandBox\9. EcoSim\Resources\Medieval Vol. 2 2 (Loop).wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SandBox\9. EcoSim\Resources\Medieval Vol. 2 3 (Loop).wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="SandBox\9. EcoSim\Resources\Medieval Vol. 2 4 (Loop).wav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="App.config" />
     <Content Include="Resource_TEMP\sandbox_icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

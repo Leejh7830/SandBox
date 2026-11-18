@@ -8,6 +8,7 @@ using GateHelper.ServerTycoon;
 using GateHelper.DataFlip;
 using GateHelper.PocketFarm;
 using GateHelper.StockAdvisor;
+using GateHelper.EcoSim;
 
 namespace GateHelper
 {
@@ -22,6 +23,7 @@ namespace GateHelper
         private DataFlipControl _dataFlipControl;
         private PocketFarmControl _pocketFarmControl;
         private StockAdvisorControl _stockAdvisorControl;
+        private EcoSimControl _ecoSimControl;
 
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
@@ -330,6 +332,7 @@ namespace GateHelper
                 _dataFlipControl?.OnTabVisibilityChanged(false);
                 _pocketFarmControl?.OnTabVisibilityChanged(false);
                 _stockAdvisorControl?.OnTabVisibilityChanged(false);
+                _ecoSimControl?.OnTabVisibilityChanged(false);
             }
         }
 
@@ -408,6 +411,14 @@ namespace GateHelper
                 tpStockAdvisor.Controls.Add(_stockAdvisorControl);
             }
 
+            // 10. EcoSim (9번 게임: 미니 생태계 진화 시뮬레이터) 컨트롤 추가
+            _ecoSimControl = new EcoSimControl();
+            _ecoSimControl.Dock = DockStyle.Fill;
+            if (SB_tabControl1.TabPages.Contains(tpEcoSim))
+            {
+                tpEcoSim.Controls.Add(_ecoSimControl);
+            }
+
             // 탭 전환 이벤트: 활성 탭에 따른 스마트 렌더링/절전 제어
             SB_tabControl1.SelectedIndexChanged += SB_tabControl1_SelectedIndexChanged;
 
@@ -434,6 +445,9 @@ namespace GateHelper
 
             bool isStockAdvisor = SB_tabControl1.SelectedTab == tpStockAdvisor;
             _stockAdvisorControl?.OnTabVisibilityChanged(isStockAdvisor);
+
+            bool isEcoSim = SB_tabControl1.SelectedTab == tpEcoSim;
+            _ecoSimControl?.OnTabVisibilityChanged(isEcoSim);
         }
 
         protected override void OnVisibleChanged(EventArgs e)
@@ -448,6 +462,7 @@ namespace GateHelper
                 _dataFlipControl?.OnTabVisibilityChanged(false);
                 _pocketFarmControl?.OnTabVisibilityChanged(false);
                 _stockAdvisorControl?.OnTabVisibilityChanged(false);
+                _ecoSimControl?.OnTabVisibilityChanged(false);
             }
             else
             {
@@ -496,6 +511,7 @@ namespace GateHelper
             _dataFlipControl?.OnTabVisibilityChanged(false);
             _pocketFarmControl?.OnTabVisibilityChanged(false);
             _stockAdvisorControl?.OnTabVisibilityChanged(false);
+            _ecoSimControl?.OnTabVisibilityChanged(false);
         }
 
         public void BackToList()
@@ -581,6 +597,18 @@ namespace GateHelper
                     }
                     SB_tabControl1.SelectedTab = tpStockAdvisor;
                     _stockAdvisorControl?.OnTabVisibilityChanged(true);
+                }
+            }
+            else if (gameName == "EcoSim")
+            {
+                if (SB_tabControl1.TabPages.Contains(tpEcoSim))
+                {
+                    if (this.WindowState == FormWindowState.Normal && (this.ClientSize.Width < 1260 || this.ClientSize.Height < 800))
+                    {
+                        this.ClientSize = new System.Drawing.Size(1280, 820);
+                    }
+                    SB_tabControl1.SelectedTab = tpEcoSim;
+                    _ecoSimControl?.OnTabVisibilityChanged(true);
                 }
             }
         }

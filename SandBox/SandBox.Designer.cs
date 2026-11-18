@@ -38,6 +38,7 @@ namespace GateHelper
             this.tpDataFlip = new System.Windows.Forms.TabPage();
             this.tpPocketFarm = new System.Windows.Forms.TabPage();
             this.tpStockAdvisor = new System.Windows.Forms.TabPage();
+            this.tpEcoSim = new System.Windows.Forms.TabPage();
             this.SB_tabControl1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -52,6 +53,7 @@ namespace GateHelper
             this.SB_tabControl1.Controls.Add(this.tpDataFlip);
             this.SB_tabControl1.Controls.Add(this.tpPocketFarm);
             this.SB_tabControl1.Controls.Add(this.tpStockAdvisor);
+            this.SB_tabControl1.Controls.Add(this.tpEcoSim);
             this.SB_tabControl1.Depth = 0;
             this.SB_tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.SB_tabControl1.ItemSize = new System.Drawing.Size(40, 20);
@@ -154,6 +156,16 @@ namespace GateHelper
             this.tpStockAdvisor.Text = "StockAdvisor";
             this.tpStockAdvisor.UseVisualStyleBackColor = true;
             // 
+            // tpEcoSim
+            // 
+            this.tpEcoSim.Location = new System.Drawing.Point(4, 24);
+            this.tpEcoSim.Name = "tpEcoSim";
+            this.tpEcoSim.Padding = new System.Windows.Forms.Padding(3);
+            this.tpEcoSim.Size = new System.Drawing.Size(636, 605);
+            this.tpEcoSim.TabIndex = 9;
+            this.tpEcoSim.Text = "EcoSim";
+            this.tpEcoSim.UseVisualStyleBackColor = true;
+            // 
             // SandBox
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 12F);
@@ -177,6 +189,7 @@ namespace GateHelper
         private System.Windows.Forms.TabPage tpDataFlip;
         private System.Windows.Forms.TabPage tpPocketFarm;
         private System.Windows.Forms.TabPage tpStockAdvisor;
+        private System.Windows.Forms.TabPage tpEcoSim;
         private System.Windows.Forms.TabPage tpList;
     }
 }

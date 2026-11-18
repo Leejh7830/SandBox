@@ -18,6 +18,7 @@ namespace GateHelper.EcoSim.Controls
         private int _selectedOrganismId = -1;
         private bool _isMouseDown;
         private int _lastWeatherTick = -1;
+        private float _playerCameraZoom = 1.85f;
 
         private struct WeatherParticle
         {
@@ -103,12 +104,53 @@ namespace GateHelper.EcoSim.Controls
             _isMouseDown = false;
         }
 
+        protected override void OnMouseWheel(MouseEventArgs e)
+        {
+            base.OnMouseWheel(e);
+            if (_engine == null || !_engine.IsPlayerMode) return;
+            _playerCameraZoom += e.Delta > 0 ? 0.15f : -0.15f;
+            if (_playerCameraZoom < 1.2f) _playerCameraZoom = 1.2f;
+            else if (_playerCameraZoom > 2.6f) _playerCameraZoom = 2.6f;
+            Invalidate();
+        }
+
+        private void GetCameraTransform(out float viewLeft, out float viewTop, out float viewW, out float viewH, out float sx, out float sy, out float scaleAvg)
+        {
+            float worldW = _engine.Config.WorldWidth;
+            float worldH = _engine.Config.WorldHeight;
+            Organism player = _engine.IsPlayerMode ? _engine.FindOrganismById(_engine.PlayerId) : null;
+
+            if (player != null && _playerCameraZoom > 1.01f)
+            {
+                viewW = worldW / _playerCameraZoom;
+                viewH = worldH / _playerCameraZoom;
+                viewLeft = player.X - viewW * 0.5f;
+                viewTop = player.Y - viewH * 0.5f;
+                if (viewLeft < 0f) viewLeft = 0f;
+                else if (viewLeft > worldW - viewW) viewLeft = worldW - viewW;
+                if (viewTop < 0f) viewTop = 0f;
+                else if (viewTop > worldH - viewH) viewTop = worldH - viewH;
+            }
+            else
+            {
+                viewLeft = 0f;
+                viewTop = 0f;
+                viewW = worldW;
+                viewH = worldH;
+            }
+
+            sx = Width / viewW;
+            sy = Height / viewH;
+            scaleAvg = (sx + sy) * 0.5f;
+        }
+
         private void HandleMouseAction(int px, int py, bool isInitialClick)
         {
             if (Width <= 0 || Height <= 0 || _engine == null) return;
 
-            float wx = (px / (float)Width) * _engine.Config.WorldWidth;
-            float wy = (py / (float)Height) * _engine.Config.WorldHeight;
+            GetCameraTransform(out float viewLeft, out float viewTop, out _, out _, out float sx, out float sy, out _);
+            float wx = viewLeft + px / sx;
+            float wy = viewTop + py / sy;
 
             if (_toolMode == EcoToolMode.Inspect)
             {
@@ -191,28 +233,28 @@ namespace GateHelper.EcoSim.Controls
 
             if (_engine == null || Width <= 0 || Height <= 0) return;
 
-            float sx = Width / _engine.Config.WorldWidth;
-            float sy = Height / _engine.Config.WorldHeight;
-            float scaleAvg = (sx + sy) * 0.5f;
+            GetCameraTransform(out float viewLeft, out float viewTop, out float viewW, out float viewH, out float sx, out float sy, out float scaleAvg);
+            float viewRight = viewLeft + viewW;
+            float viewBottom = viewTop + viewH;
 
             // -1. 지형 장애물 (연못 & 바위) 렌더링
             var terrains = _engine.Terrains;
             for (int i = 0; i < terrains.Count; i++)
             {
                 var t = terrains[i];
-                float tx = t.X * sx;
-                float ty = t.Y * sy;
+                if (t.X + t.Radius < viewLeft || t.X - t.Radius > viewRight ||
+                    t.Y + t.Radius < viewTop || t.Y - t.Radius > viewBottom) continue;
+                float tx = (t.X - viewLeft) * sx;
+                float ty = (t.Y - viewTop) * sy;
                 float trx = t.Radius * sx;
                 float try_ = t.Radius * sy;
                 if (t.IsWater)
                 {
-                    g.FillEllipse(EcoRenderCache.PondFillBrush, tx - trx, ty - try_, trx * 2f, try_ * 2f);
-                    g.DrawEllipse(EcoRenderCache.PondBorderPen, tx - trx, ty - try_, trx * 2f, try_ * 2f);
+                    g.DrawImage(EcoRenderCache.PondSprite, tx - trx, ty - try_, trx * 2f, try_ * 2f);
                 }
                 else
                 {
-                    g.FillEllipse(EcoRenderCache.RockFillBrush, tx - trx, ty - try_, trx * 2f, try_ * 2f);
-                    g.DrawEllipse(EcoRenderCache.RockBorderPen, tx - trx, ty - try_, trx * 2f, try_ * 2f);
+                    g.DrawImage(EcoRenderCache.RockSprite, tx - trx, ty - try_, trx * 2f, try_ * 2f);
                 }
             }
 
@@ -223,12 +265,13 @@ namespace GateHelper.EcoSim.Controls
                 for (int i = 0; i < shelters.Count; i++)
                 {
                     var sh = shelters[i];
-                    float shX = sh.X * sx;
-                    float shY = sh.Y * sy;
+                    if (sh.X + sh.Radius < viewLeft || sh.X - sh.Radius > viewRight ||
+                        sh.Y + sh.Radius < viewTop || sh.Y - sh.Radius > viewBottom) continue;
+                    float shX = (sh.X - viewLeft) * sx;
+                    float shY = (sh.Y - viewTop) * sy;
                     float shRx = sh.Radius * sx;
                     float shRy = sh.Radius * sy;
-                    g.FillEllipse(EcoRenderCache.ShelterFillBrush, shX - shRx, shY - shRy, shRx * 2f, shRy * 2f);
-                    g.DrawEllipse(EcoRenderCache.ShelterBorderPen, shX - shRx, shY - shRy, shRx * 2f, shRy * 2f);
+                    g.DrawImage(EcoRenderCache.ShelterSprite, shX - shRx, shY - shRy, shRx * 2f, shRy * 2f);
                 }
             }
 
@@ -239,29 +282,35 @@ namespace GateHelper.EcoSim.Controls
                 for (int i = 0; i < composts.Count; i++)
                 {
                     var c = composts[i];
-                    float cx = c.X * sx;
-                    float cy = c.Y * sy;
+                    if (c.X < viewLeft - 8f || c.X > viewRight + 8f ||
+                        c.Y < viewTop - 8f || c.Y > viewBottom + 8f) continue;
+                    float cx = (c.X - viewLeft) * sx;
+                    float cy = (c.Y - viewTop) * sy;
                     g.FillEllipse(EcoRenderCache.CompostBrush, cx - 3.2f, cy - 3.2f, 6.4f, 6.4f);
                 }
             }
 
-            // 0.6 인간 거점 모닥불 렌더링 (장작 + 흔들리는 불꽃 스프라이트)
+            // 0.6 인간 거점 모닥불 렌더링 (그룹별 고유 색상 + 잔여 수명 바)
             var campfires = _engine.Campfires;
             bool isWinterNow = _engine.EnableSeasons && _engine.CurrentSeason == EcoSeason.Winter;
             for (int i = 0; i < campfires.Count; i++)
             {
                 var cf = campfires[i];
-                float cfx = cf.X * sx;
-                float cfy = cf.Y * sy;
+                float maxR = cf.Radius * 1.5f;
+                if (cf.X + maxR < viewLeft || cf.X - maxR > viewRight ||
+                    cf.Y + maxR < viewTop || cf.Y - maxR > viewBottom) continue;
+                int gIdx = (cf.GroupId > 0 ? cf.GroupId - 1 : i) & 3;
+                float cfx = (cf.X - viewLeft) * sx;
+                float cfy = (cf.Y - viewTop) * sy;
                 float cfrx = cf.Radius * sx;
                 float cfry = cf.Radius * sy;
-                g.FillEllipse(EcoRenderCache.CampfireGlowBrush, cfx - cfrx, cfy - cfry, cfrx * 2f, cfry * 2f);
-                g.DrawEllipse(EcoRenderCache.CampfireRingPen, cfx - cfrx, cfy - cfry, cfrx * 2f, cfry * 2f);
+                g.FillEllipse(EcoRenderCache.CampfireGroupGlowBrushes[gIdx], cfx - cfrx, cfy - cfry, cfrx * 2f, cfry * 2f);
+                g.DrawEllipse(EcoRenderCache.CampfireGroupPens[gIdx], cfx - cfrx, cfy - cfry, cfrx * 2f, cfry * 2f);
                 if (isWinterNow)
                 {
                     float gRx = cf.Radius * 1.45f * sx;
                     float gRy = cf.Radius * 1.45f * sy;
-                    g.DrawEllipse(EcoRenderCache.CampfireRingPen, cfx - gRx, cfy - gRy, gRx * 2f, gRy * 2f);
+                    g.DrawEllipse(EcoRenderCache.CampfireGroupPens[gIdx], cfx - gRx, cfy - gRy, gRx * 2f, gRy * 2f);
                 }
 
                 const float spriteSize = 24f;
@@ -272,25 +321,30 @@ namespace GateHelper.EcoSim.Controls
                 }
             }
 
-            // 1. 먹이 렌더링 (새싹 스프라이트)
+            // 1. 먹이 렌더링 (새싹 스프라이트 + 뷰포트 컬링)
             var foods = _engine.Foods;
             for (int i = 0; i < foods.Count; i++)
             {
                 var f = foods[i];
-                float fx = f.X * sx;
-                float fy = f.Y * sy;
+                if (f.X < viewLeft - 10f || f.X > viewRight + 10f ||
+                    f.Y < viewTop - 10f || f.Y > viewBottom + 10f) continue;
+                float fx = (f.X - viewLeft) * sx;
+                float fy = (f.Y - viewTop) * sy;
                 g.DrawImage(EcoRenderCache.FoodSprite, fx - 5.5f, fy - 5.5f, 11f, 11f);
             }
 
-            // 2. 생명체 렌더링 (진행 방향으로 회전하는 벡터 스프라이트)
+            // 2. 생명체 렌더링 (진행 방향으로 회전하는 벡터 스프라이트 + 뷰포트 컬링)
             var orgs = _engine.Organisms;
             for (int i = 0; i < orgs.Count; i++)
             {
                 var o = orgs[i];
                 if (!o.IsAlive) continue;
+                float cullMargin = Math.Max(30f, o.Dna.Vision);
+                if (o.X < viewLeft - cullMargin || o.X > viewRight + cullMargin ||
+                    o.Y < viewTop - cullMargin || o.Y > viewBottom + cullMargin) continue;
 
-                float ox = o.X * sx;
-                float oy = o.Y * sy;
+                float ox = (o.X - viewLeft) * sx;
+                float oy = (o.Y - viewTop) * sy;
                 float r = Math.Max(4.8f, o.Dna.Size * 1.25f * scaleAvg);
 
                 bool isSelected = o.Id == _selectedOrganismId;
@@ -314,7 +368,9 @@ namespace GateHelper.EcoSim.Controls
                         sprite = EcoRenderCache.BearSprite;
                         break;
                     default:
-                        sprite = EcoRenderCache.HumanSprite;
+                        sprite = o.CampfireGroupId > 0
+                            ? EcoRenderCache.HumanGroupSprites[(o.CampfireGroupId - 1) & 3]
+                            : EcoRenderCache.HumanSprite;
                         break;
                 }
 
@@ -370,17 +426,28 @@ namespace GateHelper.EcoSim.Controls
             for (int i = 0; i < shots.Count; i++)
             {
                 var sh = shots[i];
-                g.DrawLine(EcoRenderCache.HunterShotPen, sh.X1 * sx, sh.Y1 * sy, sh.X2 * sx, sh.Y2 * sy);
+                g.DrawLine(EcoRenderCache.HunterShotPen, (sh.X1 - viewLeft) * sx, (sh.Y1 - viewTop) * sy, (sh.X2 - viewLeft) * sx, (sh.Y2 - viewTop) * sy);
             }
 
             // 4. 계절별 초경량 배경 입자 이펙트 (Zero-GC)
             DrawSeasonWeatherOverlay(g);
 
-            // 4.5 랜덤 자연재해 구역 이펙트
+            // 4.5 알파 곰 보스 범위 할퀴기 이펙트
+            if (_engine.BossSwipeTicks > 0)
+            {
+                float bx = (_engine.BossSwipeX - viewLeft) * sx;
+                float by = (_engine.BossSwipeY - viewTop) * sy;
+                float brx = _engine.BossSwipeRadius * sx;
+                float bry = _engine.BossSwipeRadius * sy;
+                g.FillEllipse(EcoRenderCache.AlphaBossSwipeBrush, bx - brx, by - bry, brx * 2f, bry * 2f);
+                g.DrawEllipse(EcoRenderCache.AlphaBossSwipePen, bx - brx, by - bry, brx * 2f, bry * 2f);
+            }
+
+            // 4.6 랜덤 자연재해 구역 이펙트
             if (_engine.ActiveDisasterTicks > 0 && _engine.ActiveDisasterType > 0)
             {
-                float dx = _engine.ActiveDisasterX * sx;
-                float dy = _engine.ActiveDisasterY * sy;
+                float dx = (_engine.ActiveDisasterX - viewLeft) * sx;
+                float dy = (_engine.ActiveDisasterY - viewTop) * sy;
                 float drx = _engine.ActiveDisasterRadius * sx;
                 float dry = _engine.ActiveDisasterRadius * sy;
                 SolidBrush dBrush = _engine.ActiveDisasterType == 1
@@ -391,6 +458,8 @@ namespace GateHelper.EcoSim.Controls
                     : (_engine.ActiveDisasterType == 2 ? EcoRenderCache.DisasterColdPen : EcoRenderCache.DisasterRainPen);
                 g.FillEllipse(dBrush, dx - drx, dy - dry, drx * 2f, dry * 2f);
                 g.DrawEllipse(dPen, dx - drx, dy - dry, drx * 2f, dry * 2f);
+                string dLabel = _engine.ActiveDisasterType == 1 ? "⚡ 낙뢰" : (_engine.ActiveDisasterType == 2 ? "❄ 한파" : "✦ 단비");
+                g.DrawString(dLabel, EcoRenderCache.BoldSmallFont, EcoRenderCache.TextPrimaryBrush, dx - 18f, dy - 8f);
             }
 
             // 5. 업적 달성 토스트 배너
@@ -401,7 +470,54 @@ namespace GateHelper.EcoSim.Controls
                 g.DrawString(_engine.AchievementToastText, EcoRenderCache.BoldSmallFont, EcoRenderCache.LegendStarBrush, 24f, 21f);
             }
 
+            // 6. 내 개체 키우기 모드 미니맵 (카메라 추적 중 전체 위치 파악용)
+            if (_engine.IsPlayerMode && Width > 220 && Height > 150)
+            {
+                DrawPlayerMinimap(g, viewLeft, viewTop, viewW, viewH);
+            }
+
             g.DrawRectangle(EcoRenderCache.BorderPen, 0, 0, Width - 1, Height - 1);
+        }
+
+        private void DrawPlayerMinimap(Graphics g, float viewLeft, float viewTop, float viewW, float viewH)
+        {
+            const float mw = 120f;
+            const float mh = 80f;
+            float mx = Width - mw - 14f;
+            float my = Height - mh - 14f;
+            float worldW = _engine.Config.WorldWidth;
+            float worldH = _engine.Config.WorldHeight;
+
+            g.FillRectangle(EcoRenderCache.InvBagBgBrush, mx, my, mw, mh);
+            g.DrawRectangle(EcoRenderCache.InvSlotBorderPen, mx, my, mw, mh);
+
+            float msx = mw / worldW;
+            float msy = mh / worldH;
+
+            // 모닥불
+            var campfires = _engine.Campfires;
+            for (int i = 0; i < campfires.Count; i++)
+            {
+                var cf = campfires[i];
+                g.FillEllipse(EcoRenderCache.CampfireCoreBrush, mx + cf.X * msx - 2f, my + cf.Y * msy - 2f, 4f, 4f);
+            }
+
+            // 보스
+            var boss = _engine.AlphaBossId >= 0 ? _engine.FindOrganismById(_engine.AlphaBossId) : null;
+            if (boss != null && boss.IsAlive)
+            {
+                g.FillEllipse(EcoRenderCache.BossHpBrush, mx + boss.X * msx - 3f, my + boss.Y * msy - 3f, 6f, 6f);
+            }
+
+            // 플레이어
+            var player = _engine.FindOrganismById(_engine.PlayerId);
+            if (player != null && player.IsAlive)
+            {
+                g.FillEllipse(EcoRenderCache.PlayerTagBrush, mx + player.X * msx - 3f, my + player.Y * msy - 3f, 6f, 6f);
+            }
+
+            // 현재 카메라 뷰포트 박스
+            g.DrawRectangle(EcoRenderCache.DirectionPen, mx + viewLeft * msx, my + viewTop * msy, viewW * msx, viewH * msy);
         }
 
         private static void DrawMiniHpBar(Graphics g, float cx, float topY, float w, float h, float ratio, SolidBrush fillBrush)

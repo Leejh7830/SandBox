@@ -87,8 +87,8 @@ namespace GateHelper.EcoSim.Models
             float baseCost;
             switch (species)
             {
-                case EcoSpecies.Predator: baseCost = 0.14f; break;
-                case EcoSpecies.Bear: baseCost = 0.13f; break;
+                case EcoSpecies.Predator: baseCost = 0.12f; break;
+                case EcoSpecies.Bear: baseCost = 0.115f; break;
                 case EcoSpecies.Human: baseCost = 0.15f; break;
                 default: baseCost = 0.085f; break;
             }

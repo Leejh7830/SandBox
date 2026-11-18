@@ -367,6 +367,8 @@ namespace GateHelper.EcoSim
             private int _meatCount;
             private int _woodCount;
             private bool _isPlayerHuman;
+            private int _hoveredSlot = -1;
+            private readonly ToolTip _toolTip;
 
             public InventoryBagPanel()
             {
@@ -376,6 +378,68 @@ namespace GateHelper.EcoSim
                     ControlStyles.OptimizedDoubleBuffer |
                     ControlStyles.ResizeRedraw,
                     true);
+                _toolTip = new ToolTip
+                {
+                    InitialDelay = 150,
+                    ReshowDelay = 80,
+                    AutoPopDelay = 5500
+                };
+            }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing) _toolTip.Dispose();
+                base.Dispose(disposing);
+            }
+
+            protected override void OnMouseMove(MouseEventArgs e)
+            {
+                base.OnMouseMove(e);
+                const float slotSize = 34f;
+                const float gap = 4f;
+                const float padX = 8f;
+                const float gridTop = 28f;
+
+                int hit = -1;
+                for (int r = 0; r < 3 && hit < 0; r++)
+                {
+                    for (int c = 0; c < 2; c++)
+                    {
+                        float sx = padX + c * (slotSize + gap);
+                        float sy = gridTop + r * (slotSize + gap);
+                        if (e.X >= sx && e.X <= sx + slotSize && e.Y >= sy && e.Y <= sy + slotSize)
+                        {
+                            hit = r * 2 + c;
+                            break;
+                        }
+                    }
+                }
+
+                if (hit == _hoveredSlot) return;
+                _hoveredSlot = hit;
+                if (hit == 0)
+                {
+                    _toolTip.SetToolTip(this, $"고기 ({_meatCount}/{Services.EcoSimulationEngine.MaxInventoryStack})\n체력 38% 미만 또는 겨울 모닥불 휴식 시 자동 섭취 (+85 에너지)");
+                }
+                else if (hit == 1)
+                {
+                    _toolTip.SetToolTip(this, $"나뭇가지 ({_woodCount}/{Services.EcoSimulationEngine.MaxInventoryStack})\n5개 보유 시 [F] 키로 모닥불 건설 (AI는 겨울에 자동 건설)");
+                }
+                else if (hit >= 2)
+                {
+                    _toolTip.SetToolTip(this, "빈 슬롯\n추후 업데이트용 여분 칸");
+                }
+                else
+                {
+                    _toolTip.SetToolTip(this, string.Empty);
+                }
+            }
+
+            protected override void OnMouseLeave(EventArgs e)
+            {
+                base.OnMouseLeave(e);
+                _hoveredSlot = -1;
+                _toolTip.SetToolTip(this, string.Empty);
             }
 
             public void SetState(bool visible, int meatCount, int woodCount, bool isPlayerHuman)

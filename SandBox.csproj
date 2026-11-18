@@ -319,6 +319,9 @@
     <Compile Include="SandBox\9. EcoSim\Models\EcoWorldElements.cs" />
     <Compile Include="SandBox\9. EcoSim\Services\SpatialGrid.cs" />
     <Compile Include="SandBox\9. EcoSim\Services\EcoSimulationEngine.cs" />
+    <Compile Include="SandBox\9. EcoSim\Services\EcoSimulationEngine.Player.cs" />
+    <Compile Include="SandBox\9. EcoSim\Services\EcoSimulationEngine.Species.cs" />
+    <Compile Include="SandBox\9. EcoSim\Services\EcoSimulationEngine.World.cs" />
     <Compile Include="SandBox\9. EcoSim\Services\EcoBgmService.cs" />
     <Compile Include="SandBox\9. EcoSim\Rendering\EcoRenderCache.cs" />
     <Compile Include="SandBox\9. EcoSim\Controls\EcoViewportControl.cs">

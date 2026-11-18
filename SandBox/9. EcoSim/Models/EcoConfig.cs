@@ -63,19 +63,19 @@ namespace GateHelper.EcoSim.Models
     /// </summary>
     public sealed class EcoConfig
     {
-        public float WorldWidth { get; set; } = 1350f;
-        public float WorldHeight { get; set; } = 920f;
+        public float WorldWidth { get; set; } = 1920f;
+        public float WorldHeight { get; set; } = 1280f;
 
-        public int InitialFoodCount { get; set; } = 150;
-        public int InitialPreyCount { get; set; } = 48;
-        public int InitialPredatorCount { get; set; } = 11;
-        public int InitialBearCount { get; set; } = 2;
-        public int InitialHumanCount { get; set; } = 2;
+        public int InitialFoodCount { get; set; } = 210;
+        public int InitialPreyCount { get; set; } = 64;
+        public int InitialPredatorCount { get; set; } = 14;
+        public int InitialBearCount { get; set; } = 3;
+        public int InitialHumanCount { get; set; } = 3;
 
-        public int MaxFoodCount { get; set; } = 420;
-        public int MaxOrganismCount { get; set; } = 380;
+        public int MaxFoodCount { get; set; } = 540;
+        public int MaxOrganismCount { get; set; } = 460;
 
-        public float BaseFoodSpawnPerTick { get; set; } = 0.95f;
+        public float BaseFoodSpawnPerTick { get; set; } = 1.25f;
         public float FoodEnergyValue { get; set; } = 36f;
         public float PreyEnergyValue { get; set; } = 68f;
 

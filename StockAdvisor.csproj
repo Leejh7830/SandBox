@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Release</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{9A4B2E1F-6C3D-4E8A-B152-7F3C9D8E4A10}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>GateHelper</RootNamespace>
+    <AssemblyName>StockAdvisor</AssemblyName>
+    <ApplicationIcon>Resource_TEMP\sandbox_icon.ico</ApplicationIcon>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+    <BaseIntermediateOutputPath>obj\StockAdvisor\</BaseIntermediateOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\StockAdvisor\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\StockAdvisor\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AngleSharp, Version=1.5.2.0, Culture=neutral, PublicKeyToken=e83494dcdc6d31ea, processorArchitecture=MSIL">
+      <HintPath>packages\AngleSharp.1.5.2\lib\net472\AngleSharp.dll</HintPath>
+    </Reference>
+    <Reference Include="MaterialSkin, Version=2.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\MaterialSkin.2.2.3.1\lib\net461\MaterialSkin.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="ObjectListView, Version=2.9.1.1072, Culture=neutral, PublicKeyToken=b1c5bf581481bcd4, processorArchitecture=MSIL">
+      <HintPath>packages\ObjectListView.Official.2.9.1\lib\net20\ObjectListView.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Design" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Memory, Version=4.0.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>packages\System.Memory.4.6.2\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Runtime.CompilerServices.Unsafe.6.1.1\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encoding.CodePages, Version=9.0.0.3, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>packages\System.Text.Encoding.CodePages.9.0.3\lib\net462\System.Text.Encoding.CodePages.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AppSettings.cs" />
+    <Compile Include="Util_Option.cs" />
+    <Compile Include="Utils\ToastNotification.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\3. MysteryTime\MysteryApiKeyForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\3. MysteryTime\MysteryApiKeyForm.Designer.cs">
+      <DependentUpon>MysteryApiKeyForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\Security\DpapiHelper.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Models\StockModels.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Models\StockVerdictHelper.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Models\TradeJournalModels.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\NaverStockPriceService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\GlobalMarketPollerService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\GeminiRiskAdvisorService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\TechnicalIndicatorService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\StockIntelligenceService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\MarketThermometerService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\MobilePushAlertService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\EarningsRadarService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\MarketLeaderRadarService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Services\StockMasterService.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingModels.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingClient.cs" />
+    <Compile Include="SandBox\8. StockAdvisor\StockItemDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\SmartPortfolioImportDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\SmartPortfolioImportDialog.Layout.cs">
+      <DependentUpon>SmartPortfolioImportDialog.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\PortfolioImportPreviewDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\KeyStockSummaryDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\PanicExitDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\BrokerOrderComparisonDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\AccountAllocationChartDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\TradeJournalDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\MarketIntelNewsDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\KbSecSettingDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockScoreHelpDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorOptionDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockEvaluatorDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockEvaluatorDialog.Layout.cs">
+      <DependentUpon>StockEvaluatorDialog.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\MarketThermometerDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\MarketCloseReportDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\MiniCandleChartControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\EarningsRadarDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\MarketLeaderRadarDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAlertHistoryDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockSearchPopup.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockToastNotification.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Designer.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Layout.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Detail.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Sync.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.TopPickBanner.cs">
+      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="StockAdvisor\StockAdvisorProgram.cs" />
+    <Compile Include="StockAdvisor\StockAdvisorMainForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\3. MysteryTime\MysteryApiKeyForm.resx">
+      <DependentUpon>MysteryApiKeyForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="SandBox\8. StockAdvisor\Resources\stock_master.json" />
+    <None Include="App.config" />
+    <Content Include="Resource_TEMP\sandbox_icon.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resource_TEMP\sandbox_icon_256.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>

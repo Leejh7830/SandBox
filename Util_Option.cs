@@ -9,11 +9,15 @@ namespace GateHelper
     {
         public static bool IsAnyMainOperationBusy() => false;
 
+        public static string MetaFolderOverride { get; set; }
+
         public static string MetaFolder
         {
             get
             {
-                string folder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "_meta");
+                string folder = !string.IsNullOrWhiteSpace(MetaFolderOverride)
+                    ? MetaFolderOverride
+                    : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "_meta");
                 if (!Directory.Exists(folder))
                 {
                     try { Directory.CreateDirectory(folder); } catch { }

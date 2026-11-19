@@ -403,12 +403,10 @@ namespace GateHelper
                 tpPocketFarm.Controls.Add(_pocketFarmControl);
             }
 
-            // 9. Stock Advisor 컨트롤 추가
-            _stockAdvisorControl = new StockAdvisorControl();
-            _stockAdvisorControl.Dock = DockStyle.Fill;
-            if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
+            // 9. Stock Advisor 컨트롤: 독립 실행(StockAdvisor.exe)이 가동 중이면 중복 API/텔레그램 폴링 방지를 위해 지연 로딩
+            if (!IsStandaloneStockAdvisorRunning())
             {
-                tpStockAdvisor.Controls.Add(_stockAdvisorControl);
+                EnsureStockAdvisorControl();
             }
 
             // 10. EcoSim (9번 게임: 미니 생태계 진화 시뮬레이터) 컨트롤 추가
@@ -589,6 +587,14 @@ namespace GateHelper
             }
             else if (gameName == "StockAdvisor")
             {
+                if (IsStandaloneStockAdvisorRunning())
+                {
+                    WakeStandaloneStockAdvisor();
+                    ToastNotification.Show("독립 실행 중인 StockAdvisor 창을 화면 앞으로 불러왔습니다.\n(API 토큰 낭비·텔레그램 충돌 방지를 위해 중복 실행하지 않습니다)", "StockAdvisor 실행 중", ToastIcon.Info);
+                    return;
+                }
+
+                EnsureStockAdvisorControl();
                 if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
                 {
                     if (this.WindowState == FormWindowState.Normal && (this.ClientSize.Width < 1100 || this.ClientSize.Height < 720))
@@ -610,6 +616,49 @@ namespace GateHelper
                     SB_tabControl1.SelectedTab = tpEcoSim;
                     _ecoSimControl?.OnTabVisibilityChanged(true);
                 }
+            }
+        }
+
+        private static bool IsStandaloneStockAdvisorRunning()
+        {
+            try
+            {
+                System.Threading.Mutex existing;
+                if (System.Threading.Mutex.TryOpenExisting("GateHelper_StockAdvisor_SingleInstance_Mutex", out existing))
+                {
+                    existing.Dispose();
+                    return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
+        private static void WakeStandaloneStockAdvisor()
+        {
+            try
+            {
+                using (var wakeEvent = System.Threading.EventWaitHandle.OpenExisting("GateHelper_StockAdvisor_Wake_Event"))
+                {
+                    wakeEvent.Set();
+                }
+            }
+            catch { }
+        }
+
+        private void EnsureStockAdvisorControl()
+        {
+            if (_stockAdvisorControl != null) return;
+            _stockAdvisorControl = new StockAdvisorControl();
+            _stockAdvisorControl.Dock = DockStyle.Fill;
+            _stockAdvisorControl.RequestHostActivate = () =>
+            {
+                ShowSandBoxWindow();
+                SwitchToGame("StockAdvisor");
+            };
+            if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
+            {
+                tpStockAdvisor.Controls.Add(_stockAdvisorControl);
             }
         }
     }

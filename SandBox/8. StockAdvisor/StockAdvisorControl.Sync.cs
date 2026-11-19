@@ -900,7 +900,7 @@ namespace GateHelper.StockAdvisor
                                         target.StockName, target.StockCode, target.CurrentPrice, target.RecommendedBuyPrice, target.ChangeRate, ToastAlertType.BuyHit,
                                         onClickAction: () =>
                                         {
-                                            if (this.FindForm() is SandBox sb) { sb.ShowSandBoxWindow(); sb.SwitchToGame("StockAdvisor"); }
+                                            BringHostWindowToFront();
                                             ShowMarketLeaderRadarDialog(target.StockCode);
                                         });
                                 }));
@@ -920,14 +920,32 @@ namespace GateHelper.StockAdvisor
             }
         }
 
+        public Action RequestHostActivate { get; set; }
+
+        private void BringHostWindowToFront()
+        {
+            if (RequestHostActivate != null)
+            {
+                RequestHostActivate();
+                return;
+            }
+
+            Form form = this.FindForm();
+            if (form != null)
+            {
+                if (!form.Visible) form.Show();
+                if (form.WindowState == FormWindowState.Minimized) form.WindowState = FormWindowState.Normal;
+                form.BringToFront();
+                form.Activate();
+            }
+        }
+
         private void SelectAndFocusStock(string code)
         {
             if (string.IsNullOrEmpty(code)) return;
             try
             {
-                Form form = this.FindForm();
-                if (form is SandBox sb) { sb.ShowSandBoxWindow(); sb.SwitchToGame("StockAdvisor"); }
-                else if (form != null) { if (!form.Visible) form.Show(); form.WindowState = FormWindowState.Normal; form.BringToFront(); form.Activate(); }
+                BringHostWindowToFront();
 
                 if (_lvStocks == null || _lvStocks.IsDisposed) return;
 

@@ -15,6 +15,8 @@ namespace GateHelper.StockAdvisor
                 _kbSyncTimer?.Dispose();
                 _telegramPollTimer?.Stop();
                 _telegramPollTimer?.Dispose();
+                _topPickBlinkTimer?.Stop();
+                _topPickBlinkTimer?.Dispose();
                 if (components != null)
                 {
                     components.Dispose();

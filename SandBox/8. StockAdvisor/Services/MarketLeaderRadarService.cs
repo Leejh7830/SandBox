@@ -107,26 +107,27 @@ namespace GateHelper.StockAdvisor.Services
 
             var rawLeaders = new List<MarketLeaderItem>();
 
-            // 1. 코스피 시총/유동성 TOP 100 수집
-            try
+            // 1. 시가총액 상위 (코스피 100 + 코스닥 50) + 당일 거래대금 최상위 (코스피 40 + 코스닥 40) 병렬 수집
+            // (중소형 테마 주도주까지 누락 없이 포착 후 종목코드 기준 중복 제거)
+            var fetchTasks = new[]
             {
-                var kospi = await FetchMarketCategoryAsync("KOSPI", 100).ConfigureAwait(false);
-                if (kospi != null) rawLeaders.AddRange(kospi);
-            }
-            catch (Exception ex)
+                FetchMarketCategorySafeAsync("marketValue", "KOSPI", 100),
+                FetchMarketCategorySafeAsync("marketValue", "KOSDAQ", 50),
+                FetchMarketCategorySafeAsync("priceTop", "KOSPI", 40),
+                FetchMarketCategorySafeAsync("priceTop", "KOSDAQ", 40)
+            };
+            var fetchedGroups = await Task.WhenAll(fetchTasks).ConfigureAwait(false);
+            var seenCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var grp in fetchedGroups)
             {
-                LogManager.LogException(ex, LogManager.Level.Warning, "MarketLeaderRadarService.Scan.KOSPI");
-            }
-
-            // 2. 코스닥 시총/유동성 TOP 50 수집
-            try
-            {
-                var kosdaq = await FetchMarketCategoryAsync("KOSDAQ", 50).ConfigureAwait(false);
-                if (kosdaq != null) rawLeaders.AddRange(kosdaq);
-            }
-            catch (Exception ex)
-            {
-                LogManager.LogException(ex, LogManager.Level.Warning, "MarketLeaderRadarService.Scan.KOSDAQ");
+                if (grp == null) continue;
+                foreach (var itm in grp)
+                {
+                    if (seenCodes.Add(itm.StockCode))
+                    {
+                        rawLeaders.Add(itm);
+                    }
+                }
             }
 
             if (rawLeaders.Count == 0) return new List<MarketLeaderItem>();
@@ -134,9 +135,9 @@ namespace GateHelper.StockAdvisor.Services
             // 거래대금 내림차순 정렬
             rawLeaders = rawLeaders.OrderByDescending(x => x.TradingValueRaw).ToList();
 
-            // 거래대금 최상위 종목 중 개별주 우선 및 ETF 포함 여부를 고려하여 상위 75개 정밀 분석
+            // 거래대금 최상위 종목 상위 85개 정밀 분석
             // (기술적 지표 + 외인·기관 수급 + 재무·지뢰 4대 팩터, 세마포어 병렬 스캔)
-            int scanTargetCount = Math.Min(75, rawLeaders.Count);
+            int scanTargetCount = Math.Min(85, rawLeaders.Count);
             var scanTargets = rawLeaders.Take(scanTargetCount).ToList();
 
             using (var sem = new SemaphoreSlim(12))
@@ -230,33 +231,46 @@ namespace GateHelper.StockAdvisor.Services
                             {
                                 item.RecommendedBuyPrice = ind.RecommendedBuyPrice;
 
-                                // 전략 1: 골든 눌림목 (우량 주도주 + 20일선 부근 -4.5% ~ +3.5% 지지 + RSI 36.5 초과 ~ 60.0 이하 + 차트 6점 이상)
-                                if (item.ChangeRate > -4.0m &&
-                                    item.Rsi > 36.5m && item.Rsi <= 60.0m &&
-                                    item.Ma20DisparityRate >= -4.5m && item.Ma20DisparityRate <= 3.5m &&
-                                    item.ChartScore >= 6)
+                                // [독립 전략 플래그 판정] — 복합 신호(예: 골든 눌림목 + 거래대금 폭발)도 모든 해당 필터 탭에 누락 없이 노출
+                                bool isGolden = item.ChangeRate > -4.0m &&
+                                                item.Rsi > 36.5m && item.Rsi <= 60.0m &&
+                                                item.Ma20DisparityRate >= -4.5m && item.Ma20DisparityRate <= 3.5m &&
+                                                item.ChartScore >= 6;
+
+                                bool isOversold = item.Rsi <= 36.5m && item.Rsi > 0m &&
+                                                  item.RiskScore >= 7 && item.ChangeRate > -4.0m;
+
+                                bool isVolBreak = item.TradingValueRaw >= 50000000000L &&
+                                                  (item.VolumeRatio >= 120m || item.ProjectedVolumeRatio >= 140m) &&
+                                                  item.ChangeRate >= 1.0m && item.ChangeRate <= 8.5m && item.Rsi < 68m;
+
+                                item.IsGoldenPullback = isGolden;
+                                item.IsOversoldBounce = isOversold;
+                                item.IsVolumeBreakout = isVolBreak;
+
+                                string volInfo = item.VolumeRatio >= 120m
+                                    ? $"5일 평균 대비 {item.VolumeRatio:F0}%"
+                                    : $"현재 {item.VolumeRatio:F0}%·장마감 환산 {item.ProjectedVolumeRatio:F0}%";
+
+                                // 대표 전략 배지 및 가이드 (복합 신호 우선 표기)
+                                if (isGolden && isVolBreak)
                                 {
-                                    item.IsGoldenPullback = true;
+                                    item.PrimaryStrategyBadge = $"골든 눌림목+폭발({item.FinalScore}점)";
+                                    item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 20일선({item.Ma20:N0}원) 지지 + 거래대금({item.TradingValueText}, {volInfo}) 동시 폭발! 최상급 진입존";
+                                }
+                                else if (isGolden)
+                                {
                                     item.PrimaryStrategyBadge = $"골든 눌림목({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 20일선({item.Ma20:N0}원) 부근 지지 안착! 이상적 분할 진입존";
                                 }
-                                // 전략 2: 과매도 반등 (우량 주도주 + RSI 36.5 이하 침체권 + 손익비 7점 이상 + 당일 급락 아님 — 메인 화면과 100% 동일 기준)
-                                else if (item.Rsi <= 36.5m && item.Rsi > 0m && item.RiskScore >= 7 && item.ChangeRate > -4.0m)
+                                else if (isOversold)
                                 {
-                                    item.IsOversoldBounce = true;
                                     item.PrimaryStrategyBadge = $"과매도 반등({item.FinalScore}점)";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · RSI({item.Rsi:F1}) 침체 및 지지선({item.SupportPrice:N0}원) 안착 확인된 역발상 분할 매수존";
                                 }
-                                // 전략 3: 거래대금 폭발 (우량 주도주 + 당일 거래대금 500억 이상 + [실제 120%↑ 또는 장중 환산 140%↑] + 양봉 돌파 + RSI < 68)
-                                else if (item.TradingValueRaw >= 50000000000L &&
-                                         (item.VolumeRatio >= 120m || item.ProjectedVolumeRatio >= 140m) &&
-                                         item.ChangeRate >= 1.0m && item.ChangeRate <= 8.5m && item.Rsi < 68m)
+                                else if (isVolBreak)
                                 {
-                                    item.IsVolumeBreakout = true;
                                     item.PrimaryStrategyBadge = $"거래대금 폭발({item.FinalScore}점)";
-                                    string volInfo = item.VolumeRatio >= 120m
-                                        ? $"5일 평균 대비 {item.VolumeRatio:F0}%"
-                                        : $"현재 {item.VolumeRatio:F0}%·장마감 환산 {item.ProjectedVolumeRatio:F0}%";
                                     item.PrimaryStrategyGuide = $"종합 {item.FinalScore}점({item.Grade}등급) · 거래대금({item.TradingValueText}, {volInfo}) 대량 유입 돌파! 상승 모멘텀 유효";
                                 }
                                 else if (verdict.CanBuy)
@@ -299,10 +313,23 @@ namespace GateHelper.StockAdvisor.Services
             return rawLeaders;
         }
 
-        private static async Task<List<MarketLeaderItem>> FetchMarketCategoryAsync(string category, int pageSize)
+        private static async Task<List<MarketLeaderItem>> FetchMarketCategorySafeAsync(string sortType, string category, int pageSize)
+        {
+            try
+            {
+                return await FetchMarketCategoryAsync(sortType, category, pageSize).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.LogException(ex, LogManager.Level.Warning, $"MarketLeaderRadarService.Scan.{sortType}.{category}");
+                return new List<MarketLeaderItem>();
+            }
+        }
+
+        private static async Task<List<MarketLeaderItem>> FetchMarketCategoryAsync(string sortType, string category, int pageSize)
         {
             var list = new List<MarketLeaderItem>();
-            string url = $"https://m.stock.naver.com/api/stocks/marketValue/{category}?page=1&pageSize={pageSize}";
+            string url = $"https://m.stock.naver.com/api/stocks/{sortType}/{category}?page=1&pageSize={pageSize}";
 
             var response = await _httpClient.GetAsync(url).ConfigureAwait(false);
             if (!response.IsSuccessStatusCode) return list;

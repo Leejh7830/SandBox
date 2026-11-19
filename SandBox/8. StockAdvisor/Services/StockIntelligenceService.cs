@@ -699,9 +699,19 @@ namespace GateHelper.StockAdvisor.Services
             // 4. 손익비 점수 (20%): 20일 지지선 하방 리스크(Downside Risk) 대비 목표가 매력도 (1~10점)
             res.RiskScore = tech != null ? Math.Max(1, Math.Min(10, tech.RiskScore)) : 5;
 
-            // 5. 4대 가중치 최종 종합 점수 산출
-            // 차트 30% + 수급재무 25% + 뉴스 25% + 손익비 20%
-            double rawFinal = (res.ChartScore * 0.30) + (res.SupplyFinanceScore * 0.25) + (res.NewsScore * 0.25) + (res.RiskScore * 0.20);
+            // 5. 최종 종합 점수 산출
+            // AI 뉴스 진단이 있거나 유의미한 공시 시그널(5점 외)이 있으면 4대 팩터(30/25/25/20) 적용.
+            // 레이더 스캔 등 AI 뉴스 미진단 & 중립 공시(5점) 상태에서는 25%가 5점에 묶여 우량주 점수가 깎이는 왜곡을 방지하기 위해
+            // 3대 객관 정량 팩터(차트 40% + 수급·재무 33% + 손익비 27%)로 공정 재정규화.
+            double rawFinal;
+            if (customNewsScore > 0 || res.NewsScore != 5)
+            {
+                rawFinal = (res.ChartScore * 0.30) + (res.SupplyFinanceScore * 0.25) + (res.NewsScore * 0.25) + (res.RiskScore * 0.20);
+            }
+            else
+            {
+                rawFinal = (res.ChartScore * 0.40) + (res.SupplyFinanceScore * 0.33) + (res.RiskScore * 0.27);
+            }
             int finalScore = (int)Math.Round(rawFinal, MidpointRounding.AwayFromZero);
 
             // 치명적 지뢰 감지 시 F등급 강제 강등 (최대 2점 캡)

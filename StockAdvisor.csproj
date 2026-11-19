@@ -89,115 +89,6 @@
     <Compile Include="SandBox\3. MysteryTime\MysteryApiKeyForm.Designer.cs">
       <DependentUpon>MysteryApiKeyForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\Security\DpapiHelper.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Models\StockModels.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Models\StockVerdictHelper.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Models\TradeJournalModels.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\NaverStockPriceService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\GlobalMarketPollerService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\GeminiRiskAdvisorService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\TechnicalIndicatorService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\StockIntelligenceService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\MarketThermometerService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\MobilePushAlertService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\EarningsRadarService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\MarketLeaderRadarService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Services\StockMasterService.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingModels.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\Trading\KbTradingClient.cs" />
-    <Compile Include="SandBox\8. StockAdvisor\StockItemDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\SmartPortfolioImportDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\SmartPortfolioImportDialog.Layout.cs">
-      <DependentUpon>SmartPortfolioImportDialog.cs</DependentUpon>
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\PortfolioImportPreviewDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\KeyStockSummaryDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\PanicExitDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\BrokerOrderComparisonDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\AccountAllocationChartDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\TradeJournalDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\MarketIntelNewsDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\KbSecSettingDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockScoreHelpDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorOptionDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockEvaluatorDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockEvaluatorDialog.Layout.cs">
-      <DependentUpon>StockEvaluatorDialog.cs</DependentUpon>
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\MarketThermometerDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\MarketCloseReportDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\MiniCandleChartControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\EarningsRadarDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\MarketLeaderRadarDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAlertHistoryDialog.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockSearchPopup.cs">
-      <SubType>Component</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockToastNotification.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.cs">
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Designer.cs">
-      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Layout.cs">
-      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Detail.cs">
-      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.Sync.cs">
-      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
-      <SubType>UserControl</SubType>
-    </Compile>
-    <Compile Include="SandBox\8. StockAdvisor\StockAdvisorControl.TopPickBanner.cs">
-      <DependentUpon>StockAdvisorControl.cs</DependentUpon>
-      <SubType>UserControl</SubType>
-    </Compile>
     <Compile Include="StockAdvisor\StockAdvisorProgram.cs" />
     <Compile Include="StockAdvisor\StockAdvisorMainForm.cs">
       <SubType>Form</SubType>
@@ -221,7 +112,6 @@
     <EmbeddedResource Include="SandBox\3. MysteryTime\MysteryApiKeyForm.resx">
       <DependentUpon>MysteryApiKeyForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="SandBox\8. StockAdvisor\Resources\stock_master.json" />
     <None Include="App.config" />
     <Content Include="Resource_TEMP\sandbox_icon.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -234,5 +124,6 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
   </ItemGroup>
+  <Import Project="StockAdvisor.Shared.props" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

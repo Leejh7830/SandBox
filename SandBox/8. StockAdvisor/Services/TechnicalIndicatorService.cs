@@ -286,11 +286,62 @@ namespace GateHelper.StockAdvisor.Services
                     result.TimingWarning = $"[관망 대기] 뚜렷한 추세 모멘텀 형성 전까지 시장 관망";
                 }
 
-                // 8. AI 퀀트 권고 매수가 및 진입 타점 계산
-                // [단일 진실 공급원(SSOT)] 손절가는 지지선(최근 20일 최저가) 기준 -3% 단일 고정 (KRX 호가 단위 정돈)
+                // 8. [단일 진실 공급원(SSOT)] 손절가 및 1·2차 목표가 선행 산출 + 손익비(R/R) 정밀 보정
+                // (반드시 진입 타점 판정보다 먼저 실행하여, R/R이 나빠 RiskScore가 감점된 종목에 '과매도 분할매수존'이 잘못 부여되는 역전 현상 차단)
                 decimal stopBase = result.SupportPrice > 0 ? result.SupportPrice : currentPrice * 0.95m;
                 result.TargetStopPrice = RoundToKrxTick(stopBase * 0.97m, roundDown: true); // 지지선 -3% 이탈 시 손절선
 
+                // [닻(Anchor) 고정 원칙 & 래칫(Ratchet) 상향 락: 장중 틱/순간 펌핑 및 경계선 핑퐁 왜곡 원천 차단]
+                // 익절가는 객관적인 20일 일봉 최고 매물대(ResistancePrice)에 닻을 내리고 고정합니다.
+                decimal baseTarget;
+                if (result.ResistancePrice > 0m)
+                {
+                    // 저항선 1.8% 선제 익절 안전 버퍼
+                    baseTarget = result.ResistancePrice * 0.982m;
+                }
+                else
+                {
+                    baseTarget = currentPrice * 1.08m;
+                }
+
+                // [돌파 히스테리시스 필터]
+                // 현재가가 저항선을 완전히 돌파 안착(저항선 +0.8% 이상 돌파)했을 때만 상향 목표 적용
+                if (currentPrice >= baseTarget * 1.008m)
+                {
+                    baseTarget = Math.Max(baseTarget, currentPrice * 1.05m);
+                }
+
+                result.RecommendedTargetPrice = RoundToKrxTick(baseTarget, roundDown: true);
+                result.SecondaryTargetPrice = RoundToKrxTick(result.RecommendedTargetPrice * 1.09m, roundDown: true);
+
+                decimal upside1 = currentPrice > 0 ? ((result.RecommendedTargetPrice - currentPrice) / currentPrice * 100m) : 0m;
+
+                // [손익비(Risk-Reward Ratio) 최종 정밀 보정 인터락]
+                // 목표가까지 먹을 여력(upside1) 대비 손절가까지의 위험(DownsideRiskPercent)을 비교하여 왜곡 방지
+                decimal stopLossRiskPercent = currentPrice > 0 && result.TargetStopPrice > 0 && currentPrice > result.TargetStopPrice
+                    ? ((currentPrice - result.TargetStopPrice) / currentPrice * 100m)
+                    : result.DownsideRiskPercent;
+                if (stopLossRiskPercent <= 0m) stopLossRiskPercent = 3.0m;
+
+                decimal riskRewardRatio = stopLossRiskPercent > 0 ? (upside1 / stopLossRiskPercent) : 1.0m;
+
+                if (riskRewardRatio < 0.8m)
+                {
+                    // 먹을 여력(+3.7%)보다 손절 위험(-6.0%)이 더 큰 나쁜 손익비인 경우: 손익비 점수 4점 이하로 감점
+                    result.RiskScore = Math.Min(result.RiskScore, 4);
+                }
+                else if (riskRewardRatio < 1.2m)
+                {
+                    // 먹을 여력과 손절 위험이 비슷한 경우: 최대 6점 캡
+                    result.RiskScore = Math.Min(result.RiskScore, 6);
+                }
+                else if (riskRewardRatio >= 2.0m && result.DownsideRiskPercent <= 4.0m)
+                {
+                    // 상승 여력이 위험의 2배 이상인 이상적 손익비: 9~10점 유지
+                    result.RiskScore = Math.Max(result.RiskScore, 9);
+                }
+
+                // 9. AI 퀀트 권고 매수가 및 진입 타점 계산 (보정 완료된 최종 RiskScore 사용)
                 if (result.Rsi >= 68.0m || (result.Ma20 > 0 && currentPrice > result.Ma20 * 1.12m))
                 {
                     decimal pullbackPrice = result.Ma20 > 0 ? result.Ma20 : currentPrice * 0.93m;
@@ -334,58 +385,7 @@ namespace GateHelper.StockAdvisor.Services
                     result.RecommendedBuyPrice = RoundToKrxTick(result.TargetStopPrice * 1.02m, roundDown: false);
                 }
 
-                // 9. AI 퀀트 권고 매도(익절) 타점 및 청산 시나리오 계산
-                // [닻(Anchor) 고정 원칙 & 래칫(Ratchet) 상향 락: 장중 틱/순간 펌핑 및 경계선 핑퐁 왜곡 원천 차단]
-                // 익절가는 객관적인 20일 일봉 최고 매물대(ResistancePrice)에 닻을 내리고 고정합니다.
-                decimal baseTarget;
-                if (result.ResistancePrice > 0m)
-                {
-                    // 저항선 1.8% 선제 익절 안전 버퍼
-                    baseTarget = result.ResistancePrice * 0.982m;
-                }
-                else
-                {
-                    baseTarget = currentPrice * 1.08m;
-                }
-
-                // [돌파 히스테리시스 필터]
-                // 현재가가 저항선을 완전히 돌파 안착(저항선 +0.8% 이상 돌파)했을 때만 상향 목표 적용
-                // 단순 경계선 틱 흔들림으로 161,500원 <-> 168,000원이 번갈아 스위칭되는 핑퐁 현상을 원천 방지
-                if (currentPrice >= baseTarget * 1.008m)
-                {
-                    baseTarget = Math.Max(baseTarget, currentPrice * 1.05m);
-                }
-
-                result.RecommendedTargetPrice = RoundToKrxTick(baseTarget, roundDown: true);
-                result.SecondaryTargetPrice = RoundToKrxTick(result.RecommendedTargetPrice * 1.09m, roundDown: true);
-
-                decimal upside1 = currentPrice > 0 ? ((result.RecommendedTargetPrice - currentPrice) / currentPrice * 100m) : 0m;
-
-                // [손익비(Risk-Reward Ratio) 최종 정밀 보정 인터락]
-                // 목표가까지 먹을 여력(upside1) 대비 손절가까지의 위험(DownsideRiskPercent)을 비교하여 왜곡 방지
-                // 손익비 R/R = 상승여력% / 하방위험%
-                decimal stopLossRiskPercent = currentPrice > 0 && result.TargetStopPrice > 0 && currentPrice > result.TargetStopPrice
-                    ? ((currentPrice - result.TargetStopPrice) / currentPrice * 100m)
-                    : result.DownsideRiskPercent;
-                if (stopLossRiskPercent <= 0m) stopLossRiskPercent = 3.0m;
-
-                decimal riskRewardRatio = stopLossRiskPercent > 0 ? (upside1 / stopLossRiskPercent) : 1.0m;
-
-                if (riskRewardRatio < 0.8m)
-                {
-                    // 먹을 여력(+3.7%)보다 손절 위험(-6.0%)이 더 큰 나쁜 손익비인 경우: 손익비 점수 3~4점 이하로 대폭 감점
-                    result.RiskScore = Math.Min(result.RiskScore, 4);
-                }
-                else if (riskRewardRatio < 1.2m)
-                {
-                    // 먹을 여력과 손절 위험이 비슷한 경우: 최대 6점 캡
-                    result.RiskScore = Math.Min(result.RiskScore, 6);
-                }
-                else if (riskRewardRatio >= 2.0m && result.DownsideRiskPercent <= 4.0m)
-                {
-                    // 상승 여력이 위험의 2배 이상인 이상적 손익비: 9~10점 유지
-                    result.RiskScore = Math.Max(result.RiskScore, 9);
-                }
+                // 10. AI 퀀트 권고 매도(익절) 배지 및 청산 시나리오 부여
 
                 if (result.Rsi >= 68.0m)
                 {

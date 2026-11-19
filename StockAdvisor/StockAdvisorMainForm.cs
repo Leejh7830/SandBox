@@ -293,7 +293,11 @@ namespace GateHelper.StockAdvisor.Standalone
         {
             if (!_isExplicitExit && e.CloseReason == CloseReason.UserClosing)
             {
-                // 창 X 버튼 클릭 시 즉시 종료
+                // 장중 상시 감시 앱이므로 X 버튼 실수 종료 방지 -> 시스템 트레이로 최소화
+                // (완전 종료는 트레이 아이콘 우클릭 -> 'StockAdvisor 종료' 사용)
+                e.Cancel = true;
+                MinimizeToTray();
+                return;
             }
 
             base.OnFormClosing(e);

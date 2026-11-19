@@ -43,8 +43,6 @@ namespace GateHelper
             this.materialLabelDataFlip = new MaterialSkin.Controls.MaterialLabel();
             this.GL_btnSelectPocketFarm = new MaterialSkin.Controls.MaterialCard();
             this.materialLabelPocketFarm = new MaterialSkin.Controls.MaterialLabel();
-            this.GL_btnSelectStockAdvisor = new MaterialSkin.Controls.MaterialCard();
-            this.materialLabelStockAdvisor = new MaterialSkin.Controls.MaterialLabel();
             this.GL_btnSelectEcoSim = new MaterialSkin.Controls.MaterialCard();
             this.materialLabelEcoSim = new MaterialSkin.Controls.MaterialLabel();
             this.GL_pnlFooter = new System.Windows.Forms.Panel();
@@ -58,7 +56,6 @@ namespace GateHelper
             this.GL_btnSelectServerTycoon.SuspendLayout();
             this.GL_btnSelectDataFlip.SuspendLayout();
             this.GL_btnSelectPocketFarm.SuspendLayout();
-            this.GL_btnSelectStockAdvisor.SuspendLayout();
             this.GL_btnSelectEcoSim.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -71,7 +68,6 @@ namespace GateHelper
             this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectServerTycoon);
             this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectDataFlip);
             this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectPocketFarm);
-            this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectStockAdvisor);
             this.GL_FlowPanel1.Controls.Add(this.GL_btnSelectEcoSim);
             this.GL_FlowPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.GL_FlowPanel1.Location = new System.Drawing.Point(0, 0);
@@ -271,34 +267,6 @@ namespace GateHelper
             this.materialLabelPocketFarm.Text = "Pocket Farm";
             this.materialLabelPocketFarm.Click += new System.EventHandler(this.GL_btnSelectPocketFarm_Click);
             // 
-            // GL_btnSelectStockAdvisor
-            // 
-            this.GL_btnSelectStockAdvisor.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(255)))));
-            this.GL_btnSelectStockAdvisor.Controls.Add(this.materialLabelStockAdvisor);
-            this.GL_btnSelectStockAdvisor.Depth = 0;
-            this.GL_btnSelectStockAdvisor.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(222)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.GL_btnSelectStockAdvisor.Location = new System.Drawing.Point(192, 308);
-            this.GL_btnSelectStockAdvisor.Margin = new System.Windows.Forms.Padding(14);
-            this.GL_btnSelectStockAdvisor.MouseState = MaterialSkin.MouseState.HOVER;
-            this.GL_btnSelectStockAdvisor.Name = "GL_btnSelectStockAdvisor";
-            this.GL_btnSelectStockAdvisor.Padding = new System.Windows.Forms.Padding(14);
-            this.GL_btnSelectStockAdvisor.Size = new System.Drawing.Size(150, 70);
-            this.GL_btnSelectStockAdvisor.TabIndex = 7;
-            this.GL_btnSelectStockAdvisor.Click += new System.EventHandler(this.GL_btnSelectStockAdvisor_Click);
-            // 
-            // materialLabelStockAdvisor
-            // 
-            this.materialLabelStockAdvisor.AutoSize = true;
-            this.materialLabelStockAdvisor.Depth = 0;
-            this.materialLabelStockAdvisor.Font = new System.Drawing.Font("Roboto", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Pixel);
-            this.materialLabelStockAdvisor.Location = new System.Drawing.Point(26, 26);
-            this.materialLabelStockAdvisor.MouseState = MaterialSkin.MouseState.HOVER;
-            this.materialLabelStockAdvisor.Name = "materialLabelStockAdvisor";
-            this.materialLabelStockAdvisor.Size = new System.Drawing.Size(98, 19);
-            this.materialLabelStockAdvisor.TabIndex = 9;
-            this.materialLabelStockAdvisor.Text = "Stock Advisor";
-            this.materialLabelStockAdvisor.Click += new System.EventHandler(this.GL_btnSelectStockAdvisor_Click);
-            // 
             // GL_btnSelectEcoSim
             // 
             this.GL_btnSelectEcoSim.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(255)))), ((int)(((byte)(255)))));
@@ -375,8 +343,6 @@ namespace GateHelper
             this.GL_btnSelectDataFlip.PerformLayout();
             this.GL_btnSelectPocketFarm.ResumeLayout(false);
             this.GL_btnSelectPocketFarm.PerformLayout();
-            this.GL_btnSelectStockAdvisor.ResumeLayout(false);
-            this.GL_btnSelectStockAdvisor.PerformLayout();
             this.GL_btnSelectEcoSim.ResumeLayout(false);
             this.GL_btnSelectEcoSim.PerformLayout();
             this.ResumeLayout(false);
@@ -393,7 +359,6 @@ namespace GateHelper
         private MaterialSkin.Controls.MaterialCard GL_btnSelectServerTycoon;
         private MaterialSkin.Controls.MaterialCard GL_btnSelectDataFlip;
         private MaterialSkin.Controls.MaterialCard GL_btnSelectPocketFarm;
-        private MaterialSkin.Controls.MaterialCard GL_btnSelectStockAdvisor;
         private MaterialSkin.Controls.MaterialCard GL_btnSelectEcoSim;
         private MaterialSkin.Controls.MaterialLabel materialLabel1;
         private MaterialSkin.Controls.MaterialLabel materialLabel2;
@@ -402,7 +367,6 @@ namespace GateHelper
         private MaterialSkin.Controls.MaterialLabel materialLabelServerTycoon;
         private MaterialSkin.Controls.MaterialLabel materialLabelDataFlip;
         private MaterialSkin.Controls.MaterialLabel materialLabelPocketFarm;
-        private MaterialSkin.Controls.MaterialLabel materialLabelStockAdvisor;
         private MaterialSkin.Controls.MaterialLabel materialLabelEcoSim;
         private System.Windows.Forms.Panel GL_pnlFooter;
         private System.Windows.Forms.Button GL_btnOptions;

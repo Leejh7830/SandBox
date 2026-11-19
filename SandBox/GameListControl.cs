@@ -67,14 +67,6 @@ namespace GateHelper
             }
         }
 
-        private void GL_btnSelectStockAdvisor_Click(object sender, EventArgs e)
-        {
-            if (this.ParentForm is SandBox sb)
-            {
-                sb.SwitchToGame("StockAdvisor");
-            }
-        }
-
         private void GL_btnSelectEcoSim_Click(object sender, EventArgs e)
         {
             if (this.ParentForm is SandBox sb)

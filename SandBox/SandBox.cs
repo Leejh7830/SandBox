@@ -7,7 +7,6 @@ using GateHelper.AiTrend;
 using GateHelper.ServerTycoon;
 using GateHelper.DataFlip;
 using GateHelper.PocketFarm;
-using GateHelper.StockAdvisor;
 using GateHelper.EcoSim;
 
 namespace GateHelper
@@ -22,7 +21,6 @@ namespace GateHelper
         private ServerTycoonControl _serverTycoonControl;
         private DataFlipControl _dataFlipControl;
         private PocketFarmControl _pocketFarmControl;
-        private StockAdvisorControl _stockAdvisorControl;
         private EcoSimControl _ecoSimControl;
 
         private NotifyIcon _trayIcon;
@@ -91,30 +89,6 @@ namespace GateHelper
                 mnuOpen.Font = new Font("Malgun Gothic", 9f, FontStyle.Bold);
                 mnuOpen.Click += (s, e) => ShowSandBoxWindow();
 
-                var mnuStock = new ToolStripMenuItem("AI 주식 리스크 참모 열기");
-                mnuStock.Click += (s, e) =>
-                {
-                    ShowSandBoxWindow();
-                    SwitchToGame("StockAdvisor");
-                };
-
-                var mnuAlertHistory = new ToolStripMenuItem("가격 도달 알림 기록");
-                mnuAlertHistory.Click += (s, e) =>
-                {
-                    ShowSandBoxWindow();
-                    SwitchToGame("StockAdvisor");
-                    _stockAdvisorControl?.ShowAlertHistoryDialog();
-                };
-
-                var mnuRefresh = new ToolStripMenuItem("실시간 시세 즉시 갱신");
-                mnuRefresh.Click += async (s, e) =>
-                {
-                    if (_stockAdvisorControl != null)
-                    {
-                        await _stockAdvisorControl.RefreshPricesAsync();
-                    }
-                };
-
                 var mnuExit = new ToolStripMenuItem("프로그램 종료");
                 mnuExit.Click += (s, e) =>
                 {
@@ -126,16 +100,12 @@ namespace GateHelper
                 };
 
                 _trayMenu.Items.Add(mnuOpen);
-                _trayMenu.Items.Add(mnuStock);
-                _trayMenu.Items.Add(mnuAlertHistory);
-                _trayMenu.Items.Add(new ToolStripSeparator());
-                _trayMenu.Items.Add(mnuRefresh);
                 _trayMenu.Items.Add(new ToolStripSeparator());
                 _trayMenu.Items.Add(mnuExit);
 
                 _trayIcon = new NotifyIcon
                 {
-                    Text = "SandBox - 주식 AI 리스크 참모 (초절전 가동 중)",
+                    Text = "SandBox (초절전 대기 중)",
                     ContextMenuStrip = _trayMenu,
                     Visible = false
                 };
@@ -151,34 +121,12 @@ namespace GateHelper
                 }
 
                 _trayIcon.DoubleClick += (s, e) => ShowSandBoxWindow();
-                _trayIcon.BalloonTipClicked += (s, e) =>
-                {
-                    ShowSandBoxWindow();
-                    SwitchToGame("StockAdvisor");
-                };
-
-                // 알림 발생 시 트레이 풍선 알림 연동
-                GateHelper.StockAdvisor.StockToastNotification.AlertLogged += OnStockAlertLogged;
+                _trayIcon.BalloonTipClicked += (s, e) => ShowSandBoxWindow();
             }
             catch (Exception ex)
             {
                 LogManager.LogException(ex, LogManager.Level.Warning, "SandBox.InitializeSystemTray");
             }
-        }
-
-        private void OnStockAlertLogged(GateHelper.StockAdvisor.Models.StockAlertLogItem item)
-        {
-            if (item == null || _trayIcon == null) return;
-            try
-            {
-                if (this.WindowState == FormWindowState.Minimized || !this.Visible)
-                {
-                    string title = item.Message;
-                    string body = $"현재가: {item.CurrentPrice:N0}원 ({item.ChangeRate:+0.00;-0.00}%) · 클릭 시 이동";
-                    _trayIcon.ShowBalloonTip(3000, title, body, ToolTipIcon.Info);
-                }
-            }
-            catch { }
         }
 
         private void StartSingleInstanceWakeListener()
@@ -331,7 +279,6 @@ namespace GateHelper
                 _serverTycoonControl?.OnTabVisibilityChanged(false);
                 _dataFlipControl?.OnTabVisibilityChanged(false);
                 _pocketFarmControl?.OnTabVisibilityChanged(false);
-                _stockAdvisorControl?.OnTabVisibilityChanged(false);
                 _ecoSimControl?.OnTabVisibilityChanged(false);
             }
         }
@@ -403,13 +350,7 @@ namespace GateHelper
                 tpPocketFarm.Controls.Add(_pocketFarmControl);
             }
 
-            // 9. Stock Advisor 컨트롤: 독립 실행(StockAdvisor.exe)이 가동 중이면 중복 API/텔레그램 폴링 방지를 위해 지연 로딩
-            if (!IsStandaloneStockAdvisorRunning())
-            {
-                EnsureStockAdvisorControl();
-            }
-
-            // 10. EcoSim (9번 게임: 미니 생태계 진화 시뮬레이터) 컨트롤 추가
+            // 9. EcoSim (미니 생태계 진화 시뮬레이터) 컨트롤 추가
             _ecoSimControl = new EcoSimControl();
             _ecoSimControl.Dock = DockStyle.Fill;
             if (SB_tabControl1.TabPages.Contains(tpEcoSim))
@@ -441,9 +382,6 @@ namespace GateHelper
             bool isPocketFarm = SB_tabControl1.SelectedTab == tpPocketFarm;
             _pocketFarmControl?.OnTabVisibilityChanged(isPocketFarm);
 
-            bool isStockAdvisor = SB_tabControl1.SelectedTab == tpStockAdvisor;
-            _stockAdvisorControl?.OnTabVisibilityChanged(isStockAdvisor);
-
             bool isEcoSim = SB_tabControl1.SelectedTab == tpEcoSim;
             _ecoSimControl?.OnTabVisibilityChanged(isEcoSim);
         }
@@ -459,7 +397,6 @@ namespace GateHelper
                 _serverTycoonControl?.OnTabVisibilityChanged(false);
                 _dataFlipControl?.OnTabVisibilityChanged(false);
                 _pocketFarmControl?.OnTabVisibilityChanged(false);
-                _stockAdvisorControl?.OnTabVisibilityChanged(false);
                 _ecoSimControl?.OnTabVisibilityChanged(false);
             }
             else
@@ -471,7 +408,6 @@ namespace GateHelper
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
             base.OnFormClosing(e);
-            GateHelper.StockAdvisor.StockToastNotification.AlertLogged -= OnStockAlertLogged;
             try
             {
                 _registeredWakeHandle?.Unregister(null);
@@ -508,7 +444,6 @@ namespace GateHelper
             _serverTycoonControl?.OnTabVisibilityChanged(false);
             _dataFlipControl?.OnTabVisibilityChanged(false);
             _pocketFarmControl?.OnTabVisibilityChanged(false);
-            _stockAdvisorControl?.OnTabVisibilityChanged(false);
             _ecoSimControl?.OnTabVisibilityChanged(false);
         }
 
@@ -585,26 +520,6 @@ namespace GateHelper
                     _pocketFarmControl?.OnTabVisibilityChanged(true);
                 }
             }
-            else if (gameName == "StockAdvisor")
-            {
-                if (IsStandaloneStockAdvisorRunning())
-                {
-                    WakeStandaloneStockAdvisor();
-                    ToastNotification.Show("독립 실행 중인 StockAdvisor 창을 화면 앞으로 불러왔습니다.\n(API 토큰 낭비·텔레그램 충돌 방지를 위해 중복 실행하지 않습니다)", "StockAdvisor 실행 중", ToastIcon.Info);
-                    return;
-                }
-
-                EnsureStockAdvisorControl();
-                if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
-                {
-                    if (this.WindowState == FormWindowState.Normal && (this.ClientSize.Width < 1100 || this.ClientSize.Height < 720))
-                    {
-                        this.ClientSize = new System.Drawing.Size(1120, 740);
-                    }
-                    SB_tabControl1.SelectedTab = tpStockAdvisor;
-                    _stockAdvisorControl?.OnTabVisibilityChanged(true);
-                }
-            }
             else if (gameName == "EcoSim")
             {
                 if (SB_tabControl1.TabPages.Contains(tpEcoSim))
@@ -616,49 +531,6 @@ namespace GateHelper
                     SB_tabControl1.SelectedTab = tpEcoSim;
                     _ecoSimControl?.OnTabVisibilityChanged(true);
                 }
-            }
-        }
-
-        private static bool IsStandaloneStockAdvisorRunning()
-        {
-            try
-            {
-                System.Threading.Mutex existing;
-                if (System.Threading.Mutex.TryOpenExisting("GateHelper_StockAdvisor_SingleInstance_Mutex", out existing))
-                {
-                    existing.Dispose();
-                    return true;
-                }
-            }
-            catch { }
-            return false;
-        }
-
-        private static void WakeStandaloneStockAdvisor()
-        {
-            try
-            {
-                using (var wakeEvent = System.Threading.EventWaitHandle.OpenExisting("GateHelper_StockAdvisor_Wake_Event"))
-                {
-                    wakeEvent.Set();
-                }
-            }
-            catch { }
-        }
-
-        private void EnsureStockAdvisorControl()
-        {
-            if (_stockAdvisorControl != null) return;
-            _stockAdvisorControl = new StockAdvisorControl();
-            _stockAdvisorControl.Dock = DockStyle.Fill;
-            _stockAdvisorControl.RequestHostActivate = () =>
-            {
-                ShowSandBoxWindow();
-                SwitchToGame("StockAdvisor");
-            };
-            if (SB_tabControl1.TabPages.Contains(tpStockAdvisor))
-            {
-                tpStockAdvisor.Controls.Add(_stockAdvisorControl);
             }
         }
     }

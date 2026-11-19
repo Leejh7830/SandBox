@@ -37,7 +37,6 @@ namespace GateHelper
             this.tpServerTycoon = new System.Windows.Forms.TabPage();
             this.tpDataFlip = new System.Windows.Forms.TabPage();
             this.tpPocketFarm = new System.Windows.Forms.TabPage();
-            this.tpStockAdvisor = new System.Windows.Forms.TabPage();
             this.tpEcoSim = new System.Windows.Forms.TabPage();
             this.SB_tabControl1.SuspendLayout();
             this.SuspendLayout();
@@ -52,7 +51,6 @@ namespace GateHelper
             this.SB_tabControl1.Controls.Add(this.tpServerTycoon);
             this.SB_tabControl1.Controls.Add(this.tpDataFlip);
             this.SB_tabControl1.Controls.Add(this.tpPocketFarm);
-            this.SB_tabControl1.Controls.Add(this.tpStockAdvisor);
             this.SB_tabControl1.Controls.Add(this.tpEcoSim);
             this.SB_tabControl1.Depth = 0;
             this.SB_tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -146,16 +144,6 @@ namespace GateHelper
             this.tpPocketFarm.Text = "PocketFarm";
             this.tpPocketFarm.UseVisualStyleBackColor = true;
             // 
-            // tpStockAdvisor
-            // 
-            this.tpStockAdvisor.Location = new System.Drawing.Point(4, 24);
-            this.tpStockAdvisor.Name = "tpStockAdvisor";
-            this.tpStockAdvisor.Padding = new System.Windows.Forms.Padding(3);
-            this.tpStockAdvisor.Size = new System.Drawing.Size(636, 605);
-            this.tpStockAdvisor.TabIndex = 8;
-            this.tpStockAdvisor.Text = "StockAdvisor";
-            this.tpStockAdvisor.UseVisualStyleBackColor = true;
-            // 
             // tpEcoSim
             // 
             this.tpEcoSim.Location = new System.Drawing.Point(4, 24);
@@ -188,7 +176,6 @@ namespace GateHelper
         private System.Windows.Forms.TabPage tpServerTycoon;
         private System.Windows.Forms.TabPage tpDataFlip;
         private System.Windows.Forms.TabPage tpPocketFarm;
-        private System.Windows.Forms.TabPage tpStockAdvisor;
         private System.Windows.Forms.TabPage tpEcoSim;
         private System.Windows.Forms.TabPage tpList;
     }
